@@ -1,0 +1,53 @@
+{
+ "prompt": "test product",
+ "niche": "beauty",
+ "presenter": "human",
+ "format": "demo",
+ "duration_s": 10,
+ "hook_family": "test",
+ "hook_stack": [
+  {
+   "type": "HOOK",
+   "dialogue": "Look at this."
+  }
+ ],
+ "caption": "Test caption. #beautytok",
+ "beats": [
+  {
+   "type": "VISUAL TRIGGER",
+   "t": "0.0-0.5s",
+   "direction": "Split-screen.",
+   "on_screen": "BEFORE | AFTER",
+   "dialogue": "",
+   "delivery": "",
+   "rehook": ""
+  },
+  {
+   "type": "VERBAL HOOK + LOCK",
+   "t": "0.5-3.0s",
+   "direction": "Presenter to camera.",
+   "on_screen": "",
+   "dialogue": "This is the after.",
+   "delivery": "Brisk.",
+   "rehook": "Here is what it took."
+  },
+  {
+   "type": "DEMO BEAT",
+   "t": "3.0-6.0s",
+   "direction": "Hands demo the product.",
+   "on_screen": "",
+   "dialogue": "One pass and it's done.",
+   "delivery": "Brisk.",
+   "rehook": ""
+  },
+  {
+   "type": "COMMENT BAIT",
+   "t": "6.0-9.0s",
+   "direction": "Presenter to camera.",
+   "on_screen": "",
+   "dialogue": "Hit follow, comment TEST and it's yours.",
+   "delivery": "Brisk.",
+   "rehook": ""
+  }
+ ]
+}

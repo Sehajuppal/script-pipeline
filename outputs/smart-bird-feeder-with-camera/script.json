@@ -1,0 +1,89 @@
+{
+ "prompt": "smart bird feeder with camera",
+ "presenter": "ai",
+ "format": "review",
+ "duration_s": 30,
+ "niche": "pets",
+ "fit": "neutral",
+ "hook_family": "transformation",
+ "fit_warning": null,
+ "hook_stack": [
+  {
+   "t": "0.0–0.5s",
+   "type": "VISUAL TRIGGER",
+   "direction": "Frame 0 MID-ACTION: hands on smart bird feeder with camera, object in motion. No logos, no static intro. Works muted (85% watch sound-off).",
+   "on_screen": "AFTER"
+  },
+  {
+   "t": "0.5–3.0s",
+   "type": "VERBAL HOOK + LOCK",
+   "dialogue": "This is the after. Here's what it took.",
+   "payoff_contract": "Viewer is promised a verdict — worth it or skip — delivered at ~23.4s — never frontloaded.",
+   "delivery": "Brisk, confident. Verbal hook ≤8 words total (D73 charter hook stack)."
+  }
+ ],
+ "beats": [
+  {
+   "t": "3–5.0s",
+   "type": "REJECTION HISTORY",
+   "dialogue": "Three cameras, three fails — one gave up on day two, one arrived broken, one was a lie in the listing. Then I tested this one.",
+   "delivery": "Candid reviewer register — the credibility beat (D28).",
+   "rehook": "And here's why it survived."
+  },
+  {
+   "t": "5.0–14.0s",
+   "type": "EDUCATION BEAT",
+   "dialogue": "Most of these fail because they optimize for the spec sheet, not real daily use. This one doesn't.",
+   "delivery": "Unhurried, warm — trust-building register (F138).",
+   "rehook": "Here's where it gets interesting: hang it where the morning birds actually land and let the camera roll."
+  },
+  {
+   "t": "14.0–22.4s",
+   "type": "DEMO BEAT",
+   "dialogue": "The detail that sold me: finished details, not cost-cut.",
+   "on_screen": "TEST 1",
+   "delivery": "Energetic, pitch-varied (F85). Mid-action framing.",
+   "rehook": "One more thing before you decide — the morning the first bird showed up on the feed."
+  },
+  {
+   "t": "22.4–26.3s",
+   "type": "PAYOFF",
+   "dialogue": "Verdict: BUY — birds on camera every single morning.",
+   "delivery": "Slow down. Let the result land. No scripted laugh (F142).",
+   "on_screen": "VERDICT: BUY — for anyone who wants backyard birds up close · expected the camera's build to fail the way cheap cameras always fail, but it never did — seven days, no failure, no gimmicks"
+  },
+  {
+   "t": "26.3–29.0s",
+   "type": "COMMENT BAIT",
+   "dialogue": "Hit follow, comment PET — I'll send you the full link list for everything in this video.",
+   "note": "Deliberate disagreement / fill-in-blank = comment engine (playbook §17)."
+  },
+  {
+   "t": "29.0–30.8s",
+   "type": "CTA",
+   "dialogue": "Follow for the part 2 — I'm testing the camera head-to-head.",
+   "delivery": "Brisk 160–180 wpm (F86)."
+  }
+ ],
+ "caption": "This is the after. Here's what it took.\n\nPOV: the camera that finally delivered.\n\nComment PET for the full link list 👇\n\nmade with an AI persona\n\n#petowner #furbaby #petsoftiktok",
+ "research_notes": [
+  "LIVE RESEARCH (pack 2026-09-28, 1824 reels): top hook families now: curiosity-gap, bold-claim, pov; top patterns: b-roll-captions, talking-head-ugc, caption-driven-skit.",
+  "Fresh from the DB (bindass_kavya, comedy): \"When you are a meme-paglu\"",
+  "Fresh from the DB (juhahnjones, comedy): \"Hood Cinema!\"",
+  "Fresh from the DB (nickantonyan, comedy): \"(visual open, playground backdrop)\"",
+  "Hook family 'transformation': curiosity-gap + bold-claim = ~41% of viral hooks (hooks playbook §2).",
+  "3-layer hook stack: visual 0–0.5s / verbal ≤8 words 0.5–1.5s / lock by 3.0s (playbook §1).",
+  "Payoff contract: specific reward named in hook, delivered ~78% through — never frontloaded (playbook §3).",
+  "Re-hooks every beat: open loops keep retention past the 3–5s mark (Robins analysis).",
+  "85% watch muted → frame-0 visual + ≤3-word on-screen text (playbook §4).",
+  "Educational beats before evaluative pitch (F103, persona dossier: educational > evaluative for VIs).",
+  "Pacing by objective: unhurried for trust beats, brisk 160–180 wpm for CTA (F86/F138/F139).",
+  "No scripted laughs/sighs — volitional vocalizations read inauthentic (F142).",
+  "Persona–product fit: 'neutral' SKU. Fit unclear — test both anchors.",
+  "Attractiveness is a top-of-funnel amplifier, not a conversion lever — don't over-invest in beauty (Q1).",
+  "Frame-0 AI disclosure: small on-screen 'AI persona' label, separate from hook text, top safe zone (G6/FTC).",
+  "Autonomy cue: persona 'decides' to test — perceived autonomy is the VI-specific bond driver (F143).",
+  "Engagement ladder: comments → DMs → community; conversion lags engagement (Q9/F112)."
+ ],
+ "disclosure": "Disclosure (G6/Q7): on-screen small \"AI persona\" label from FRAME 0, separate element from hook text, top safe zone, min 2s + caption line \"made with an AI persona\". Never a banner; omission punished worse than disclosure (third-party exposure trust cliff)."
+}

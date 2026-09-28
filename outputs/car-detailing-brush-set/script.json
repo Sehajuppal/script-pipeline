@@ -1,0 +1,87 @@
+{
+ "prompt": "car detailing brush set",
+ "presenter": "human",
+ "format": "demo",
+ "duration_s": 30,
+ "niche": "automotive",
+ "fit": "utilitarian",
+ "hook_family": "curiosity-gap",
+ "fit_warning": null,
+ "hook_stack": [
+  {
+   "t": "0.0–0.5s",
+   "type": "VISUAL TRIGGER",
+   "direction": "Frame 0 MID-ACTION: hands on car detailing brush set, object in motion. No logos, no static intro. Works muted (85% watch sound-off).",
+   "on_screen": "NOBODY MENTIONS"
+  },
+  {
+   "t": "0.5–3.0s",
+   "type": "VERBAL HOOK + LOCK",
+   "dialogue": "Nobody mentions the detailing brush set flaw.",
+   "payoff_contract": "Viewer is promised a specific payoff, delivered at ~23.4s — never frontloaded.",
+   "delivery": "Brisk, confident. Verbal hook ≤8 words total (D73 charter hook stack)."
+  }
+ ],
+ "beats": [
+  {
+   "t": "3.0–5.0s",
+   "type": "IMPERFECTION BEAT",
+   "dialogue": "Confession: first swipe, I fumbled it — left that in. If it works when *I* mess it up, it works.",
+   "delivery": "Candid, unpolished — the flaw first (E7, D12). No cover-up, no polished read.",
+   "rehook": "Okay — with that out of the way: the detailing brush set test, up close."
+  },
+  {
+   "t": "5.0–14.0s",
+   "type": "EDUCATION BEAT",
+   "dialogue": "Three things I check before buying any detailing brush set: build quality that survives daily use, setup under five minutes, does the core job without gimmicks.",
+   "delivery": "Unhurried, warm — trust-building register (F138).",
+   "rehook": "And then I noticed something weird — the detailing brush set, edge to edge, no cuts."
+  },
+  {
+   "t": "14.0–22.4s",
+   "type": "DEMO BEAT",
+   "dialogue": "Test 1: the detailing brush set test, up close, round two. The before and after, on camera.",
+   "on_screen": "TEST 1",
+   "delivery": "Energetic, pitch-varied (F85). Mid-action framing.",
+   "rehook": "But here's the part nobody shows you — the detailing brush set test, up close."
+  },
+  {
+   "t": "22.4–26.3s",
+   "type": "PAYOFF",
+   "dialogue": "Test result: before and after, side by side, on camera.",
+   "delivery": "Slow down. Let the result land. No scripted laugh (F142).",
+   "on_screen": "TEST: car detailing brush set · expected the detailing brush set's build to fail the way cheap detailing brush sets always fail, but it never did — seven days, no failure, no gimmicks"
+  },
+  {
+   "t": "26.3–29.0s",
+   "type": "COMMENT BAIT",
+   "dialogue": "Hit follow, comment CAR — the link list is yours.",
+   "note": "Deliberate disagreement / fill-in-blank = comment engine (playbook §17)."
+  },
+  {
+   "t": "29.0–30.8s",
+   "type": "CTA",
+   "dialogue": "Follow — part 2: the torture test.",
+   "delivery": "Brisk 160–180 wpm (F86)."
+  }
+ ],
+ "caption": "Nobody mentions the detailing brush set flaw.\n\nPOV: the detailing brush set that finally delivered.\n\nComment CAR for the full link list 👇\n\n#cartok #carhacks #caraccessories",
+ "research_notes": [
+  "LIVE RESEARCH (pack 2026-09-28, 1824 reels): top hook families now: curiosity-gap, bold-claim, pov; top patterns: b-roll-captions, talking-head-ugc, caption-driven-skit.",
+  "Fresh from the DB (bindass_kavya, comedy): \"When you are a meme-paglu\"",
+  "Fresh from the DB (juhahnjones, comedy): \"Hood Cinema!\"",
+  "Fresh from the DB (nickantonyan, comedy): \"(visual open, playground backdrop)\"",
+  "Hook family 'curiosity-gap': curiosity-gap + bold-claim = ~41% of viral hooks (hooks playbook §2).",
+  "3-layer hook stack: visual 0–0.5s / verbal ≤8 words 0.5–1.5s / lock by 3.0s (playbook §1).",
+  "Payoff contract: specific reward named in hook, delivered ~78% through — never frontloaded (playbook §3).",
+  "Re-hooks every beat: open loops keep retention past the 3–5s mark (Robins analysis).",
+  "85% watch muted → frame-0 visual + ≤3-word on-screen text (playbook §4).",
+  "Educational beats before evaluative pitch (F103, persona dossier: educational > evaluative for VIs).",
+  "Pacing by objective: unhurried for trust beats, brisk 160–180 wpm for CTA (F86/F138/F139).",
+  "No scripted laughs/sighs — volitional vocalizations read inauthentic (F142).",
+  "Borrowed authority: name-drop an in-niche known figure (Robins rule).",
+  "Delivery: confident-dynamism, never pressuring/harsh (UGC Q4 composite).",
+  "Similarity > beauty for presenter appeal (JTAER 2025)."
+ ],
+ "delivery_note": "Borrowed authority allowed (name-drop a known figure in-niche). Delivery: confident-dynamism, never pressuring (UGC Q4 composite)."
+}

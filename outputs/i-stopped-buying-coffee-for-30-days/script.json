@@ -1,0 +1,80 @@
+{
+ "prompt": "I stopped buying coffee for 30 days",
+ "presenter": "human",
+ "format": "pov-vlog",
+ "duration_s": 30,
+ "niche": "food",
+ "fit": "hedonic",
+ "hook_family": "transformation",
+ "fit_warning": null,
+ "persona": null,
+ "hook_stack": [
+  {
+   "t": "0.0–0.5s",
+   "type": "VISUAL TRIGGER",
+   "direction": "Frame 0: the problem state full-frame — coffee cup mid-pour, buying coffee at its worst, on-screen text up. No logos, no static intro. Works muted (85% watch sound-off).",
+   "on_screen": "BUYING COFFEE DAYS"
+  },
+  {
+   "t": "0.5–3.0s",
+   "type": "VERBAL HOOK + LOCK",
+   "dialogue": "I quit buying coffee for 30 days.",
+   "payoff_contract": "Viewer is promised a specific payoff, delivered at ~23.4s — never frontloaded.",
+   "delivery": "Brisk, confident. Verbal hook ≤8 words total (D73 charter hook stack)."
+  }
+ ],
+ "beats": [
+  {
+   "t": "3.0–12.0s",
+   "type": "STORY BEAT",
+   "dialogue": "Day 1 of no buying coffee: the 3pm headache I tried to bargain with.",
+   "delivery": "Conversational, present-tense. Let the audience co-experience (F45 ritual).",
+   "rehook": "Day 1 is where it almost fell apart."
+  },
+  {
+   "t": "12.3–21.3s",
+   "type": "STORY BEAT",
+   "dialogue": "2 days in — the morning ritual that felt wrong without the cup.",
+   "delivery": "Conversational, present-tense. Let the audience co-experience (F45 ritual).",
+   "rehook": "Day 2: the moment I almost quit."
+  },
+  {
+   "t": "21.6–25.5s",
+   "type": "PAYOFF",
+   "dialogue": "Day 30 verdict: deeper sleep, no 3pm crash.",
+   "delivery": "Slow down. Let the result land. No scripted laugh (F142).",
+   "on_screen": "SLEEP + ENERGY: crash gone — screen-recorded · expected I'd cave by day 3 and mainline espresso again · the headaches only lasted 4 days — and my afternoons got quieter, not louder"
+  },
+  {
+   "t": "25.5–28.2s",
+   "type": "COMMENT BAIT",
+   "dialogue": "Follow, then comment DAY1 — start your own count.",
+   "note": "Deliberate disagreement / fill-in-blank = comment engine (playbook §17)."
+  },
+  {
+   "t": "28.2–30s",
+   "type": "CTA",
+   "dialogue": "Tomorrow: my buying coffee replacement. No lies.",
+   "delivery": "Brisk 160–180 wpm (F86)."
+  }
+ ],
+ "caption": "I quit buying coffee for 30 days.\n\nThe 30-Day Buying Coffee Reset — Day 30 results.\n\nComment DAY1 to start your own count. 👇\n\n#30daychallenge #selfimprovement",
+ "research_notes": [
+  "LIVE RESEARCH (pack 2026-09-28, 1824 reels): top hook families now: curiosity-gap, bold-claim, pov; top patterns: b-roll-captions, talking-head-ugc, caption-driven-skit.",
+  "Fresh from the DB (bindass_kavya, comedy): \"When you are a meme-paglu\"",
+  "Fresh from the DB (juhahnjones, comedy): \"Hood Cinema!\"",
+  "Fresh from the DB (nickantonyan, comedy): \"(visual open, playground backdrop)\"",
+  "Hook family 'transformation': curiosity-gap + bold-claim = ~41% of viral hooks (hooks playbook §2).",
+  "3-layer hook stack: visual 0–0.5s / verbal ≤8 words 0.5–1.5s / lock by 3.0s (playbook §1).",
+  "Payoff contract: specific reward named in hook, delivered ~78% through — never frontloaded (playbook §3).",
+  "Re-hooks every beat: open loops keep retention past the 3–5s mark (Robins analysis).",
+  "85% watch muted → frame-0 visual + ≤3-word on-screen text (playbook §4).",
+  "Educational beats before evaluative pitch (F103, persona dossier: educational > evaluative for VIs).",
+  "Pacing by objective: unhurried for trust beats, brisk 160–180 wpm for CTA (F86/F138/F139).",
+  "No scripted laughs/sighs — volitional vocalizations read inauthentic (F142).",
+  "Borrowed authority: name-drop an in-niche known figure (Robins rule).",
+  "Delivery: confident-dynamism, never pressuring/harsh (UGC Q4 composite).",
+  "Similarity > beauty for presenter appeal (JTAER 2025)."
+ ],
+ "delivery_note": "Borrowed authority allowed (name-drop a known figure in-niche). Delivery: confident-dynamism, never pressuring (UGC Q4 composite)."
+}

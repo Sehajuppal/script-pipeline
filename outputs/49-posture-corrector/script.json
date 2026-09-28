@@ -1,0 +1,95 @@
+{
+ "prompt": "$49 posture corrector",
+ "presenter": "human",
+ "format": "transformation",
+ "duration_s": 30,
+ "niche": "fitness",
+ "fit": "neutral",
+ "hook_family": "bold-claim",
+ "fit_warning": null,
+ "hook_stack": [
+  {
+   "t": "0.0–0.5s",
+   "type": "VISUAL TRIGGER",
+   "direction": "Frame 0: BEFORE/AFTER split-screen — DAY 1 left, TODAY right, posture corrector in frame, on-screen text already up. No logos, no static intro. Works muted (85% watch sound-off).",
+   "on_screen": "NOBODY MENTIONS"
+  },
+  {
+   "t": "0.5–3.0s",
+   "type": "VERBAL HOOK + LOCK",
+   "dialogue": "Nobody mentions the corrector flaw.",
+   "payoff_contract": "Viewer is promised the DAY 1 vs DAY 3 transformation result — delivered at ~23.4s — never frontloaded.",
+   "delivery": "Brisk, confident. Verbal hook ≤8 words total (D73 charter hook stack)."
+  }
+ ],
+ "beats": [
+  {
+   "t": "3.0–5.0s",
+   "type": "IMPERFECTION BEAT",
+   "dialogue": "I'll be honest — I thought this posture corrector was a gimmick. My last ones rolled up and cut into my hands by day two. I'm not easy to impress here.",
+   "delivery": "Candid, unpolished — the flaw first (E7, D12). No cover-up, no polished read.",
+   "rehook": "Okay — with that out of the way, here's what I tested."
+  },
+  {
+   "t": "5.0–14.0s",
+   "type": "EDUCATION BEAT",
+   "dialogue": "Most of these fail because they optimize for the spec sheet, not real daily use. This one doesn't.",
+   "delivery": "Unhurried, warm — trust-building register (F138).",
+   "rehook": "Wait — it gets better: hold the corrector up where you can see every edge."
+  },
+  {
+   "t": "14.0–22.4s",
+   "type": "DEMO BEAT",
+   "dialogue": "The detail that sold me: finished details, not cost-cut.",
+   "on_screen": "TEST 1",
+   "delivery": "Energetic, pitch-varied (F85). Mid-action framing.",
+   "rehook": "Okay, but why does it actually work? Watch the detail the box never shows, up close."
+  },
+  {
+   "t": "22.4–26.6s",
+   "type": "EVIDENCE BEAT",
+   "dialogue": "Same body, same light — DAY 1 on the left, today on the right. That's not a filter; that's the posture corrector, every day.",
+   "on_screen": "DAY 1 | TODAY (split-screen, timestamped)",
+   "delivery": "Slow down. Let the result land — proof shots are never rushed. No scripted laugh (F142).",
+   "rehook": "Okay, but why does it actually work? Watch the close-up that proves it."
+  },
+  {
+   "t": "26.6–30.5s",
+   "type": "PAYOFF",
+   "dialogue": "So here's the payoff I promised: DAY 1 vs DAY 3 — 3 days of the posture corrector, one result on screen. I expected this to be a very expensive clothes rack by day 3, but the log never missed a day.",
+   "delivery": "Slow down. Let the result land. No scripted laugh (F142).",
+   "on_screen": "DAY 1 | DAY 3 (split-screen)"
+  },
+  {
+   "t": "30.5–33.2s",
+   "type": "COMMENT BAIT",
+   "dialogue": "Hit follow, comment SET — I'll send you the full link list for everything in this video.",
+   "note": "Deliberate disagreement / fill-in-blank = comment engine (playbook §17)."
+  },
+  {
+   "t": "33.2–35.0s",
+   "type": "CTA",
+   "dialogue": "Follow for the part 2 — I'm testing the corrector head-to-head.",
+   "delivery": "Brisk 160–180 wpm (F86)."
+  }
+ ],
+ "caption": "Nobody mentions the corrector flaw.\n\nPOV: the corrector that finally delivered.\n\nComment SET for the full link list 👇\n\n#fitnesstips #gymtok",
+ "research_notes": [
+  "LIVE RESEARCH (pack 2026-09-28, 1824 reels): top hook families now: curiosity-gap, bold-claim, pov; top patterns: b-roll-captions, talking-head-ugc, caption-driven-skit.",
+  "Fresh from the DB (bindass_kavya, comedy): \"When you are a meme-paglu\"",
+  "Fresh from the DB (juhahnjones, comedy): \"Hood Cinema!\"",
+  "Fresh from the DB (nickantonyan, comedy): \"(visual open, playground backdrop)\"",
+  "Hook family 'bold-claim': curiosity-gap + bold-claim = ~41% of viral hooks (hooks playbook §2).",
+  "3-layer hook stack: visual 0–0.5s / verbal ≤8 words 0.5–1.5s / lock by 3.0s (playbook §1).",
+  "Payoff contract: specific reward named in hook, delivered ~78% through — never frontloaded (playbook §3).",
+  "Re-hooks every beat: open loops keep retention past the 3–5s mark (Robins analysis).",
+  "85% watch muted → frame-0 visual + ≤3-word on-screen text (playbook §4).",
+  "Educational beats before evaluative pitch (F103, persona dossier: educational > evaluative for VIs).",
+  "Pacing by objective: unhurried for trust beats, brisk 160–180 wpm for CTA (F86/F138/F139).",
+  "No scripted laughs/sighs — volitional vocalizations read inauthentic (F142).",
+  "Borrowed authority: name-drop an in-niche known figure (Robins rule).",
+  "Delivery: confident-dynamism, never pressuring/harsh (UGC Q4 composite).",
+  "Similarity > beauty for presenter appeal (JTAER 2025)."
+ ],
+ "delivery_note": "Borrowed authority allowed (name-drop a known figure in-niche). Delivery: confident-dynamism, never pressuring (UGC Q4 composite)."
+}

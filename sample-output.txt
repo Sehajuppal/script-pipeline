@@ -1,0 +1,69 @@
+================================================================
+VIRAL SCRIPT — DEMO · 30s · presenter: AI
+Prompt: a $12 LED sunrise alarm lamp
+Niche: gadgets · Fit: utilitarian · Hook family: curiosity-gap
+================================================================
+
+--- HOOK STACK (first 3 seconds) ---
+[0.0–0.5s] VISUAL TRIGGER
+  direction: Frame 0 MID-ACTION: hands on LED sunrise alarm lamp, object in motion. No logos, no static intro. Works muted (85% watch sound-off).
+  on_screen: THERE'S ONE THING LED SUNRISE
+
+[0.5–3.0s] VERBAL HOOK + LOCK
+  dialogue: There's one thing LED sunrise alarm lamp does that nobody mentions.
+  payoff_contract: Viewer is promised a specific payoff, delivered at ~23.4s — never frontloaded.
+  delivery: Brisk, confident. First sentence ≤8 words.
+
+--- BEATS ---
+[3.0–12.0s] EDUCATION BEAT
+  dialogue: Here's the problem LED sunrise alarm lamp actually solves: the thing every lamp gets wrong.
+  delivery: Unhurried, warm — trust-building register (F138).
+  rehook: And then I noticed something weird.
+
+[11.4–19.8s] DEMO BEAT
+  dialogue: Compare it to the $96 name-brand one: same job, a fraction of the price.
+  on_screen: TEST 1
+  delivery: Energetic, pitch-varied (F85). Mid-action framing.
+  rehook: Now watch what happens when I I flip it over.
+
+[21.6–25.5s] PAYOFF
+  dialogue: So here's the payoff I promised: LED sunrise alarm lamp at $12 does the one thing lamps are supposed to do — without the drama.
+  delivery: Slow down. Let the result land. No scripted laugh (F142).
+
+[25.5–28.2s] COMMENT BAIT
+  dialogue: Rank these: budget lamp, premium lamp, going without — fight in the comments.
+  note: Deliberate disagreement / fill-in-blank = comment engine (playbook §17).
+
+[28.2–30s] CTA
+  dialogue: Save this before you forget. Link in bio.
+  delivery: Brisk 160–180 wpm (F86).
+
+--- CAPTION ---
+There's one thing LED sunrise alarm lamp does that nobody mentions.
+
+POV: your lamp finally does its job.
+
+Link in bio 👆
+
+made with an AI persona
+
+#gadgets #techfinds #amazonfinds
+
+--- DISCLOSURE ---
+Disclosure footer (quiet, integrated — F98/Q7): on-screen small label "AI persona" + caption line "made with an AI persona". Never a banner; omission punished worse than disclosure (third-party exposure trust cliff).
+
+--- RESEARCH NOTES (why each choice) ---
+• Hook family 'curiosity-gap': curiosity-gap + bold-claim = ~41% of viral hooks (hooks playbook §2).
+• 3-layer hook stack: visual 0–0.5s / verbal ≤8 words 0.5–1.5s / lock by 3.0s (playbook §1).
+• Payoff contract: specific reward named in hook, delivered ~78% through — never frontloaded (playbook §3).
+• Re-hooks every beat: open loops keep retention past the 3–5s mark (Robins analysis).
+• 85% watch muted → frame-0 visual + ≤3-word on-screen text (playbook §4).
+• Educational beats before evaluative pitch (F103, persona dossier: educational > evaluative for VIs).
+• Pacing by objective: unhurried for trust beats, brisk 160–180 wpm for CTA (F86/F138/F139).
+• No scripted laughs/sighs — volitional vocalizations read inauthentic (F142).
+• Persona–product fit: 'utilitarian' SKU. Utilitarian = congruent lane for AI personas (F32/F34).
+• Attractiveness is a top-of-funnel amplifier, not a conversion lever — don't over-invest in beauty (Q1).
+• Quiet AI disclosure: small on-screen 'AI persona' label + caption line (Q7/F98 asymmetric-risk).
+• Autonomy cue: persona 'decides' to test — perceived autonomy is the VI-specific bond driver (F143).
+• Engagement ladder: comments → DMs → community; conversion lags engagement (Q9/F112).
+• Format note: split-screen sub-$10 gadget demos are a top trend (viral-trends-watch 2026-09-27).

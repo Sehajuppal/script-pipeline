@@ -1,0 +1,86 @@
+{
+ "prompt": "electric milk frother",
+ "presenter": "human",
+ "format": "demo",
+ "duration_s": 30,
+ "niche": "default",
+ "fit": "neutral",
+ "hook_family": "curiosity-gap",
+ "fit_warning": null,
+ "hook_stack": [
+  {
+   "t": "0.0–0.5s",
+   "type": "VISUAL TRIGGER",
+   "direction": "Frame 0 MID-ACTION: hands on electric milk frother, object in motion. No logos, no static intro. Works muted (85% watch sound-off).",
+   "on_screen": "NOBODY IS TALKING"
+  },
+  {
+   "t": "0.5–3.0s",
+   "type": "VERBAL HOOK + LOCK",
+   "dialogue": "Nobody is talking about the frother flaw everyone ignores.",
+   "payoff_contract": "Viewer is promised a specific payoff, delivered at ~23.4s — never frontloaded.",
+   "delivery": "Brisk, confident. First sentence ≤8 words."
+  }
+ ],
+ "beats": [
+  {
+   "t": "3.0–5.0s",
+   "type": "IMPERFECTION BEAT",
+   "dialogue": "Confession: first swipe, I fumbled it — left that in. If it works when *I* mess it up, it works.",
+   "delivery": "Candid, unpolished — the flaw first (E7, D12). No cover-up, no polished read.",
+   "rehook": "Okay — with that out of the way, here's what I tested."
+  },
+  {
+   "t": "5.0–14.0s",
+   "type": "EDUCATION BEAT",
+   "dialogue": "The science is simple: it removes the friction between you and the result.",
+   "delivery": "Unhurried, warm — trust-building register (F138).",
+   "rehook": "One more thing before you decide — show the frother up close on camera."
+  },
+  {
+   "t": "11.4–19.8s",
+   "type": "DEMO BEAT",
+   "dialogue": "Test one: the side-by-side. night-and-day difference.",
+   "on_screen": "TEST 1",
+   "delivery": "Energetic, pitch-varied (F85). Mid-action framing.",
+   "rehook": "Now watch what happens when I zoom in on the detail the box never shows."
+  },
+  {
+   "t": "21.6–25.5s",
+   "type": "PAYOFF",
+   "dialogue": "So here's the payoff I promised: the electric milk frother — seven days using it daily: the frother test the box never shows — measured, on camera — and here's what surprised me: I expected the frother's build to fail the way cheap frothers always fail, but it never did — seven days, no failure, no gimmicks.",
+   "delivery": "Slow down. Let the result land. No scripted laugh (F142)."
+  },
+  {
+   "t": "25.5–28.2s",
+   "type": "COMMENT BAIT",
+   "dialogue": "Comment FROTHER — I'll send you the full link list for everything in this video.",
+   "note": "Deliberate disagreement / fill-in-blank = comment engine (playbook §17)."
+  },
+  {
+   "t": "28.2–30s",
+   "type": "CTA",
+   "dialogue": "Link's in my bio — this one's going in my bio.",
+   "delivery": "Brisk 160–180 wpm (F86)."
+  }
+ ],
+ "caption": "Nobody is talking about the frother flaw everyone ignores.\n\nPOV: the frother that finally delivered.\n\nLink in bio 👆\n\n#viral #fyp #ugc",
+ "research_notes": [
+  "LIVE RESEARCH (pack 2026-09-28, 1824 reels): top hook families now: curiosity-gap, bold-claim, pov; top patterns: b-roll-captions, talking-head-ugc, caption-driven-skit.",
+  "Fresh from the DB (bindass_kavya, comedy): \"When you are a meme-paglu\"",
+  "Fresh from the DB (juhahnjones, comedy): \"Hood Cinema!\"",
+  "Fresh from the DB (nickantonyan, comedy): \"(visual open, playground backdrop)\"",
+  "Hook family 'curiosity-gap': curiosity-gap + bold-claim = ~41% of viral hooks (hooks playbook §2).",
+  "3-layer hook stack: visual 0–0.5s / verbal ≤8 words 0.5–1.5s / lock by 3.0s (playbook §1).",
+  "Payoff contract: specific reward named in hook, delivered ~78% through — never frontloaded (playbook §3).",
+  "Re-hooks every beat: open loops keep retention past the 3–5s mark (Robins analysis).",
+  "85% watch muted → frame-0 visual + ≤3-word on-screen text (playbook §4).",
+  "Educational beats before evaluative pitch (F103, persona dossier: educational > evaluative for VIs).",
+  "Pacing by objective: unhurried for trust beats, brisk 160–180 wpm for CTA (F86/F138/F139).",
+  "No scripted laughs/sighs — volitional vocalizations read inauthentic (F142).",
+  "Borrowed authority: name-drop an in-niche known figure (Robins rule).",
+  "Delivery: confident-dynamism, never pressuring/harsh (UGC Q4 composite).",
+  "Similarity > beauty for presenter appeal (JTAER 2025)."
+ ],
+ "delivery_note": "Borrowed authority allowed (name-drop a known figure in-niche). Delivery: confident-dynamism, never pressuring (UGC Q4 composite)."
+}

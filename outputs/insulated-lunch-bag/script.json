@@ -1,0 +1,96 @@
+{
+ "prompt": "insulated lunch bag",
+ "presenter": "human",
+ "format": "review",
+ "duration_s": 30,
+ "niche": "tools",
+ "fit": "neutral",
+ "hook_family": "curiosity-gap",
+ "fit_warning": null,
+ "persona": null,
+ "hook_stack": [
+  {
+   "t": "0.0–0.5s",
+   "type": "VISUAL TRIGGER",
+   "direction": "Frame 0 MID-ACTION: hands on insulated lunch bag, object in motion. No logos, no static intro. Works muted (85% watch sound-off).",
+   "on_screen": "NOBODY MENTIONS FLAW"
+  },
+  {
+   "t": "0.5–3.0s",
+   "type": "VERBAL HOOK + LOCK",
+   "dialogue": "Nobody mentions the bag flaw.",
+   "payoff_contract": "Viewer is promised a verdict — worth it or skip — delivered at ~23.4s — never frontloaded.",
+   "delivery": "Brisk, confident. Verbal hook ≤8 words total (D73 charter hook stack)."
+  }
+ ],
+ "beats": [
+  {
+   "t": "3.0–5.0s",
+   "type": "IMPERFECTION BEAT",
+   "dialogue": "Nobody's paying me to say this insulated lunch bag is good — and honestly the first one I tried was garbage. So I tested this like I wanted it to fail.",
+   "delivery": "Candid, unpolished — the flaw first (E7, D12). No cover-up, no polished read.",
+   "rehook": "Okay — with that out of the way: the bag doing its real job."
+  },
+  {
+   "t": "5–7.0s",
+   "type": "REJECTION HISTORY",
+   "dialogue": "Three bags, three fails — one gave up on day two, one arrived broken, one was a lie in the listing. Then I tested this one.",
+   "delivery": "Candid reviewer register — the credibility beat (D28).",
+   "rehook": "And here's why it survived."
+  },
+  {
+   "t": "7.0–16.0s",
+   "type": "EDUCATION BEAT",
+   "dialogue": "Here's why it actually works: it removes the friction between you and the result.",
+   "delivery": "Unhurried, warm — trust-building register (F138).",
+   "rehook": "And then I noticed something weird — the bag, edge to edge, no cuts."
+  },
+  {
+   "t": "16.0–24.4s",
+   "type": "DEMO BEAT",
+   "dialogue": "The detail that sold me: finished details, not cost-cut.",
+   "on_screen": "TEST",
+   "delivery": "Energetic, pitch-varied (F85). Mid-action framing.",
+   "rehook": "Here's where it gets interesting: the bag doing its real job."
+  },
+  {
+   "t": "24.4–28.3s",
+   "type": "PAYOFF",
+   "dialogue": "Verdict: BUY — before and after, side by side.",
+   "delivery": "Slow down. Let the result land. No scripted laugh (F142).",
+   "on_screen": "VERDICT: BUY — for anyone burned by cheap bags before · expected the bag's build to fail the way cheap bags always fail, but it never did — seven days, no failure, no gimmicks"
+  },
+  {
+   "t": "28.3–31.0s",
+   "type": "COMMENT BAIT",
+   "dialogue": "Hit follow, comment BAG, the link list is yours.",
+   "note": "Deliberate disagreement / fill-in-blank = comment engine (playbook §17)."
+  },
+  {
+   "t": "31.0–32.8s",
+   "type": "CTA",
+   "dialogue": "Follow, part 2: the long-term test.",
+   "delivery": "Brisk 160–180 wpm (F86)."
+  }
+ ],
+ "caption": "Nobody mentions the bag flaw.\n\nPOV: the bag that finally delivered.\n\nComment BAG for the full link list 👇\n\n#organization #kitchentok #amazonfinds",
+ "research_notes": [
+  "LIVE RESEARCH (pack 2026-09-28, 1824 reels): top hook families now: curiosity-gap, bold-claim, pov; top patterns: b-roll-captions, talking-head-ugc, caption-driven-skit.",
+  "Fresh from the DB (bindass_kavya, comedy): \"When you are a meme-paglu\"",
+  "Fresh from the DB (juhahnjones, comedy): \"Hood Cinema!\"",
+  "Fresh from the DB (nickantonyan, comedy): \"(visual open, playground backdrop)\"",
+  "Hook family 'curiosity-gap': curiosity-gap + bold-claim = ~41% of viral hooks (hooks playbook §2).",
+  "3-layer hook stack: visual 0–0.5s / verbal ≤8 words 0.5–1.5s / lock by 3.0s (playbook §1).",
+  "Payoff contract: specific reward named in hook, delivered ~78% through — never frontloaded (playbook §3).",
+  "Re-hooks every beat: open loops keep retention past the 3–5s mark (Robins analysis).",
+  "85% watch muted → frame-0 visual + ≤3-word on-screen text (playbook §4).",
+  "Educational beats before evaluative pitch (F103, persona dossier: educational > evaluative for VIs).",
+  "Pacing by objective: unhurried for trust beats, brisk 160–180 wpm for CTA (F86/F138/F139).",
+  "No scripted laughs/sighs — volitional vocalizations read inauthentic (F142).",
+  "Borrowed authority: name-drop an in-niche known figure (Robins rule).",
+  "Delivery: confident-dynamism, never pressuring/harsh (UGC Q4 composite).",
+  "Similarity > beauty for presenter appeal (JTAER 2025).",
+  "Format note: split-screen sub-$10 gadget demos are a top trend (viral-trends-watch 2026-09-27)."
+ ],
+ "delivery_note": "Borrowed authority allowed (name-drop a known figure in-niche). Delivery: confident-dynamism, never pressuring (UGC Q4 composite)."
+}

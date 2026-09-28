@@ -1,0 +1,89 @@
+{
+ "prompt": "solar power bank",
+ "presenter": "ai",
+ "format": "demo",
+ "duration_s": 30,
+ "niche": "gadgets",
+ "fit": "neutral",
+ "hook_family": "curiosity-gap",
+ "fit_warning": null,
+ "persona": {
+  "name": "Maya",
+  "identity": "a photorealistic AI woman in her late 20s with dark hair tied back, natural look, wearing a plain gray crewneck",
+  "voice": "conversational human read — warm and confident, never an ad read",
+  "styling_rule": "neutral, non-sexualized presentation (persona-loop Q1/F6)"
+ },
+ "hook_stack": [
+  {
+   "t": "0.0–0.5s",
+   "type": "VISUAL TRIGGER",
+   "direction": "Frame 0 MID-ACTION: hands on solar power bank, object in motion. No logos, no static intro. Works muted (85% watch sound-off).",
+   "on_screen": "NOBODY MENTIONS FLAW"
+  },
+  {
+   "t": "0.5–3.0s",
+   "type": "VERBAL HOOK + LOCK",
+   "dialogue": "Nobody mentions the bank flaw.",
+   "payoff_contract": "Viewer is promised a specific payoff, delivered at ~23.4s — never frontloaded.",
+   "delivery": "Brisk, confident. Verbal hook ≤8 words total (D73 charter hook stack)."
+  }
+ ],
+ "beats": [
+  {
+   "t": "3.0–12.0s",
+   "type": "EDUCATION BEAT",
+   "dialogue": "Here's why it actually works: it removes the friction between you and the result.",
+   "delivery": "Unhurried, warm — trust-building register (F138).",
+   "rehook": "Wait — it gets better: the bank, edge to edge, no cuts."
+  },
+  {
+   "t": "12.0–20.4s",
+   "type": "DEMO BEAT",
+   "dialogue": "The detail that sold me: finished details, not cost-cut.",
+   "on_screen": "TEST",
+   "delivery": "Energetic, pitch-varied (F85). Mid-action framing.",
+   "rehook": "And then I noticed something weird — the bank doing its real job."
+  },
+  {
+   "t": "21.6–25.5s",
+   "type": "PAYOFF",
+   "dialogue": "Test result: before and after, side by side.",
+   "delivery": "Slow down. Let the result land. No scripted laugh (F142).",
+   "on_screen": "TEST: solar power bank · expected the bank's build to fail the way cheap banks always fail, but it never did — seven days, no failure, no gimmicks"
+  },
+  {
+   "t": "25.5–28.2s",
+   "type": "COMMENT BAIT",
+   "dialogue": "Hit follow, comment BANK, the link list is yours.",
+   "note": "Deliberate disagreement / fill-in-blank = comment engine (playbook §17)."
+  },
+  {
+   "t": "28.2–30s",
+   "type": "CTA",
+   "dialogue": "Follow, part 2: the torture test.",
+   "delivery": "Brisk 160–180 wpm (F86)."
+  }
+ ],
+ "caption": "Nobody mentions the bank flaw.\n\nPOV: the bank that finally delivered.\n\nComment BANK for the full link list 👇\n\nmade with an AI persona\n\n#gadgets #techfinds #amazonfinds",
+ "research_notes": [
+  "LIVE RESEARCH (pack 2026-09-28, 1824 reels): top hook families now: curiosity-gap, bold-claim, pov; top patterns: b-roll-captions, talking-head-ugc, caption-driven-skit.",
+  "Fresh from the DB (bindass_kavya, comedy): \"When you are a meme-paglu\"",
+  "Fresh from the DB (juhahnjones, comedy): \"Hood Cinema!\"",
+  "Fresh from the DB (nickantonyan, comedy): \"(visual open, playground backdrop)\"",
+  "Hook family 'curiosity-gap': curiosity-gap + bold-claim = ~41% of viral hooks (hooks playbook §2).",
+  "3-layer hook stack: visual 0–0.5s / verbal ≤8 words 0.5–1.5s / lock by 3.0s (playbook §1).",
+  "Payoff contract: specific reward named in hook, delivered ~78% through — never frontloaded (playbook §3).",
+  "Re-hooks every beat: open loops keep retention past the 3–5s mark (Robins analysis).",
+  "85% watch muted → frame-0 visual + ≤3-word on-screen text (playbook §4).",
+  "Educational beats before evaluative pitch (F103, persona dossier: educational > evaluative for VIs).",
+  "Pacing by objective: unhurried for trust beats, brisk 160–180 wpm for CTA (F86/F138/F139).",
+  "No scripted laughs/sighs — volitional vocalizations read inauthentic (F142).",
+  "Persona–product fit: 'neutral' SKU. Fit unclear — test both anchors.",
+  "Attractiveness is a top-of-funnel amplifier, not a conversion lever — don't over-invest in beauty (Q1).",
+  "Frame-0 AI disclosure: small on-screen 'AI persona' label, separate from hook text, top safe zone (G6/FTC).",
+  "Autonomy cue: persona 'decides' to test — perceived autonomy is the VI-specific bond driver (F143).",
+  "Engagement ladder: comments → DMs → community; conversion lags engagement (Q9/F112).",
+  "Format note: split-screen sub-$10 gadget demos are a top trend (viral-trends-watch 2026-09-27)."
+ ],
+ "disclosure": "Disclosure (G6/Q7): on-screen small \"AI persona\" label from FRAME 0, separate element from hook text, top safe zone, min 2s + caption line \"made with an AI persona\". Never a banner; omission punished worse than disclosure (third-party exposure trust cliff)."
+}

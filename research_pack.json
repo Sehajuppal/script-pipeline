@@ -1,0 +1,499 @@
+{
+ "generated_at": "2026-09-28T13:40:04+00:00",
+ "sources": {
+  "viral_db": "/home/hatch/workspace/viral-research/viral.db",
+  "dossier_ugc": "/home/hatch/workspace/goals/neuro-ad-research-program/files/ugc-persuasion-dossier.md",
+  "dossier_persona": "/home/hatch/workspace/goals/neuro-ad-research-program/files/ai-persona-persuasion-dossier.md"
+ },
+ "reels_total": 1824,
+ "reels_analyzed_last_7d": 1824,
+ "top_hooks": [
+  {
+   "category": "curiosity-gap",
+   "times_seen": 230
+  },
+  {
+   "category": "bold-claim",
+   "times_seen": 217
+  },
+  {
+   "category": "pov",
+   "times_seen": 128
+  },
+  {
+   "category": "controversy",
+   "times_seen": 122
+  },
+  {
+   "category": "transformation",
+   "times_seen": 88
+  },
+  {
+   "category": "question",
+   "times_seen": 82
+  },
+  {
+   "category": "persona-caption",
+   "times_seen": 75
+  },
+  {
+   "category": "comment-bait",
+   "times_seen": 71
+  }
+ ],
+ "top_patterns": [
+  {
+   "pattern": "b-roll-captions",
+   "times_seen": 235
+  },
+  {
+   "pattern": "talking-head-ugc",
+   "times_seen": 220
+  },
+  {
+   "pattern": "caption-driven-skit",
+   "times_seen": 95
+  },
+  {
+   "pattern": "before-after",
+   "times_seen": 76
+  },
+  {
+   "pattern": "lifestyle-diary",
+   "times_seen": 74
+  },
+  {
+   "pattern": "day-in-life",
+   "times_seen": 67
+  },
+  {
+   "pattern": "meme-overlay",
+   "times_seen": 65
+  },
+  {
+   "pattern": "cinematic-manifesto",
+   "times_seen": 65
+  }
+ ],
+ "niche_hooks": {
+  "ai-persona": [
+   {
+    "category": "emotional-quote",
+    "times_seen": 18
+   },
+   {
+    "category": "tease-command",
+    "times_seen": 8
+   },
+   {
+    "category": "cultural-pride",
+    "times_seen": 7
+   }
+  ],
+  "travel-commentary": [],
+  "ai-education": [
+   {
+    "category": "bold-claim",
+    "times_seen": 217
+   },
+   {
+    "category": "question",
+    "times_seen": 82
+   },
+   {
+    "category": "comment-bait",
+    "times_seen": 71
+   }
+  ],
+  "masked-persona": [
+   {
+    "category": "pov",
+    "times_seen": 128
+   },
+   {
+    "category": "controversy",
+    "times_seen": 122
+   },
+   {
+    "category": "mission-serial",
+    "times_seen": 1
+   }
+  ],
+  "faceless-truth-teller": [
+   {
+    "category": "fomo",
+    "times_seen": 53
+   }
+  ],
+  "cinematic-adjacent": [
+   {
+    "category": "unknown",
+    "times_seen": 8
+   }
+  ],
+  "dark-narrator": [],
+  "comedy": [
+   {
+    "category": "story-time",
+    "times_seen": 54
+   },
+   {
+    "category": "payoff-tease",
+    "times_seen": 29
+   },
+   {
+    "category": "when-setup",
+    "times_seen": 16
+   }
+  ],
+  "dance": [
+   {
+    "category": "transformation",
+    "times_seen": 88
+   },
+   {
+    "category": "trend-ride",
+    "times_seen": 43
+   },
+   {
+    "category": "tag-challenge",
+    "times_seen": 6
+   }
+  ],
+  "fashion-beauty": [
+   {
+    "category": "grwm-hook",
+    "times_seen": 17
+   },
+   {
+    "category": "relatable-realness",
+    "times_seen": 4
+   },
+   {
+    "category": "request-fulfillment",
+    "times_seen": 1
+   }
+  ],
+  "finance": [
+   {
+    "category": "money-origin",
+    "times_seen": 20
+   },
+   {
+    "category": "loophole-tip",
+    "times_seen": 17
+   },
+   {
+    "category": "luxury-flex-montage",
+    "times_seen": 15
+   }
+  ],
+  "fitness": [
+   {
+    "category": "gym-relatable",
+    "times_seen": 13
+   },
+   {
+    "category": "day-counter",
+    "times_seen": 10
+   },
+   {
+    "category": "what-i-eat",
+    "times_seen": 2
+   }
+  ],
+  "food": [
+   {
+    "category": "satisfying-process",
+    "times_seen": 24
+   },
+   {
+    "category": "collab-crossover",
+    "times_seen": 15
+   },
+   {
+    "category": "mashup-absurd",
+    "times_seen": 10
+   }
+  ],
+  "regional-news": [],
+  "punjabi-music-news": [],
+  "automotive-business": [],
+  "travel": [
+   {
+    "category": "aspirational",
+    "times_seen": 27
+   },
+   {
+    "category": "superlative",
+    "times_seen": 10
+   },
+   {
+    "category": "relatable",
+    "times_seen": 7
+   }
+  ],
+  "lifestyle": [
+   {
+    "category": "unboxing",
+    "times_seen": 1
+   },
+   {
+    "category": "behind-the-scenes",
+    "times_seen": 1
+   }
+  ],
+  "ugc-ads": [
+   {
+    "category": "problem-solution",
+    "times_seen": 4
+   },
+   {
+    "category": "disgust-reveal",
+    "times_seen": 2
+   },
+   {
+    "category": "satisfaction-payoff",
+    "times_seen": 1
+   }
+  ],
+  "virtual-influencer": [
+   {
+    "category": "reflection",
+    "times_seen": 19
+   },
+   {
+    "category": "self-aware-ai",
+    "times_seen": 15
+   },
+   {
+    "category": "advocacy",
+    "times_seen": 6
+   }
+  ]
+ },
+ "fresh_hook_lines": [
+  {
+   "hook": "When you are a meme-paglu",
+   "niche": "comedy",
+   "likes": null,
+   "account": "bindass_kavya",
+   "pattern": "caption-driven-skit"
+  },
+  {
+   "hook": "Hood Cinema!",
+   "niche": "comedy",
+   "likes": null,
+   "account": "juhahnjones",
+   "pattern": "caption-driven-skit"
+  },
+  {
+   "hook": "(visual open, playground backdrop)",
+   "niche": "comedy",
+   "likes": null,
+   "account": "nickantonyan",
+   "pattern": "caption-driven-skit"
+  },
+  {
+   "hook": "If hood dudes went camping",
+   "niche": "comedy",
+   "likes": null,
+   "account": "ad.snooze",
+   "pattern": "pov-fixed-camera"
+  },
+  {
+   "hook": "POV: That Hood that hates vacations",
+   "niche": "comedy",
+   "likes": null,
+   "account": "cashhmuna",
+   "pattern": "pov-fixed-camera"
+  },
+  {
+   "hook": "(low-effort bedroom video)",
+   "niche": "comedy",
+   "likes": null,
+   "account": "hoodn1g",
+   "pattern": "pov-fixed-camera"
+  },
+  {
+   "hook": "(comedy club stage duo)",
+   "niche": "comedy",
+   "likes": null,
+   "account": "hiphopspottv",
+   "pattern": "caption-driven-skit"
+  },
+  {
+   "hook": "when the angry oldest daughter\u2026",
+   "niche": "comedy",
+   "likes": null,
+   "account": "savannahsachdev",
+   "pattern": "caption-driven-skit"
+  },
+  {
+   "hook": "Hood mfs (animated)",
+   "niche": "comedy",
+   "likes": null,
+   "account": "alpha_mansion_animations",
+   "pattern": "meme-overlay"
+  },
+  {
+   "hook": "text-only teaser for car argument",
+   "niche": "comedy",
+   "likes": null,
+   "account": "crazyhoodvids",
+   "pattern": "caption-driven-skit"
+  },
+  {
+   "hook": "love-bite vs dog-bite",
+   "niche": "comedy",
+   "likes": null,
+   "account": "vishnu_unnikrishnan",
+   "pattern": "caption-driven-skit"
+  },
+  {
+   "hook": "Me & bro starting an online business",
+   "niche": "comedy",
+   "likes": null,
+   "account": "historypath",
+   "pattern": "meme-overlay"
+  },
+  {
+   "hook": "two-part skit (part 1 vs part 2)",
+   "niche": "comedy",
+   "likes": null,
+   "account": "anwar",
+   "pattern": "caption-driven-skit"
+  },
+  {
+   "hook": "rustic kitchen character skit",
+   "niche": "comedy",
+   "likes": null,
+   "account": "justinug_",
+   "pattern": "multi-character-solo"
+  },
+  {
+   "hook": "(bright white room, visual open)",
+   "niche": "comedy",
+   "likes": null,
+   "account": "davidalvareeezy",
+   "pattern": "caption-driven-skit"
+  }
+ ],
+ "verified_rules": [
+  {
+   "topic": "Q1 \u00b7 Presenter attractiveness vs persuasion/liking/purchase intent \u2014 the \"3 girl",
+   "rule": "Beauty buys social competence, not honesty. Eagly, Ashmore, Makhijani & Longo (1991), meta-analysis of 76 studies: the \"beautiful is good\" halo is asymmetric \u2014 strongest for social competence (d \u2248 0.46\u20130.68), intermediate for potency/adjustment/intellectual competence, near-zero ",
+   "dossier": "ugc"
+  },
+  {
+   "topic": "Q1 \u00b7 Presenter attractiveness vs persuasion/liking/purchase intent \u2014 the \"3 girl",
+   "rule": "Match-up hypothesis: attractiveness helps only when it is product-relevant. Kahle & Homer (1985); Kamins (1990); Misra & Beatty (1990); Till & Busler (2000); influencer-era replications (e.g., Schouten et al",
+   "dossier": "ugc"
+  },
+  {
+   "topic": "Q1 \u00b7 Presenter attractiveness vs persuasion/liking/purchase intent \u2014 the \"3 girl",
+   "rule": "Beauty premium confirmed in real-money sales \u2014 small but real (second pass, VERIFIED). Ahearne, Gruen & Jarvis (1999) plus a Jarvis-led pharma field study (~2006): physicians rated sales reps' looks on 7-point scales against actual prescription counts (avg 342 prescriptions/3 mon",
+   "dossier": "ugc"
+  },
+  {
+   "topic": "Q1 \u00b7 Presenter attractiveness vs persuasion/liking/purchase intent \u2014 the \"3 girl",
+   "rule": "The meta-analytic division of persuasive labor: attractiveness wins engagement, expertise wins behavior (third pass, VERIFIED). Rasul, Santini, Lim & Shaheen, one-stage meta-analytic SEM (OSMASEM) across 97 studies / 40,330 participants: attractiveness was the ONLY credibility at",
+   "dossier": "ugc"
+  },
+  {
+   "topic": "Q1 \u00b7 Presenter attractiveness vs persuasion/liking/purchase intent \u2014 the \"3 girl",
+   "rule": "The babyface trust/expertise split: facial maturity is a separate lever from attractiveness level (third pass, VERIFIED). Brownlow (1992): babyfaced speakers induced more agreement than maturefaced speakers when trustworthiness was in question; maturefaced speakers won when exper",
+   "dossier": "ugc"
+  },
+  {
+   "topic": "Q2 \u00b7 Colors \u2014 clothing, background, environment",
+   "rule": "The blue-background advantage is affect, not arousal. Bellizzi & Hite (1992), Journal of Retailing, two experiments simulating red vs blue retail environments: blue \u2192 more simulated purchases, fewer purchase postponements, stronger browsing intent",
+   "dossier": "ugc"
+  },
+  {
+   "topic": "Q2 \u00b7 Colors \u2014 clothing, background, environment",
+   "rule": "Red\u2192cognition performance effects are fragile \u2014 build nothing on them. Elliot et al",
+   "dossier": "ugc"
+  },
+  {
+   "topic": "Q5 \u00b7 Parasocial bonds \u2014 identification, likability vs aspiration",
+   "rule": "Perceived similarity drives identification (d=0.85); demographic similarity doesn't (d=0.10, n.s.). Tukachinsky (2014) meta-analysis of narrative-persuasion studies: objective demographic match with characters was non-significant; perceived homophily was large",
+   "dossier": "ugc"
+  },
+  {
+   "topic": "Q5 \u00b7 Parasocial bonds \u2014 identification, likability vs aspiration",
+   "rule": "Attachment anxiety \u2192 parasocial bond strength converges across labs; breakup distress is intensity-driven and near-universally replicated. Cole & Leets (1999, JSPR, n=115 students): anxious-ambivalents formed the deepest parasocial bonds, avoidants the least, secures mid \u2014 replic",
+   "dossier": "ugc"
+  },
+  {
+   "topic": "Q5 \u00b7 Parasocial bonds \u2014 identification, likability vs aspiration",
+   "rule": "Meta-analytic: PSR, homophily, and trust are the top drivers of behavioral intentions from influencer content; attractiveness is weak. EMAC 2022 meta-analysis of the social-media-influencer literature (English-language studies with sufficient statistics): credibility, trust, and ",
+   "dossier": "ugc"
+  },
+  {
+   "topic": "Q7 \u00b7 Social proof mechanics in UGC \u2014 likes, counts, testimonials, comments, herd",
+   "rule": "Social-norm messages reliably move consumer behavior \u2014 modestly, moderator-heavy, best with close reference groups. Melnyk, Carrillat & Melnyk (2022), Journal of Marketing: 250 effect sizes, 112,478 respondents, 22 countries, 1978\u20132019",
+   "dossier": "ugc"
+  },
+  {
+   "topic": "Q7 \u00b7 Social proof mechanics in UGC \u2014 likes, counts, testimonials, comments, herd",
+   "rule": "The eWOM floor: volume\u2192sales is real but tiny (r\u2248.091); volume beats valence; review variability hurts. Babi\u0107 Rosario, Sotgiu, de Valck & Bijmolt (2016), Journal of Marketing Research: meta-analysis of 1,532 effect sizes, 96 studies, 40 platforms, 26 product categories",
+   "dossier": "ugc"
+  },
+  {
+   "topic": "Q8 \u00b7 Gender differences \u2014 what persuades women vs men",
+   "rule": "The selectivity hypothesis \u2014 comprehensive vs heuristic processing, with a stated boundary. Meyers-Levy (1989); Meyers-Levy & Maheswaran (1991); Darley & Smith (1995); a 1970\u20132002 literature synthesis: women assimilate all available cues and elaborate effortfully, men process sel",
+   "dossier": "ugc"
+  },
+  {
+   "topic": "Q8 \u00b7 Gender differences \u2014 what persuades women vs men",
+   "rule": "\"Women are more easily influenced\" is real but behaviorally mediated \u2014 the gullibility reading is killed. Eagly & Carli (1981) meta-analysis: women were more easily influenced on average",
+   "dossier": "ugc"
+  },
+  {
+   "topic": "Q8 \u00b7 Gender differences \u2014 what persuades women vs men",
+   "rule": "Dominant communication penalizes women; likability is a stronger influence determinant for female presenters with male audiences. Carli (2001, Journal of Social Issues review): men are generally more influential, but women are specifically less influential when using dominant for",
+   "dossier": "ugc"
+  },
+  {
+   "topic": "Q9 \u00b7 Authenticity cues vs polished production",
+   "rule": "Influencers beat celebrities on trustworthiness via identification \u2014 not via rawness. Schouten, Janssen & Verspaget (2020, Int",
+   "dossier": "ugc"
+  },
+  {
+   "topic": "Q9 \u00b7 Authenticity cues vs polished production",
+   "rule": "Refutational two-sidedness raises source credibility (meta-analytic) \u2014 the \"admit one flaw\" tactic. Eisend (2006, Int",
+   "dossier": "ugc"
+  },
+  {
+   "topic": "Q10 \u00b7 Storytelling structures that sell",
+   "rule": "Narratives persuade, but the effect is small-to-medium and outcome-specific. Braddock & Dillard (2016), meta-analysis of 74 studies: narrative vs non-narrative persuasive messages shift beliefs, attitudes, intentions, and behaviors with small-to-medium effects (a published write-",
+   "dossier": "ugc"
+  },
+  {
+   "topic": "Q10 \u00b7 Storytelling structures that sell",
+   "rule": "Transportation is the mechanism: immersion suppresses counter-arguing. Green & Brock's Transportation-Imagery Model (2000, 2002); van Laer, de Ruyter, Visconti & Wetzels (2014), Extended Transportation-Imagery Model meta-analysis, Journal of Consumer Research: narrative transport",
+   "dossier": "ugc"
+  },
+  {
+   "topic": "Q10 \u00b7 Storytelling structures that sell",
+   "rule": "The UGC format itself amplifies the effect (with a confound flag). van Laer, Feiereisen & Visconti (2018), meta-analysis of 64 articles / 138 effect sizes on digital-era moderators: narrative transportation persuasion was stronger when the story was (1) user-generated (vs profess",
+   "dossier": "ugc"
+  },
+  {
+   "topic": "Q10 \u00b7 Storytelling structures that sell",
+   "rule": "Stories can backfire: with strong facts, plain beats narrative. Krause & Rucker (2020), Personality & Social Psychology Bulletin 46(2), 216\u2013227: multiple experiments in product-ad contexts, attitude + behavioral measures (willingness to provide email)",
+   "dossier": "ugc"
+  },
+  {
+   "topic": "Q10 \u00b7 Storytelling structures that sell",
+   "rule": "Blended messages (narrative hook \u2192 analytical facts) beat pure narrative and pure facts on purchase willingness. JAMS (2025; multimethod: meta-analysis of 767 effects from 308 studies, n = 54,715, + practitioner survey + experiment; DOI 10.1007/s11747-025-01095-4; author names un",
+   "dossier": "ugc"
+  },
+  {
+   "topic": "Q10 \u00b7 Storytelling structures that sell",
+   "rule": "The narrative persuasion advantage persists up to six months (not grows \u2014 a distinct claim from the STRUCK sleeper kill). Oschatz & Marker (2020), Journal of Communication 70(4), 473\u2013496: meta-analysis of long-term narrative persuasion \u2014 narrative messages beat non-narrative mess",
+   "dossier": "ugc"
+  }
+ ]
+}
