@@ -1134,6 +1134,13 @@ def resolve_trend(a):
     t = str(a.trend or "auto").strip()
     if t.lower() == "none":
         return None, "off (--trend none)"
+    if (t.lower() == "auto" and os.environ.get("VSP_FIXTURE_OK") == "1"
+            and not a.trends_dir):
+        # evaluations (self-test, scorecards, vsp.improve) run in fixture
+        # mode and must never be steered by whatever dataset the machine
+        # holds; an explicit --trends-dir still tests steering (D164)
+        return None, ("off in fixture mode (VSP_FIXTURE_OK=1 without "
+                      "--trends-dir: evaluations stay trend-free)")
     try:
         from vsp.trends import steer as vst
         st = vst.for_run(a.prompt, presenter=a.presenter, fmt=a.format,

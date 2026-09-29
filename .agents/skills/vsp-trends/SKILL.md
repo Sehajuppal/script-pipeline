@@ -22,6 +22,11 @@ metadata:
 - Add a **private** GitHub remote. The dataset's branch is `data`: the Hermes profile denies pushes to main.
 - Optional:
   - `VSP_YT_API_KEY`: a YouTube Data API v3 key.
+  - `VSP_YT_DERIVED_OK=1`: set it only after accepting YouTube's
+    "Analytics & Reporting" derived-metrics amendment in the Google Cloud
+    console. Without it, YouTube rows are stored (30 days) but never
+    scored, because views ÷ median is a derived metric under the
+    Developer Policies (D163).
   - `VSP_TRENDS_NICHES=beauty,gadgets,…`: maker niche names.
 - Details: `trends-db-template/README.md`, `docs/ws-trends-notes.md`.
 

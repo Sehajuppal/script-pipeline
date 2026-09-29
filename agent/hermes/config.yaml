@@ -53,4 +53,5 @@ terminal:
     - VSP_EXCLUDE_VENDOR
     - VSP_TRENDS_DIR
     - VSP_YT_API_KEY
+    - VSP_YT_DERIVED_OK
     - VSP_TRENDS_NICHES

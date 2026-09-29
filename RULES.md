@@ -3389,6 +3389,12 @@ Integration notes:
     fewer, and our own analysis. Never media, CDN URLs or whole captions.
     Instruction-like text is flagged as data (rule 8).
   - **Retention:** YouTube API rows expire after 30 days unless refreshed.
+  - **YouTube derived metrics:** a views ÷ median ratio is a derived
+    metric, which YouTube's policies allow only after accepting the
+    Analytics & Reporting amendment (`VSP_YT_DERIVED_OK=1`). Without
+    it, YouTube rows stay unscored and no channel baseline is fetched.
+  - **YouTube quota:** since 1 Jun 2026, `search.list` has its own
+    bucket of 100 calls a day.
     Deletion on request is by `purge`. The dataset lives in a private
     repo, on branch `data`.
   Mechanism: Meta's Automated Data Collection terms, TikTok's ToS and
@@ -3414,8 +3420,10 @@ Integration notes:
   - A steered run writes `trend.json` and pins it in the manifest args, so
     `--replay` re-applies the same recipe. A shipped recipe is marked used,
     which lowers its novelty next time.
-  - Self-test, scorecards and `vsp.improve` run trend-free (`VSP_TRENDS_DIR`
-    points to an empty path).
+  - Self-test, scorecards and `vsp.improve` run trend-free: fixture mode
+    (`VSP_FIXTURE_OK=1`) turns `--trend auto` off unless `--trends-dir` is
+    explicit, and the self-test points `VSP_TRENDS_DIR` at an empty path.
+    The yardstick (`evals/scorecard.py`) is untouched.
   Mechanism: a trend is market evidence, not a quality guarantee; letting
   it outrank quality would ship weaker hooks on stale or thin evidence.
   Source: research/trend-discovery-rules.md (evidence × velocity × novelty ×

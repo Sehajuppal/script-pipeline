@@ -46,6 +46,7 @@ import urllib.request
 from datetime import timedelta
 
 from vsp.trends import schema as S
+from vsp.trends import score as SC
 from vsp.trends import store
 
 RESNAPSHOT_MIN_GROWTH = 0.10
@@ -55,7 +56,10 @@ MAX_CAPTION_TAGS = 5            # Instagram allows 5 hashtags per post (Dec 2025
 
 YT_BASE = "https://www.googleapis.com/youtube/v3/"
 YT_ENV_KEY = "VSP_YT_API_KEY"
-YT_COSTS = {"search": 100, "videos": 1, "channels": 1, "playlistItems": 1}
+# since 1 Jun 2026 search.list is 1 unit in its OWN bucket of 100 calls/day;
+# every other method draws on the 10,000-unit bucket (determine_quota_cost)
+YT_COSTS = {"search": 1, "videos": 1, "channels": 1, "playlistItems": 1}
+YT_SEPARATE_BUCKET = ("search",)
 YT_UNIT_STOP = 9000
 YT_SEARCH_STOP = 90
 YT_DAILY_UNITS = 10000
@@ -348,8 +352,8 @@ class Quota:
         self.run_units = self.run_search = 0
 
     def charge(self, endpoint):
-        cost = YT_COSTS[endpoint]
-        if self.y["units"] + cost > YT_UNIT_STOP:
+        cost = 0 if endpoint in YT_SEPARATE_BUCKET else YT_COSTS[endpoint]
+        if cost and self.y["units"] + cost > YT_UNIT_STOP:
             raise QuotaStop(f"YouTube units: {self.y['units']} used today, a {endpoint}.list "
                             f"call ({cost}) would pass the {YT_UNIT_STOP} stop")
         if endpoint == "search" and self.y["search_calls"] + 1 > YT_SEARCH_STOP:
@@ -526,7 +530,10 @@ def youtube(d, now, query, region="US", max_results=25, days=7, niche=None, dry_
         rep["channels"] = len(chans)
         for ch in sorted(chans, key=lambda c: c.get("id") or ""):
             snaps[ch["id"]] = _channel_snapshot(ch, now)
-        for ch in sorted(chans, key=lambda c: c.get("id") or ""):
+        # D163: channel baselines (a median = a derived metric) only when the
+        # user accepted YouTube's Analytics & Reporting amendment
+        for ch in (sorted(chans, key=lambda c: c.get("id") or "")
+                   if SC.yt_derived_ok() else []):
             up = ((ch.get("contentDetails") or {}).get("relatedPlaylists") or {}).get("uploads")
             if not up:
                 continue

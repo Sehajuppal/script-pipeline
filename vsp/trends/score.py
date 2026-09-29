@@ -26,6 +26,7 @@ means the FORMAT won, not the audience) x recency (halves every 7 days) x
 replicability / 5 x basis weight (proxies count less).
 Sources and grades: docs/research/trend-discovery-rules.md.
 """
+import os
 import math
 import statistics
 
@@ -146,7 +147,20 @@ def _followers(o, creators):
     return f if isinstance(f, int) else None
 
 
+def yt_derived_ok():
+    """D163: YouTube's Developer Policies forbid derived metrics from API data
+    unless the developer accepted the "Analytics & Reporting" amendment
+    (developers.google.com/youtube/terms/derived-metrics-policy); set
+    VSP_YT_DERIVED_OK=1 after accepting it."""
+    return os.environ.get("VSP_YT_DERIVED_OK") == "1"
+
+
 def score_one(o, creators, by_creator, now):
+    if o.get("source") == "yt_data_api" and not yt_derived_ok():
+        r = _unscored(o, creators, now)
+        r["note"] = ("YouTube Data API row: multiples are derived metrics; accept the "
+                     "Analytics & Reporting amendment, then set VSP_YT_DERIVED_OK=1")
+        return r
     m = o.get("metrics") or {}
     views, likes, comments = m.get("views"), m.get("likes"), m.get("comments")
     followers = _followers(o, creators)
@@ -192,6 +206,28 @@ def score_one(o, creators, by_creator, now):
         "age_days": round(age, 2) if age is not None else None,
         "posted_at": o.get("posted_at"), "observed_at": o.get("observed_at"),
         "status": "scored" if multiple is not None else "unscored",
+    }
+
+
+def _unscored(o, creators, now):
+    """A row kept for its trend keys and raw public counts, never scored."""
+    m = o.get("metrics") or {}
+    age = _days_between(S.iso(now), o.get("posted_at") or o.get("observed_at"))
+    followers = _followers(o, creators)
+    return {
+        "obs_id": o.get("obs_id"), "platform": o.get("platform"),
+        "post_id": o.get("post_id"), "permalink": o.get("permalink"),
+        "source": o.get("source"), "niche": o.get("niche"),
+        "format_key": o.get("format_key"), "trend_keys": list(o.get("trend_keys") or []),
+        "handle": (o.get("creator") or {}).get("handle"), "followers": followers,
+        "tier": S.tier_for(followers) if followers is not None else None,
+        "small_medium": False, "views": m.get("views"), "likes": m.get("likes"),
+        "comments": m.get("comments"), "baseline_median": None, "baseline_n": None,
+        "baseline_from": None, "outlier_x": None, "reach_x": None, "eng_rate": None,
+        "eng_x": None, "vph": None, "basis": None, "multiple": None, "band": band_for(None),
+        "inspiration_score": 0.0, "age_days": round(age, 2) if age is not None else None,
+        "posted_at": o.get("posted_at"), "observed_at": o.get("observed_at"),
+        "status": "unscored",
     }
 
 

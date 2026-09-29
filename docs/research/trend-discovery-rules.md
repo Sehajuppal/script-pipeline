@@ -1,6 +1,6 @@
 # Trend discovery rules (the constants vsp.trends implements)
 
-Checked 2026-09-29. Each row is a constant in `vsp/trends/*.py` (module in brackets) and its basis.
+Checked 2026-09-29 (cited evidence: [trend-discovery.md](trend-discovery.md)). Each row is a constant in `vsp/trends/*.py` (module in brackets) and its basis.
 
 Grades:
 - **P**: platform documentation, policy or law
@@ -20,7 +20,8 @@ Change a constant only together with this table and the selfcheck.
 | Watchlist cap | 150 handles; suggest nano/micro/mid with ≥5x | jobs `WATCHLIST_CAP`, `WATCHLIST_MIN_X` | Business Discovery rate limits | A |
 | TikTok | Creative Center lists copied by hand; no automated collection | importers `tiktok_cc`, skill | TikTok ToS; the Research API is academic-only; the Display API returns own videos only | P |
 | YouTube search | `type=video&videoDuration=short`, then duration ≤ 180 s | importers `SHORT_MAX_S` | Data API v3 (videoDuration short < 4 min; Shorts up to 3 min) | P |
-| YouTube costs | search.list 100 units; videos/channels/playlistItems.list 1 each | importers `YT_COSTS` | Data API quota table | P |
+| YouTube costs | search.list 1 unit in its own bucket of 100 calls/day (since 1 Jun 2026); videos/channels/playlistItems.list 1 unit each from the 10,000-unit bucket | importers `YT_COSTS`, `YT_SEPARATE_BUCKET` | [quota costs](https://developers.google.com/youtube/v3/determine_quota_cost), [revision history](https://developers.google.com/youtube/v3/revision_history) | P |
+| YouTube derived metrics | views ÷ channel median (and any ratio) is a derived metric: only with the Analytics & Reporting amendment accepted (`VSP_YT_DERIVED_OK=1`); otherwise YouTube rows are kept unscored and no channel baseline is fetched | score `yt_derived_ok`, importers | [Developer Policies](https://developers.google.com/youtube/terms/developer-policies), [derived-metrics amendment](https://developers.google.com/youtube/terms/derived-metrics-policy) | P |
 | YouTube stop | before 9,000 of the 10,000 units/day, or 90 of the 100 search.list calls/day | importers `YT_UNIT_STOP`, `YT_SEARCH_STOP` | quota docs (search bucket since 1 Jun 2026); 10 % margin is ours | P / A |
 | YouTube quota day | fixed UTC−8 | importers `YT_DAY_OFFSET_H` | the quota resets at midnight Pacific | P / A |
 | YouTube retention | `purge_after` = observed + 30 days (rows and creators); refresh-or-purge | schema `YT_RETENTION_DAYS` | Developer Policies (30-day refresh of non-authorized stats); the June 2026 amendment allows 36 months for stats, but we take the conservative 30 days | P |
@@ -53,7 +54,7 @@ Change a constant only together with this table and the selfcheck.
 | A trend | a trend key with ≥ 2 distinct creators | lifecycle `STAGE_RULES.min_creators` | imitation publics (Zulli & Zulli) | S / A |
 | Windows | 3d = days 0–2 · 7d = 0–6 · prev7d = 7–13; growth = 7d ÷ max(1, prev7d) | lifecycle | burst detection (Kleinberg 2002); cascades (Cheng et al. 2014) | S / A |
 | emerging | first seen ≤ 7 days ago and ≥ 2 creators | `STAGE_RULES` | | A |
-| rising | growth ≥ 1.5 and ≥ 3 creators in 7d | `STAGE_RULES` | cascades double about 80 % of the time (Cheng et al. 2014) | S / A |
+| rising | growth ≥ 1.5 and ≥ 3 creators in 7d | `STAGE_RULES` | early growth predicts whether a cascade doubles (about 0.8 accuracy, Cheng et al. 2014); the 1.5 threshold is ours | S / A |
 | peak | ≥ 10 creators in 7d and 0.8 ≤ growth < 1.5 | `STAGE_RULES` | | A |
 | saturated | ≥ 20 creators in 7d and growth < 0.8 | `STAGE_RULES` | | A |
 | declining | growth ≤ 0.5, or no sighting for 14 days (the latter implies growth = 0) | `STAGE_RULES` | 27 % of top hashtags last over 2 weeks (Publicis × TikTok 2026) | S / A |

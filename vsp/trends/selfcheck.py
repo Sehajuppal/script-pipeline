@@ -627,6 +627,43 @@ def _youtube_checks(C, ctx):
             "SECRET-KEY-123" not in json.dumps(rep) and len(rep["requests"]) == 5 and
             not os.path.exists(store.derived_path(d, "quota.json")), s)
     fxd = FX.write_youtube_fixture(os.path.join(ctx.tmp, "ytfx"))
+    # D163: without the Analytics & Reporting amendment (VSP_YT_DERIVED_OK
+    # unset) no channel baseline is fetched and YouTube rows stay unscored
+    saved = os.environ.pop("VSP_YT_DERIVED_OK", None)
+    try:
+        dry0 = IM.youtube(d, FX.NOW, "desk setup shorts", niche="gadgets", dry_run=True,
+                          fixture=fxd)
+        C.check("youtube: no derived-metrics amendment -> no uploads/baseline calls",
+                len(dry0["requests"]) == 3 and not any("playlistItems" in u
+                                                       for u in dry0["requests"]),
+                dry0["requests"])
+        d0 = os.path.join(ctx.tmp, "yt0")
+        store.init(d0)
+        IM.youtube(d0, FX.NOW, "desk setup shorts", niche="gadgets", fixture=fxd)
+        r0 = SC.score_all(store.load_observations(d0), store.load_creators(d0), FX.NOW)
+        C.check("youtube: no derived-metrics amendment -> rows kept but unscored",
+                r0 and all(r["status"] == "unscored" and r["multiple"] is None
+                           and "amendment" in (r.get("note") or "") for r in r0),
+                [(r["post_id"], r["status"]) for r in r0])
+    finally:
+        if saved is not None:
+            os.environ["VSP_YT_DERIVED_OK"] = saved
+    os.environ["VSP_YT_DERIVED_OK"] = "1"
+    try:
+        _youtube_derived_checks(C, ctx, d, fxd)
+    finally:
+        if saved is None:
+            os.environ.pop("VSP_YT_DERIVED_OK", None)
+        else:
+            os.environ["VSP_YT_DERIVED_OK"] = saved
+
+
+def _youtube_derived_checks(C, ctx, d, fxd):
+    """The YouTube path with the amendment accepted (VSP_YT_DERIVED_OK=1)."""
+    from vsp.trends import fixtures as FX
+    from vsp.trends import importers as IM
+    from vsp.trends import score as SC
+    from vsp.trends import store
     dry = IM.youtube(d, FX.NOW, "desk setup shorts", niche="gadgets", dry_run=True,
                      fixture=fxd)
     C.check("youtube: --dry-run --fixture lists every call and writes nothing",
@@ -651,19 +688,20 @@ def _youtube_checks(C, ctx):
             rows["FIXTUREyt01"]["outlier_x"] == 25.0 and rows["FIXTUREyt01"]["band"] ==
             "breakout")
     q = store.load_quota(d).get("youtube") or {}
-    C.check("youtube: quota accounting (100 search + 1 + 1 + 2 x 2 channels = 106 units)",
-            rep["units"] == 106 and rep["search_calls"] == 1 and q.get("units") == 106 and
+    C.check("youtube: quota accounting (search in its own bucket; 1 + 1 + 2 x 2 = 6 units)",
+            rep["units"] == 6 and rep["search_calls"] == 1 and q.get("units") == 6 and
             q.get("search_calls") == 1 and q.get("day") == "2026-09-29", (rep["units"], q))
     C.check("youtube: purge_after = observed_at + 30 days, creator snapshots too",
             y1.get("retention", {}).get("purge_after") == "2026-10-29T12:00:00Z" and
             (c1.get("retention") or {}).get("purge_after") == "2026-10-29T12:00:00Z" and
             y1.get("source") == "yt_data_api" and y1.get("trend_keys") == ["tag:desksetup"])
     doc = store.load_quota(d)
-    doc["youtube"]["units"] = 8950
+    doc["youtube"]["units"] = 9000
     store.save_quota(d, doc)
     stop = IM.youtube(d, FX.NOW, "desk setup shorts", niche="gadgets", fixture=fxd)
-    C.check("youtube: stops before 9,000 units (nothing called)",
-            stop["stopped"] and stop["units"] == 0 and not stop["requests"], stop["stopped"])
+    C.check("youtube: stops at 9,000 units (only the search call, its own bucket, ran)",
+            stop["stopped"] and stop["units"] == 0 and len(stop["requests"]) == 1 and
+            "/search?" in stop["requests"][0], (stop["stopped"], stop["requests"]))
     doc["youtube"]["units"], doc["youtube"]["search_calls"] = 100, 90
     store.save_quota(d, doc)
     stop2 = IM.youtube(d, FX.NOW, "desk setup shorts", niche="gadgets", fixture=fxd)

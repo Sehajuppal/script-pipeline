@@ -187,8 +187,8 @@ Tracked ids: every D-number plus lettered sub-ids (D17b, D89b, D90b, B4a). The s
 | D160 | GATE | AI RENDER-PROMPT HYGIENE | §68 — PIPELINE v2.1 CREATIVE LAYER (2026-09-29) | evals/scorecard.py×3, make_shotlist.py×2, vsp/creative_eval.py×5, vsp/hooks.py×1, vsp/rules.py×10, vsp/selftest.py×1, vsp/selftest_cases.py×16, vsp/shotplan.py×6 |
 | D161 | MAKER | DISCOVERY KEYWORD PLACEMENT | §68 — PIPELINE v2.1 CREATIVE LAYER (2026-09-29) | evals/scorecard.py×1, viral_script_maker.py×10, vsp/creative_eval.py×1, vsp/discovery.py×2, vsp/lexicon.py×1, vsp/rubric.py×2, vsp/schema.py×2 |
 | D162 | PIPELINE | RENDER HAND-OFF LANE INTEGRITY | §70 — PIPELINE v2.2: TREND INTELLIGENCE + RENDE… | pipeline.py×3, vsp/render.py×1, vsp/selftest_cases.py×1 |
-| D163 | PIPELINE | TREND DATA COMPLIANCE | §70 — PIPELINE v2.2: TREND INTELLIGENCE + RENDE… | vsp/trends/importers.py×1, vsp/trends/schema.py×1 |
-| D164 | MAKER | TREND STEERING IS A TIE-BREAK | §70 — PIPELINE v2.2: TREND INTELLIGENCE + RENDE… | pipeline.py×5, viral_script_maker.py×3, vsp/direction.py×1, vsp/hooks.py×1, vsp/selftest_cases.py×1 |
+| D163 | PIPELINE | TREND DATA COMPLIANCE | §70 — PIPELINE v2.2: TREND INTELLIGENCE + RENDE… | vsp/trends/importers.py×2, vsp/trends/schema.py×1, vsp/trends/score.py×1, vsp/trends/selfcheck.py×1 |
+| D164 | MAKER | TREND STEERING IS A TIE-BREAK | §70 — PIPELINE v2.2: TREND INTELLIGENCE + RENDE… | pipeline.py×6, viral_script_maker.py×3, vsp/direction.py×1, vsp/hooks.py×1, vsp/selftest_cases.py×1 |
 | B4a | GATE | KEYWORD CTA TEMPLATE | 23. JUDGE-LOOP PATCHES (beauty one-off) — 2026-… | evals/scorecard.py×1, make_shotlist.py×3, pipeline.py×1, tools/fast_eval.py×1, tools/smoke_delivery.py×1, viral_script_maker.py×6, vsp/gates.py×2, vsp/improve/diagnose.py×1, vsp/lexicon.py×1, vsp/render.py×1, vsp/repair.py×1, vsp/rules.py×3, vsp/trace.py×1 |
 
 ## JSON summary

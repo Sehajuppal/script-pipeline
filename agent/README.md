@@ -34,6 +34,7 @@ VSP_IG_USER_ID=<IG business account id>
 VSP_VIRAL_DB=/abs/path/viral.db
 VSP_TRENDS_DIR=/abs/path/viral-trends-db  # the private trends repo (below)
 VSP_YT_API_KEY=<YouTube Data API v3 key>  # optional: official Shorts outliers
+VSP_YT_DERIVED_OK=1                       # only after accepting YouTube's derived-metrics amendment
 VSP_TRENDS_NICHES=gadgets,beauty,fitness  # niches the daily scan covers
 ```
 
