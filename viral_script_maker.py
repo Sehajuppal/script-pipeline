@@ -138,6 +138,7 @@ HOOK_SLOTS = frozenset(s for _lines in HOOKS.values() for _t in _lines
 HOOK_PACKS_LOADED = []      # ids of approved packs that added >= 1 template
 HOOK_PACK_WARNINGS = []     # what was skipped, and why (also on stderr)
 _LEARNED_LAST = {}          # the last pick_hook's learned provenance
+LEARNED_NEUTRAL = 0.5       # pick_hook's prior score for a family without evidence
 
 
 def hook_template_problem(t, known=HOOK_SLOTS):
@@ -2495,8 +2496,11 @@ def _hook_candidates(ctx, pool, ai, lex, fam_pref):
                 contract = "ndays" in slots or "day 1" in low
             else:
                 contract = True
+            # WS-INT: score[3] = learned performance (NEUTRAL here; pick_hook
+            # swaps in a Thompson sample for families with enough evidence)
             out.append({"family": fam, "line": r, "overlay": ov,
-                        "score": (anchored, ov_focus, contract, fam == fam_pref)})
+                        "score": (anchored, ov_focus, contract, LEARNED_NEUTRAL,
+                                  fam == fam_pref)})
             break
     return out
 
@@ -2513,6 +2517,7 @@ def pick_hook(ctx, rng):
     # rendered: "template" | "pinned" | "fallback" (D145), and the returned
     # family is the family of the line that rendered.
     fam = NICHE_HOOK.get(ctx["niche"], "curiosity-gap")
+    _LEARNED_LAST.clear()   # WS-INT: learned provenance of THIS pick only
     if _PACK and not _NO_RESEARCH:
         # WS-INT (D148): live research — the first mappable family in the
         # niche's WHOLE ranked list, across the research niches the maker
@@ -2585,6 +2590,34 @@ def pick_hook(ctx, rng):
         pref = fam
     cands = _hook_candidates(ctx, pool, ai, lex, pref)
     if cands:
+        # WS-INT (learned priors): score[3] is the learned-performance
+        # component — a Thompson sample from the (niche, family) Beta
+        # posterior in learned/priors.json (vsp.priors), drawn with hrng, for
+        # families with n >= 3; NEUTRAL (0.5) otherwise. It sits after the
+        # quality components (anchored, overlay focus, format contract) and
+        # before the static niche-family preference, so quality always wins
+        # and, among quality-equivalent candidates, learned performance
+        # picks (with exploration). Draws happen only when the quality-tied
+        # top spans >= 2 families (otherwise priors cannot change the
+        # family): without a priors file, or without evidence, hrng is
+        # untouched and the pick is byte-identical.
+        qtop = max(c["score"][:3] for c in cands)
+        tied = {c["family"] for c in cands if c["score"][:3] == qtop}
+        if len(tied) > 1:
+            try:
+                from vsp import priors as _vpri
+                _pri = _vpri.load_priors()
+                ts = _vpri.thompson(_pri, ctx.get("niche"), tied, hrng) if _pri else {}
+            except Exception:
+                ts = {}
+            if ts:
+                for c in cands:
+                    if c["family"] in ts:
+                        c["score"] = (c["score"][:3] + (ts[c["family"]]["sample"],)
+                                      + c["score"][4:])
+                _LEARNED_LAST["priors_used"] = {
+                    f: {"alpha": v["alpha"], "beta": v["beta"], "n": v["n"]}
+                    for f, v in ts.items()}
         top = max(c["score"] for c in cands)
         best = [c for c in cands if c["score"] == top]
         pick = best[hrng.randrange(len(best))]
