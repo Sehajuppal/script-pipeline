@@ -977,10 +977,11 @@ def card_options(verbal, default, info, maker, kw=None, ai=False):
                 if not ok or not _card_has_content(card) or screen_text(card, prompt, ai):
                     continue
                 has_kw = bool(kw) and L.keyword_in(card, kw)
+                has_head = bool(head) and any(t["stem"] == head for t in win)
                 ends = (bool(head) and z["stem"] == head) or (counted and z["low"] in tim)
                 focus = any(t["stem"] in payload for t in win)
-                ranked.append(((has_kw, ends, focus, len(content), {2: 2, 3: 1, 1: 0}[n],
-                                -si, -i), card))
+                ranked.append(((has_kw, has_head, ends, focus, len(content),
+                                {2: 2, 3: 1, 1: 0}[n], -si, -i), card))
     ranked.sort(key=lambda x: x[0], reverse=True)
     return out + [c for _k, c in ranked]
 
@@ -1009,6 +1010,16 @@ def trigrams_fw(text, drop=()):
     if len(t) < 3:
         return {tuple(t)} if t else set()
     return {tuple(t[i:i + 3]) for i in range(len(t) - 2)}
+
+
+def _ov_alignment(card, verbal, head):
+    """score_hook's overlay_alignment for a card on a line (1.0 names the
+    head noun, 0.8 a label form, 0.6 any other clean card, 0 unclean)."""
+    ok, why = L.overlay_is_clean(card, verbal)
+    if not ok:
+        return 0.0
+    return 1.0 if head and head in {_stem(w) for w in toks(card)} else \
+        0.8 if "label" in why else 0.6
 
 
 def _pair_jaccard(c, x):
@@ -1101,6 +1112,7 @@ def _variants(script, ctx, seed, maker):
                 continue
             raw += (-1.0 if f["direction"] == "-" else 1.0) * w[fid] * feats[fid]
         c["raw0"] = raw
+        c["ov0"] = feats["overlay_alignment"]
         c["paid"] = feats["open_loop_paired"] >= 0
         c["vts"] = _vt_options(c["archetype"], c["verbal"], c["overlay"], ctx, ai)
         c["pair"] = set(d["PAIRINGS"].get(c["archetype"], ()))
@@ -1138,11 +1150,16 @@ def _variants(script, ctx, seed, maker):
 # selection levels, tried in order for every slot: (new archetype only, max
 # trigram Jaccard, cluster cap, alternate floor). 0 = VARIANT_POLICY (a new
 # archetype, Jaccard <= 0.2, <= 2 per cluster) at HOOK-08's alternate floor
-# (score >= 0.50); 1 = a new archetype at 0.40 with no cluster cap, only
+# (score >= 0.58); 1 = a new archetype at 0.45 with no cluster cap, only
 # while the set has < 3 archetypes; 2 = an archetype may repeat while >= 3
 # stay distinct (§1.2); 3 = weaker lines, only to reach 4 openings
 # (VARIANT_POLICY: 3 alternates). Every level keeps Jaccard <= 0.2.
-ALT_MIN_SCORE = 0.50
+# HOOK-08's alternate floor (0.50) plus the maker's scorer tie margin
+# (HOOK_STRENGTH_MARGIN 0.08): the generator and the independent evaluator
+# score some templates up to that far apart, so an alternate clears the
+# floor with margin (v2.1 finishing pass: the audit check R23 regressed at
+# 0.50 once unique cards pushed selection toward marginal lines)
+ALT_MIN_SCORE = 0.58
 # v2.1: level 2 relaxes the score floor and the cluster cap only — a
 # near-duplicate (Jaccard > 0.2 on either measure) never ships, not even to
 # reach a 4th opening (the old level 2 allowed 1/3: "Day 30 of reading 10
@@ -1151,7 +1168,10 @@ ALT_MIN_SCORE = 0.50
 # repeat while the set has < 3 archetypes (VARIANT_POLICY lists archetype
 # among the unique fields; a 3-opening set with 2 archetypes tested one
 # idea twice)
-ALT_NEW_MIN = 0.40
+ALT_NEW_MIN = 0.45
+# a 5th opening is a 4th alternate: VARIANT_POLICY allows 3-4 alternates,
+# and an extra arm splits the test's traffic, so it must be strong
+ALT_FIFTH_MIN = 0.65
 _LEVELS = ((True, MAX_JACCARD, True, ALT_MIN_SCORE),
            (True, MAX_JACCARD, False, ALT_NEW_MIN),
            (False, MAX_JACCARD, True, ALT_MIN_SCORE),
@@ -1174,6 +1194,8 @@ def _select(A, cands, info, ctx, fw_drop=frozenset(), maker=None, mode=0):
     d = data()
     w_vt, w_nov, bsum = d["_feat_w"]["visual_type_strength"], d["_feat_w"]["novelty"], \
         d["_bonus_sum"]
+    w_ov = d["_feat_w"]["overlay_alignment"]
+    head = info.get("head") or ""
     drop = set(info["kw"])
     sel = [{"verbal": A["verbal"], "archetype": A["archetype"], "vt": A["visual_type"],
             "overlay": A["overlay"], "tri": trigrams(A["verbal"], drop),
@@ -1226,15 +1248,18 @@ def _select(A, cands, info, ctx, fw_drop=frozenset(), maker=None, mode=0):
                 if card is None:
                     continue   # VARIANT_POLICY: every opening its own card
                 own_card = card[0] == c["overlay"]
+                # the card this opening would ship with, not its default
+                ov_adj = 0.0 if own_card else w_ov * (
+                    _ov_alignment(card[0], c["verbal"], head) - c.get("ov0", 0.0))
                 free = [v for v in c["vts"] if v not in vts]
                 paired = [v for v in free if v in c["pair"]]
                 for vt in (paired or free):
                     vh = d["VISUAL_HOOKS"][vt]
                     vx = float(vh["prior"]) * (1.0 if c["archetype"] in vh["best_archetypes"]
                                                else 0.6)
-                    raw = c["raw0"] + w_vt * vx + w_nov * (1.0 - jac)
+                    raw = c["raw0"] + ov_adj + w_vt * vx + w_nov * (1.0 - jac)
                     score = max(0.0, min(1.0, raw / bsum))
-                    if score < floor:
+                    if score < floor or (len(sel) >= 4 and score < ALT_FIFTH_MIN):
                         continue
                     mmr = MMR_LAMBDA * score + (1 - MMR_LAMBDA) * (1.0 - jac) + \
                         0.05 * new_arc + 0.02 * own_card
