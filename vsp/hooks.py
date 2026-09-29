@@ -1276,9 +1276,19 @@ def selfcheck():
         if not cond:
             fails.append(name)
 
-    saved = {k: os.environ.get(k) for k in ("VSP_NO_PRIORS",)}
+    import shutil
+    import tempfile
+    saved = {k: os.environ.get(k) for k in ("VSP_NO_PRIORS", "VSP_VIRAL_DB",
+                                            "VSP_FIXTURE_OK")}
     os.environ["VSP_NO_PRIORS"] = "1"
+    tmp = tempfile.mkdtemp(prefix="vsp_hooks_selfcheck_")
     try:
+        try:
+            from vsp.fixtures import build_fixture_db
+            os.environ["VSP_VIRAL_DB"] = build_fixture_db(os.path.join(tmp, "viral.db"))
+            os.environ["VSP_FIXTURE_OK"] = "1"
+        except Exception:  # noqa: BLE001 — gate 2 is then reported, not run
+            pass
         _selfcheck_body(chk, time)
     except Exception as e:  # noqa: BLE001 — a crashing check fails closed
         import traceback
@@ -1290,6 +1300,7 @@ def selfcheck():
                 os.environ.pop(k, None)
             else:
                 os.environ[k] = v
+        shutil.rmtree(tmp, ignore_errors=True)
     return (not fails), lines
 
 
@@ -1307,7 +1318,11 @@ def _selfcheck_body(chk, time):
         len(ws) == 19 and abs(sum(ws) - 1.0) < 1e-9 and abs(d["_bonus_sum"] - 0.81) < 1e-9)
     chk("risky phrases: 20 compiled", len(d["_risky"]) == 20)
     import viral_script_maker as vsm
-    from vsp.gates import gate1
+    from vsp.gates import gate1, gate2
+    try:
+        import make_shotlist
+    except Exception:  # noqa: BLE001
+        make_shotlist = None
     chk("maker: HOOK_SLOTS unchanged (pack loader / evolve contract)",
         frozenset(vsm.HOOK_SLOTS) == _EXPECTED_SLOTS, str(sorted(vsm.HOOK_SLOTS)))
     chk("maker: every HOOKS family is a HOOK_ARCHETYPES id",
@@ -1380,6 +1395,8 @@ def _selfcheck_body(chk, time):
             times.append(time.perf_counter() - t0)
 
     bad, nondet, warns, g1, missing, counts, not_a = [], [], [], [], [], {}, []
+    g2, g2_runs = [], 0
+    can_g2 = make_shotlist is not None and bool(os.environ.get("VSP_VIRAL_DB"))
     if mod is not None:
         mod.variants = timed
     try:
@@ -1408,6 +1425,15 @@ def _selfcheck_body(chk, time):
                         not_a.append(key)
                     if gate1(s):
                         g1.append(f"{key}: {gate1(s)[0][:90]}")
+                    elif can_g2:
+                        try:
+                            bt, _, _ = make_shotlist.build_bundle(s)
+                            e2 = gate2(bt, s)
+                        except Exception as e:  # noqa: BLE001
+                            e2 = [f"stage 2 crash {type(e).__name__}: {e}"]
+                        g2_runs += 1
+                        if e2:
+                            g2.append(f"{key}: {str(e2[0])[:90]}")
     finally:
         if mod is not None:
             mod.variants = real
@@ -1420,11 +1446,31 @@ def _selfcheck_body(chk, time):
     chk("sweep: byte-identical twice", not nondet, "; ".join(nondet[:3]))
     chk("sweep: no creative_warnings", not warns, "; ".join(warns[:2]))
     chk("sweep: primary hooks still pass gate 1", not g1, "; ".join(g1[:2]))
+    chk(f"sweep: bundles pass gate 2 ({g2_runs} built, fixture reference DB)",
+        can_g2 and g2_runs == n and not g2, "; ".join(g2[:2]) or
+        ("" if can_g2 else "no fixture DB / make_shotlist"))
     avg = 1000 * sum(times) / max(1, len(times))
     chk(f"sweep: variants() averages {avg:.1f} ms over {len(times)} calls (< 15 ms)",
         avg < 15.0)
     chk("sweep: variant counts " + ", ".join(f"{k}: {v}" for k, v in sorted(counts.items())),
         all(MIN_VARIANTS <= k <= MAX_VARIANTS for k in counts))
+    # determinism across processes and PYTHONHASHSEED
+    import subprocess
+    code = ("import json, sys; sys.path.insert(0, %r); import viral_script_maker as v; "
+            "print(json.dumps([v.generate(p, presenter=pr, fmt=f, seed=7).get('hook_variants') "
+            "for p, pr, f in [('electric milk frother','ai','demo'), ('silk pillowcase',"
+            "'human','review'), ('I quit sugar for 21 days','human','pov-vlog'), "
+            "('things in my car that just make sense','ai','transformation'), "
+            "('why your hooks fail','human','talking-head'), ('my 5am morning routine',"
+            "'ai','review')]], sort_keys=True))" % _repo_root())
+    outs = []
+    for hs in ("0", "12345"):
+        env = dict(os.environ, PYTHONHASHSEED=hs)
+        r = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True,
+                           env=env, timeout=300)
+        outs.append(r.stdout if r.returncode == 0 else f"exit {r.returncode}: {r.stderr[-200:]}")
+    chk("determinism: byte-identical across processes and PYTHONHASHSEED",
+        outs[0] == outs[1] and outs[0].startswith("[["), outs[0][:120])
     # --script-json path: no ctx -> derived from the prompt; never raises
     s = json.loads(json.dumps(vsm.generate("electric milk frother", presenter="ai",
                                            fmt="demo", seed=3)))

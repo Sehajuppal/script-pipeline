@@ -2453,7 +2453,9 @@ ADVICE_HOOKS = [
  ("negative-command", "Don't post another {category_sg} before this.", ("creator",)),
  ("curiosity-gap", "The {category_sg} mistake most people make.", ()),
  ("negative-command", "Stop guessing with {category_sg}.", ()),
- ("question", "Getting {category_sg} wrong? Here's the fix.", ()),
+ # a mass-noun topic ("skincare", "UGC") vs a creator's count noun ("hooks")
+ ("question", "Getting {category_sg} wrong? Here's the fix.", ("noncreator",)),
+ ("question", "Getting your {category_pl} wrong? Here's the fix.", ("creator",)),
 ]
 # advice framing words: never the topic's head noun (parse_prompt's advice
 # category) — "the truth about protein" is about protein, "tips for better
@@ -2751,6 +2753,8 @@ def _hook_template_ok(ctx, fam, line, req, ai, payoff=None, variant=False):
     if "why" in req and not re.match(r"(why|how)\b", str(ctx.get("product", "")), re.I):
         return None
     if "creator" in req and ctx.get("niche") != "education":
+        return None
+    if "noncreator" in req and ctx.get("niche") == "education":
         return None
     practice = ctx.get("challenge_type") == "practice"
     if "abstinence" in req and (concept != "challenge" or practice):
