@@ -616,13 +616,13 @@ def _camera(vibe, presenter, shop):
 def _text_style(vibe):
     T = _profiles()[vibe]["text_style"]
     n = int(T["max_words_per_card"])
-    placement = (T["placement"] + f"; frame-0 card: up to {FRAME0_MAX_WORDS} "
-                 "words, UPPER, no emoji")
-    if n > FRAME0_MAX_WORDS:
+    first = min(FRAME0_MAX_WORDS, n)
+    placement = (T["placement"] + f"; frame-0 card: up to {first} words, "
+                 "UPPER, no emoji")
+    if n > first:
         placement += f"; later cards up to {n} words"
     return {"case": T["case"], "weight": T["weight"],
-            "max_words_per_card": min(FRAME0_MAX_WORDS, n),
-            "placement": placement}
+            "max_words_per_card": first, "placement": placement}
 
 
 def _showmanship(vibe, presenter, seed, subj):
@@ -761,3 +761,610 @@ def direct(script, ctx=None, seed=None, maker=None):
         return None
     return _build(script, ctx if isinstance(ctx, dict) else None, seed,
                   _pack(maker), _priors())
+
+
+# --------------------------------------------------------------- render
+_PLATFORM_NAMES = {"tiktok": "TikTok", "instagram": "Instagram",
+                   "youtube_shorts": "YouTube Shorts"}
+
+
+def _join(xs, sep=", "):
+    return sep.join(str(x) for x in xs if x)
+
+
+def render_md(direction):
+    """The bundle section / direction.md. Starts with HEADING; never contains
+    a shot heading, a creative_vocab.BUNDLE_FORBIDDEN phrase or a D46 link
+    phrase."""
+    d = direction or {}
+    t, p, m = d.get("tone") or {}, d.get("pacing") or {}, d.get("music") or {}
+    L, C, T = d.get("look") or {}, d.get("camera") or {}, d.get("text_style") or {}
+    v = d.get("vibe") or ""
+    wpm = p.get("target_wpm") or [WPM_MIN, WPM_MAX]
+    out = [HEADING]
+    sec = d.get("secondary_vibe")
+    out.append(f"**Vibe:** {v} \u2014 {CV.VIBES.get(v, '')}"
+               + (f" (secondary: {sec})" if sec else "") + ". "
+               f"Why: {d.get('vibe_reason') or 'profile default'}.")
+    out.append(f"**Tone:** {t.get('voice')} (allowed: {_join(t.get('allowed') or [])}"
+               f"; humour: {t.get('humor')}). {t.get('notes') or ''}".rstrip())
+    out.append(f"**Pacing:** VO {wpm[0]}\u2013{wpm[1]} wpm, and never slower "
+               "than a beat's wpm below (each beat was sized at that rate; calm "
+               "comes from pauses and fewer words, not slower speech) \u00b7 "
+               f"average shot {_join(p.get('avg_shot_s') or [], chr(8211))} s "
+               f"\u00b7 {_join(p.get('cuts_per_10s') or [], chr(8211))} cuts per "
+               f"10 s \u00b7 no static shot over {p.get('max_static_s', MAX_STATIC_S):g} s "
+               f"\u00b7 a pattern interrupt at least every "
+               f"{p.get('pattern_interrupt_s', 5):g} s \u00b7 energy "
+               f"{d.get('energy')}/5.")
+    out.append("")
+    out.append("| window | beat | energy | wpm |")
+    out.append("|---|---|---|---|")
+    for e in d.get("energy_curve") or []:
+        out.append(f"| {e.get('t')} | {e.get('type')} | {e.get('energy')} | "
+                   f"{e.get('wpm', chr(8212))} |")
+    out.append("")
+    bpm = m.get("bpm") or [0, 0]
+    out.append(f"**Music:** {_join(m.get('moods') or [])} \u00b7 {bpm[0]}\u2013"
+               f"{bpm[1]} BPM \u00b7 {_join(m.get('genres') or [], ' / ')} "
+               f"\u00b7 duck {m.get('vo_ducking_db')} dB under the VO \u00b7 SFX: "
+               f"{_join(m.get('sfx') or [])}. Search the platform library for: "
+               + " \u00b7 ".join(f"\u201c{q}\u201d" for q in m.get("search_queries") or [])
+               + " (never a named commercial track).")
+    out.append("**Licensing** (music is added at upload, not in the master: "
+               "deliver VO + SFX + room tone only):")
+    for pl in CV.PLATFORMS:
+        lic = (m.get("licensing") or {}).get(pl) or {}
+        out.append(f"- {_PLATFORM_NAMES[pl]}: {lic.get('library')} \u2014 "
+                   f"{lic.get('note')}")
+    pal = ", ".join(f"{n} {h}" for n, h in zip(L.get("palette_names") or [],
+                                               L.get("palette_hex") or []))
+    out.append(f"**Look:** {_cap(L.get('lighting') or '')}. Palette: {pal}. "
+               f"Grade: {L.get('grade')}. Set: {L.get('set')}. Wardrobe: "
+               f"{L.get('wardrobe')}.")
+    out.append(f"**Camera:** {_cap(C.get('style') or '')}; lens: "
+               f"{C.get('lens')}; moves: {_join(C.get('movement') or [])}.")
+    out.append(f"**Text style:** {T.get('case')} case, {T.get('weight')}, "
+               f"high contrast; {T.get('placement')}.")
+    out.append(f"**Transitions:** {_join(d.get('transitions') or [])}.")
+    out.append(f"**Showmanship (one device):** {_cap(d.get('showmanship') or '')}.")
+    out.append(f"**Voice:** {(d.get('voice') or {}).get('spec')}.")
+    out.append("**Do:** " + " \u00b7 ".join(d.get("do") or []))
+    out.append("**Don't:** " + " \u00b7 ".join(d.get("dont") or []))
+    return "\n".join(out) + "\n"
+
+
+def style_paragraph(direction):
+    """One paragraph that replaces the legacy ## STYLE body. Lo-fi vs polish
+    is per vibe (research §2.1): only candid vibes invite imperfection."""
+    d = direction or {}
+    v = d.get("vibe") or "raw-ugc"
+    F = data()["FINISH"]
+    finish = F["candid_text"] if v in F["candid"] else F["clean_text"]
+    L, C, T, m = (d.get("look") or {}, d.get("camera") or {},
+                  d.get("text_style") or {}, d.get("music") or {})
+    lane = "AI" if (d.get("voice") or {}).get("presenter") == "ai" else "Human"
+    tr = [x if x != "none" else "no transition (hold the take)"
+          for x in d.get("transitions") or ["hard-cut"]]
+    bpm = m.get("bpm") or [0, 0]
+    return (f"{lane} UGC, {v} vibe: {CV.VIBES.get(v, '')}. 9:16 vertical. "
+            f"Set: {L.get('set')}. Light: {L.get('lighting')}. Grade: "
+            f"{L.get('grade')}; palette {_join(L.get('palette_names') or [])}. "
+            f"{finish}. Camera: {C.get('style')} "
+            f"({_join(C.get('movement') or [])}). Transitions: {tr[0]} by "
+            f"default; {_join(tr[1:], ' / ') or tr[0]} where the beat changes. "
+            f"On-screen graphic text (labels like BEFORE/AFTER, TEST 1): "
+            f"{T.get('weight')}, {T.get('case')} case, high contrast; "
+            f"{T.get('placement')}. Safe zones: keep graphic text and key "
+            f"action clear of the top 250px, bottom 320px (IG UI overlays), "
+            f"and the right rail. Product accuracy: match the PRODUCT block "
+            f"above exactly \u2014 no invented branding. Audio: voiceover clean "
+            f"and forward over real product sound and room tone; no music in "
+            f"the master \u2014 a {_join((m.get('moods') or [])[:2], ', ')} bed "
+            f"({bpm[0]}\u2013{bpm[1]} BPM) is added at upload from each "
+            f"platform's commercial library, ducked {m.get('vo_ducking_db')} dB "
+            f"under speech.")
+
+
+def voice_spec(direction):
+    """The full VOICEOVER "Voice spec:" line (label included)."""
+    spec = ((direction or {}).get("voice") or {}).get("spec") or ""
+    return "Voice spec: " + spec.rstrip(".") + "."
+
+
+# ------------------------------------------------------------ validation
+_GRADES = ("P", "S", "M", "A")
+
+
+def validate(direction, script):
+    """Contract problems of one direction for its script -> [str]."""
+    d, s, errs = direction, script, []
+    if not isinstance(d, dict):
+        return ["direction missing"]
+    presenter = "ai" if s.get("presenter") == "ai" else "human"
+    if d.get("schema_version") != SCHEMA_VERSION:
+        errs.append("schema_version")
+    for k in ("vibe", "secondary_vibe"):
+        if d.get(k) is not None and d.get(k) not in CV.VIBES:
+            errs.append(f"{k} {d.get(k)!r} not a VIBES id")
+    if d.get("vibe") is None:
+        errs.append("vibe missing")
+    t = d.get("tone") or {}
+    if t.get("voice") not in CV.TONES or t.get("voice") not in (t.get("allowed") or []):
+        errs.append(f"tone.voice {t.get('voice')!r}")
+    if any(x not in CV.TONES for x in t.get("allowed") or []):
+        errs.append("tone.allowed has a non-TONES id")
+    if t.get("humor") not in ("none", "light", "high"):
+        errs.append("tone.humor")
+    if presenter == "ai":
+        ai_ok = data()["VOICE_RULES"]["ai"]["tones_allowed"]
+        if any(x not in ai_ok for x in t.get("allowed") or []):
+            errs.append("AI tone outside the §4 allowed set")
+        if d.get("vibe") in ("story-vlog", "raw-ugc"):
+            errs.append(f"AI presenter got {d.get('vibe')}")
+    if any(m not in CV.CAMERA_MOVES for m in (d.get("camera") or {}).get("movement") or []):
+        errs.append("camera.movement has a non-CAMERA_MOVES id")
+    trans = data()["PROPOSED_VOCAB"]["TRANSITIONS"]
+    if any(x not in trans for x in d.get("transitions") or []):
+        errs.append("transition id outside PROPOSED_VOCAB.TRANSITIONS")
+    items = _items(s)
+    curve = d.get("energy_curve") or []
+    if [(e.get("t"), e.get("type")) for e in curve] != \
+            [(it.get("t") or "", it.get("type") or "") for it in items]:
+        errs.append("energy_curve does not cover every hook_stack + beats item "
+                    "in order")
+    p = d.get("pacing") or {}
+    lo, hi = (p.get("target_wpm") or [0, 0])[:2]
+    if not (WPM_MIN <= lo <= hi <= WPM_MAX):
+        errs.append(f"target_wpm {lo}-{hi} outside {WPM_MIN}-{WPM_MAX}")
+    if not p.get("max_static_s") or p["max_static_s"] > MAX_STATIC_S:
+        errs.append("max_static_s > 3.5")
+    floors = []
+    for e, it in zip(curve, items):
+        if not isinstance(e.get("energy"), int) or not 1 <= e["energy"] <= 5:
+            errs.append(f"energy {e.get('energy')!r} at {e.get('type')}")
+        if _spoken(it):
+            need = int(round(60 * _gate_wps(it.get("delivery"))))
+            floors.append(need)
+            if e.get("wpm") != need:
+                errs.append(f"{it.get('type')} wpm {e.get('wpm')} != sizing {need}")
+    if floors and (lo < min(floors) or hi < max(floors)):
+        errs.append(f"target_wpm {lo}-{hi} slower than the per-beat sizing "
+                    f"{min(floors)}-{max(floors)}")
+    types = [e.get("type") for e in curve]
+    lv = [e.get("energy") for e in curve]
+    if "PAYOFF" in types:
+        k = types.index("PAYOFF")
+        if lv.count(max(lv)) != 1 or lv[k] != max(lv):
+            errs.append(f"energy peak is not a single PAYOFF: {lv}")
+        for e in curve:
+            if e.get("type") == "CTA" and not 2 <= e["energy"] <= lv[k]:
+                errs.append("CTA energy outside [2, PAYOFF]")
+    if len(curve) >= 5 and len(set(lv)) < 3:
+        errs.append(f"flat energy curve {lv}")
+    m = d.get("music") or {}
+    if m.get("in_master") is not False:
+        errs.append("music.in_master must be False")
+    q = m.get("search_queries") or []
+    if len(q) != 3 or any(not isinstance(x, str) or "BPM" not in x or
+                          re.search("[\"\u201c\u201d]| by ", x) for x in q):
+        errs.append(f"search_queries {q!r}")
+    lic = m.get("licensing") or {}
+    for pl in CV.PLATFORMS:
+        c = lic.get(pl) or {}
+        if not c.get("library") or not c.get("note"):
+            errs.append(f"licensing.{pl} missing")
+    tk = (lic.get("tiktok") or {}).get("note") or ""
+    if "AI-generated music" not in tk:
+        errs.append("TikTok licensing does not rule out AI music")
+    if (d.get("text_style") or {}).get("max_words_per_card", 99) > FRAME0_MAX_WORDS:
+        errs.append("text_style.max_words_per_card > 3")
+    sh = d.get("showmanship")
+    if not isinstance(sh, str) or not sh.strip():
+        errs.append("showmanship missing")
+    v = d.get("voice") or {}
+    spec = v.get("spec") or ""
+    if v.get("presenter") != presenter:
+        errs.append("voice.presenter")
+    if presenter == "ai":
+        from vsp import lexicon
+        if not (lexicon.has_ai_disclosure_line(spec) and "synthetic" in spec
+                and "disclosed" in spec and "never claims to be human" in spec):
+            errs.append("AI voice spec not disclosed")
+    elif "no TTS" not in spec or "synthetic" in spec:
+        errs.append("human voice spec")
+    ev = d.get("evidence") or []
+    if not ev or any(not isinstance(e, dict) or e.get("grade") not in _GRADES
+                     or not e.get("claim") or not e.get("source") for e in ev):
+        errs.append("evidence entries")
+    if not d.get("do") or not d.get("dont"):
+        errs.append("do/dont empty")
+    return errs
+
+
+def text_problems(direction, script=None):
+    """Bundle-text problems of render_md / style_paragraph / voice_spec."""
+    errs = []
+    md = render_md(direction)
+    sp, vs = style_paragraph(direction), voice_spec(direction)
+    if not md.startswith(HEADING + "\n"):
+        errs.append("render_md heading")
+    if "music is added at upload, not in the master" not in md:
+        errs.append("render_md lacks the upload-music line")
+    for name, txt in (("render_md", md), ("style_paragraph", sp),
+                      ("voice_spec", vs)):
+        for ph in CV.BUNDLE_FORBIDDEN + FORBIDDEN_CLAIMS:
+            if ph.lower() in txt.lower():
+                errs.append(f"{name} contains {ph!r}")
+        if CV.link_groups_in(txt):
+            errs.append(f"{name} has D46 link groups {sorted(CV.link_groups_in(txt))}")
+    if "\n## " in md or "\n### " in md:
+        errs.append("render_md has a sub-heading")
+    if "9:16" not in sp or "\n" in sp.strip():
+        errs.append("style_paragraph is not one 9:16 paragraph")
+    if not vs.startswith("Voice spec: ") or "\n" in vs:
+        errs.append("voice_spec is not one line")
+    if isinstance(script, dict) and script.get("presenter") == "ai":
+        from vsp import lexicon
+        hit = lexicon.first_match(lexicon.AI_FIRST_PERSON, md + "\n" + sp)
+        if hit:
+            errs.append(f"AI bundle text voices lived experience: {hit!r}")
+    return errs
+
+
+# ------------------------------------------------------------- selfcheck
+def _maker():
+    if REPO not in sys.path:
+        sys.path.insert(0, REPO)
+    import viral_script_maker
+    return viral_script_maker
+
+
+def _golden():
+    with open(os.path.join(REPO, "evals", "golden.jsonl"), encoding="utf-8") as f:
+        return [json.loads(ln) for ln in f if ln.strip()]
+
+
+def _digest(obj):
+    return hashlib.sha256(json.dumps(obj, sort_keys=True, ensure_ascii=False)
+                          .encode("utf-8")).hexdigest()
+
+
+_HASH_CODE = r"""
+import json, sys
+sys.path.insert(0, sys.argv[1])
+import viral_script_maker as m
+from vsp import direction as D
+out = []
+for pr in json.loads(sys.argv[2]):
+    for f in D.FORMATS:
+        for p in D.PRESENTERS:
+            s = m.generate(pr, presenter=p, fmt=f, duration=30, seed=1)
+            out.append([s.get("direction"), D.render_md(s.get("direction"))])
+print("@@DIGEST@@" + D._digest(out))
+"""
+
+
+def _unit_checks():
+    """Synthetic-input checks of the lanes, tie-break, pacing and pack."""
+    errs = []
+    from vsp import priors as P
+    base = {"prompt": "electric milk frother", "presenter": "ai",
+            "format": "demo", "duration_s": 30, "niche": "tools",
+            "fit": "utilitarian", "hook_family": "negative-command",
+            "hook_stack": [{"t": "0.0\u20130.5s", "type": "VISUAL TRIGGER"},
+                           {"t": "0.5\u20133.0s", "type": "VERBAL HOOK + LOCK",
+                            "dialogue": "Stop buying frothers on looks.",
+                            "delivery": "Brisk, confident."}],
+            "beats": [{"t": "3.0\u201315.0s", "type": "DEMO BEAT",
+                       "dialogue": "Watch it work.", "delivery": "Energetic."},
+                      {"t": "15.0\u201325.0s", "type": "PAYOFF",
+                       "dialogue": "Test result.", "delivery": "Slow down."},
+                      {"t": "25.0\u201330.0s", "type": "CTA",
+                       "dialogue": "Part 2 next.", "delivery": "Brisk."}]}
+
+    def run(s, pri=None, pack=None, seed=1, ctx=None):
+        return _build(s, ctx, seed, pack, pri)
+
+    d0 = run(base)
+    if d0["vibe"] != "expert-trust" or d0["secondary_vibe"] != "clean-aesthetic":
+        errs.append(f"unit base vibe {d0['vibe']}/{d0['secondary_vibe']}")
+
+    def pri(niche, key, a, b, n):
+        return P.normalise({"schema_version": 2, "families": {}, "global": {},
+                            "sections": {"vibe": {"by_niche": {niche: {
+                                key: {"alpha": a, "beta": b, "n": n}}},
+                                "global": {}}}})
+    d1 = run(base, pri("tools", "clean-aesthetic", 9, 1, 10))
+    if d1["vibe"] != "clean-aesthetic" or "tie-break" not in d1["vibe_reason"]:
+        errs.append("tie-break did not pick the stronger secondary")
+    if run(base, pri("tools", "clean-aesthetic", 9, 1, 2))["vibe"] != "expert-trust":
+        errs.append("tie-break used a prior with n < 3")
+    if run(base, pri("tools", "clean-aesthetic", 1, 9, 10))["vibe"] != "expert-trust":
+        errs.append("tie-break picked a weaker secondary")
+    sv = dict(base, prompt="I quit sugar for 21 days", format="pov-vlog",
+              niche="food", fit="hedonic", hook_family="challenge")
+    sv["beats"] = [dict(b, type="STORY BEAT") if b["type"] == "DEMO BEAT" else b
+                   for b in base["beats"]]
+    d2 = run(sv, pri("food", "story-vlog", 99, 1, 100))
+    if d2["vibe"] == "story-vlog" or d2["secondary_vibe"] == "story-vlog":
+        errs.append("AI presenter reached story-vlog through a prior")
+    if run(dict(sv, presenter="human"))["vibe"] != "story-vlog":
+        errs.append("human challenge pov-vlog is not story-vlog")
+    if run(dict(sv, presenter="human", duration_s=15))["vibe"] != "raw-ugc":
+        errs.append("15 s story-vlog did not swap to raw-ugc")
+    short = run(dict(sv, presenter="human", duration_s=15))["pacing"]
+    if short["pattern_interrupt_s"] > 3 or short["target_wpm"][0] < 170:
+        errs.append(f"15 s pacing {short}")
+    hype = dict(base, prompt="mini projector", niche="gadgets", presenter="human")
+    if run(hype)["vibe"] != "hype-energy" or \
+            run(dict(hype, duration_s=60))["vibe"] != "raw-ugc":
+        errs.append("gadget demo hype-energy / 60 s swap")
+    fin = dict(base, prompt="budget planner", niche="finance", format="review",
+               presenter="human", fit="neutral")
+    for f in FORMATS:
+        if run(dict(fin, format=f))["vibe"] in ("playful-comedic", "hype-energy",
+                                                "cozy-calm"):
+            errs.append(f"finance veto failed for {f}")
+    brisk = dict(base, beats=[dict(b, delivery="Brisk.") for b in base["beats"]])
+    if run(brisk)["pacing"]["target_wpm"][0] < 180:
+        errs.append("all-brisk script got a band slower than 180 wpm")
+    shop = dict(base, prompt="tiktok shop lint remover", niche="home",
+                presenter="human", format="review")
+    ds = run(shop)
+    lic = ds["music"]["licensing"]["tiktok"]
+    if not lic["note"].startswith("Shop lane") or \
+            not any("real person visible" in x for x in ds["do"]) or \
+            "handheld" in ds["camera"]["movement"] or \
+            "quiet room" not in ds["voice"]["spec"]:
+        errs.append("TikTok Shop lane rules missing")
+    dsa = run(dict(shop, presenter="ai"))
+    if "not eligible for the TikTok Shop lane" not in dsa["voice"]["spec"] or \
+            dsa["vibe"] in ("raw-ugc", "story-vlog"):
+        errs.append("AI + TikTok Shop conflict not stated")
+    if run(dict(base, prompt="luxury perfume", niche="beauty",
+                presenter="human"), ctx=None)["vibe"] != "cinematic-premium" or \
+            run(dict(shop, prompt="tiktok shop luxury perfume",
+                     format="demo"))["vibe"] == "cinematic-premium":
+        errs.append("cinematic cue / Shop people-visible swap")
+    rev = dict(base, prompt="wireless charger", niche="gadgets",
+               format="review", presenter="human", fit="utilitarian")
+    pk = {"niche_patterns": {"ugc-ads": [
+        {"pattern": "b-roll-captions", "times_seen": 40},
+        {"pattern": "talking-head-ugc", "times_seen": 10}]}}
+    if run(rev)["vibe"] != "raw-ugc" or run(rev, pack=pk)["vibe"] != \
+            "clean-aesthetic" or run(rev, pack={"top_patterns": []})["vibe"] != "raw-ugc":
+        errs.append("pack niche pattern (raw-ugc only, share >= 0.25)")
+    weak = {"niche_patterns": {"ugc-ads": [
+        {"pattern": "b-roll-captions", "times_seen": 20},
+        {"pattern": "talking-head-ugc", "times_seen": 19},
+        {"pattern": "before-after", "times_seen": 19},
+        {"pattern": "day-in-life", "times_seen": 19},
+        {"pattern": "meme-overlay", "times_seen": 19}]}}
+    if run(rev, pack=weak)["vibe"] != "raw-ugc":
+        errs.append("pack pattern applied below the 0.25 share")
+    snap = copy.deepcopy(base)
+    st = random.getstate()
+    a, b = run(base, seed=7), run(base, seed=7)
+    if base != snap:
+        errs.append("direct() mutated the script")
+    if random.getstate() != st:
+        errs.append("direct() consumed the global rng")
+    if _digest(a) != _digest(b):
+        errs.append("same seed, different direction")
+    if len({run(base, seed=i)["showmanship"] for i in range(12)}) < 2:
+        errs.append("showmanship ignores the seed")
+    if direct(None) is not None or direct({"prompt": "x"})["energy_curve"] != []:
+        errs.append("degenerate inputs")
+    for ex in data()["DEFAULT_VIBE"]["examples"]:
+        v, _s, _t = resolve_vibe(ex["concept"], ex["format"], ex["niche"],
+                                 ex["fit"], ex["presenter"], ex["duration_s"],
+                                 ex["prompt"])
+        if v != ex["expected"]:
+            errs.append(f"DEFAULT_VIBE example {ex['prompt']!r}: {v} != "
+                        f"{ex['expected']}")
+    return errs
+
+
+def _data_checks():
+    errs = []
+    D = data()
+    VP = D["VIBE_PROFILES"]
+    if list(VP) != list(CV.VIBES):
+        errs.append("VIBE_PROFILES ids != creative_vocab.VIBES")
+    if sorted(D["TONE_PROFILES"]) != sorted(CV.TONES):
+        errs.append("TONE_PROFILES ids != creative_vocab.TONES")
+    trans = D["PROPOSED_VOCAB"]["TRANSITIONS"]
+    for v, pr in VP.items():
+        if pr["tone"]["default"] not in CV.TONES or \
+                any(t not in CV.TONES for t in pr["tone"]["allowed"]):
+            errs.append(f"{v}: tone ids")
+        if any(m not in CV.CAMERA_MOVES for m in pr["camera"]["movement"]):
+            errs.append(f"{v}: camera ids")
+        if any(t not in trans for t in pr["transitions"]):
+            errs.append(f"{v}: transition ids")
+        lo, hi = pr["pacing"]["target_wpm"]
+        if not WPM_MIN <= lo <= hi <= WPM_MAX:
+            errs.append(f"{v}: target_wpm")
+        for sec in (D["ENERGY_CURVE"]["by_vibe"], D["SET_TEMPLATES"],
+                    D["SHOWMANSHIP"]["by_vibe"], D["HUMOR"]["by_vibe"]):
+            if v not in sec:
+                errs.append(f"{v}: missing from a derived table")
+        if not any("ai" in D["SHOWMANSHIP"]["devices"][x]["presenters"]
+                   for x in D["SHOWMANSHIP"]["by_vibe"].get(v, [])):
+            errs.append(f"{v}: no AI-safe showmanship device")
+        for e in pr["evidence"]:
+            if not e.startswith("rules-") and e not in D["EVIDENCE"]:
+                errs.append(f"{v}: evidence ref {e} unresolved")
+    for k, e in D["EVIDENCE"].items():
+        if e.get("grade") not in _GRADES:
+            errs.append(f"evidence {k} grade")
+    doc = os.path.join(REPO, "docs", "research", "vibe-tone-music.md")
+    if os.path.isfile(doc):
+        with open(doc, encoding="utf-8") as f:
+            blocks = re.findall(r"```json\n(.*?)\n```", f.read(), re.S)
+        names = list(D["transcribed_sections"])
+        if len(blocks) != len(names) or any(
+                json.loads(b) != D[n] for b, n in zip(blocks, names)):
+            errs.append("vibes.json no longer matches the research JSON blocks")
+    return errs
+
+
+def selfcheck():
+    """Hermetic: in-process generate() over evals/golden.jsonl x 5 formats x
+    2 presenters at seed 1 (plus synthetic lane/tie-break/pack checks).
+    Reads repo files only; writes nothing. -> (ok, lines)."""
+    import collections
+    import importlib
+    import subprocess
+    t_start = time.time()
+    lines, fails = [], []
+    fails += [f"data: {e}" for e in _data_checks()]
+    lines.append("data: vibes.json ids valid; research §5 blocks transcribed "
+                 "verbatim" if not fails else "data: FAIL")
+    unit = _unit_checks()
+    fails += [f"unit: {e}" for e in unit]
+    lines.append(f"unit: lanes, tie-break (n>=3 only), pacing floors, pack "
+                 f"pattern, Shop lane, determinism, 4 research examples: "
+                 f"{'ok' if not unit else 'FAIL'}")
+    maker = _maker()
+    mod = importlib.import_module("vsp.direction")
+    orig = mod.direct
+    calls = []
+
+    def timed(script, ctx=None, seed=None, maker=None):
+        t0 = time.perf_counter()
+        out = orig(script, ctx=ctx, seed=seed, maker=maker)
+        calls.append((time.perf_counter() - t0,
+                      (ctx or {}).get("concept") if isinstance(ctx, dict) else None))
+        return out
+    golden = _golden()
+    runs = {}
+    mod.direct = timed
+    try:
+        for rnd in (0, 1):
+            for g in golden:
+                for f in FORMATS:
+                    for p in PRESENTERS:
+                        s = maker.generate(g["prompt"], presenter=p, fmt=f,
+                                           duration=30, seed=1)
+                        key = (g["id"], f, p)
+                        if rnd == 0:
+                            runs[key] = (s, calls[-1][1] if calls else None)
+                        else:
+                            s0 = runs[key][0]
+                            if (_digest(s0.get("direction")) != _digest(s.get("direction"))
+                                    or render_md(s0.get("direction")) !=
+                                    render_md(s.get("direction"))):
+                                fails.append(f"determinism: {key}")
+    finally:
+        mod.direct = orig
+    dist = collections.Counter()
+    by_p = {p: collections.Counter() for p in PRESENTERS}
+    agree = 0
+    for key, (s, cconcept) in runs.items():
+        d = s.get("direction")
+        if "creative_warnings" in s:
+            fails.append(f"{key}: creative_warnings {s['creative_warnings']}")
+        probs = validate(d, s) + (text_problems(d, s) if d else [])
+        fails += [f"{key}: {e}" for e in probs]
+        if not d:
+            continue
+        dist[d["vibe"]] += 1
+        by_p[key[2]][d["vibe"]] += 1
+        s2 = {k: v for k, v in s.items() if k != "direction"}
+        concept, _src = infer_concept(s2)
+        if cconcept and concept != cconcept:
+            fails.append(f"{key}: inferred concept {concept} != ctx {cconcept}")
+        d2 = orig(s2, ctx=None, seed=1, maker=maker)
+        agree += d2["vibe"] == d["vibe"]
+        fails += [f"{key} (no ctx): {e}" for e in validate(d2, s2)]
+    n = len(runs)
+    lines.append(f"matrix: {n} scripts ({len(golden)} golden prompts x "
+                 f"{len(FORMATS)} formats x {len(PRESENTERS)} presenters, seed 1); "
+                 f"contract/pacing/licensing/voice/text checks on every one")
+    lines.append("vibes: " + ", ".join(f"{v} {dist[v]}" for v in CV.VIBES if dist[v]))
+    for p in PRESENTERS:
+        lines.append(f"vibes ({p}): " + ", ".join(
+            f"{v} {by_p[p][v]}" for v in CV.VIBES if by_p[p][v]))
+    lines.append(f"determinism: 2 runs x {n} byte-identical"
+                 if not any(x.startswith("determinism") for x in fails)
+                 else "determinism: FAIL")
+    lines.append(f"no-ctx path: concept inference matches ctx on all {n}; same "
+                 f"vibe on {agree}/{n}")
+    ts = [c[0] for c in calls]
+    mean_ms = 1000.0 * sum(ts) / max(1, len(ts))
+    lines.append(f"timing: direct() mean {mean_ms:.2f} ms, max "
+                 f"{1000.0 * max(ts or [0]):.2f} ms over {len(ts)} calls")
+    if mean_ms >= 10.0:
+        fails.append(f"timing: mean {mean_ms:.2f} ms >= 10 ms")
+    subset = [g["prompt"] for g in golden[:2]] + [golden[-2]["prompt"]]
+    want = _digest([[runs[(g["id"], f, p)][0].get("direction"),
+                     render_md(runs[(g["id"], f, p)][0].get("direction"))]
+                    for g in [x for x in golden if x["prompt"] in subset]
+                    for f in FORMATS for p in PRESENTERS])
+    for hs in ("0", "4242"):
+        env = dict(os.environ, PYTHONHASHSEED=hs)
+        try:
+            r = subprocess.run([sys.executable, "-c", _HASH_CODE, REPO,
+                                json.dumps(subset)], capture_output=True,
+                               text=True, env=env, timeout=300, cwd=REPO)
+            got = r.stdout.rsplit("@@DIGEST@@", 1)[-1].strip()
+        except (OSError, subprocess.SubprocessError) as e:
+            got = f"error {e}"
+        if got != want:
+            fails.append(f"PYTHONHASHSEED={hs}: digest differs ({got[:12]})")
+    lines.append("PYTHONHASHSEED 0 / 4242: identical to in-process "
+                 f"({len(subset) * len(FORMATS) * len(PRESENTERS)} scripts)")
+    lines += [f"FAIL {x}" for x in fails[:40]]
+    if len(fails) > 40:
+        lines.append(f"... {len(fails) - 40} more failures")
+    lines.append(f"selfcheck {'ok' if not fails else 'FAILED'} in "
+                 f"{time.time() - t_start:.1f}s ({len(fails)} failures)")
+    return not fails, lines
+
+
+# ------------------------------------------------------------------ CLI
+def main(argv=None):
+    import argparse
+    ap = argparse.ArgumentParser(prog="python3 -m vsp.direction",
+                                 description="creative direction (WS-VIBE)")
+    sub = ap.add_subparsers(dest="cmd")
+    sub.add_parser("selfcheck", help="hermetic golden-matrix check")
+    sh = sub.add_parser("show", help="print render_md for a generated script")
+    sh.add_argument("prompt")
+    sh.add_argument("--format", default="demo", choices=FORMATS)
+    sh.add_argument("--presenter", default="ai", choices=PRESENTERS)
+    sh.add_argument("--duration", type=int, default=30)
+    sh.add_argument("--seed", type=int, default=1)
+    sh.add_argument("--json", action="store_true", help="print the dict")
+    sh.add_argument("--style", action="store_true",
+                    help="also print style_paragraph and voice_spec")
+    a = ap.parse_args(argv)
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except (AttributeError, ValueError):
+        pass
+    if a.cmd == "selfcheck":
+        ok, lines = selfcheck()
+        print("\n".join(lines))
+        return 0 if ok else 1
+    if a.cmd == "show":
+        maker = _maker()
+        s = maker.generate(a.prompt, presenter=a.presenter, fmt=a.format,
+                           duration=a.duration, seed=a.seed)
+        d = s.get("direction") or direct(s, seed=a.seed, maker=maker)
+        if a.json:
+            print(json.dumps(d, indent=1, ensure_ascii=False))
+        else:
+            print(render_md(d), end="")
+            if a.style:
+                print("\n" + style_paragraph(d) + "\n\n" + voice_spec(d))
+        return 0
+    ap.print_help()
+    return 2
+
+
+if __name__ == "__main__":
+    from vsp import direction as _self   # one module instance for enrich()
+    sys.exit(_self.main(sys.argv[1:]))
