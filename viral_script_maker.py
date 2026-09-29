@@ -921,7 +921,14 @@ def _parse_prompt_core(prompt):
     # CTA, #viral #fyp #ugc. "Unfollowed" is quitting-verb-shaped — abstinence
     # of a feed source, same class as "stopped doomscrolling" (D8) — so it
     # joins the ch alternation, routing to abstinence grammar.
-    ch = re.search(r"\bi\s+(stopped|quit|gave up|tried|did|unfollowed)\s+([a-z0-9,]+(?:\s+(?!for\b)[a-z0-9,]+){0,2})(?:\s+for\s+(\d+)\s*days?)?", low0)
+    # D113/D35 (pipeline v2 holdout): the object was capped at 3 tokens, so
+    # "I gave up my phone before bed for 21 days" parsed noun "my phone
+    # before" and lost the span (payoff "Day 30" on a 21-day challenge). The
+    # object now runs up to 5 tokens when a "for N days" span closes it.
+    ch = (re.search(r"\bi\s+(stopped|quit|gave up|tried|did|unfollowed)\s+"
+                    r"([a-z0-9,]+(?:\s+(?!for\b)[a-z0-9,]+){0,4})\s+for\s+(\d+)\s*days?\b",
+                    low0)
+          or re.search(r"\bi\s+(stopped|quit|gave up|tried|did|unfollowed)\s+([a-z0-9,]+(?:\s+(?!for\b)[a-z0-9,]+){0,2})(?:\s+for\s+(\d+)\s*days?)?", low0))
     # D66 (judge loop, cycle 17): PRACTICE-CHALLENGE + VICE-ABSTINENCE
     # detection. "I cooked every meal at home for 30 days" is a self-
     # challenge no D8 verb can catch ("cooked" isn't a quitting verb), so it
@@ -1003,7 +1010,10 @@ def _parse_prompt_core(prompt):
             span_n = vice.group(3)
             challenge_type = "abstinence"
         elif ch:
-            noun = ch.group(2).strip()
+            # D130 parity (pipeline v2): the vice branch already strips a
+            # leading determiner — "gave up MY phone" rendered "no my phone"
+            noun = re.sub(r"^(all|every|the|my|these)\s+", "",
+                          ch.group(2).strip())
             span_n = ch.group(3) if ch.group(3) else "30"
             challenge_type = "abstinence"
         elif things_in_my and things_in_my.group(1).strip():
@@ -1176,7 +1186,10 @@ def _parse_prompt_core(prompt):
     # hard-mapping talking-head to advice (or product) both break the other
     # class. Detect advice markers on the raw prompt; challenge still first.
     is_advice = bool(re.search(
-        r"^(why|how|what no one|the truth about|the secret)\b|"
+        # D13 (pipeline v2 holdout): "what nobody tells you about X" and
+        # "things nobody tells you" are advice, not a product named "what"
+        r"^(why|how|what no one|what nobody|the truth about|the secret)\b|"
+        r"\b(?:nobody|no one) (?:tells|told|talks about)\b|"
         r"\bmistakes?\b|\bsigns?\b|\bthings to (stop|avoid|never)\b|"
         r"\bfail\b|\bfails\b|\bsecrets?\b|\btips\b|\bhacks\b", low0)) \
         and not re.search(r"\$\d", p)
@@ -2018,7 +2031,8 @@ ADVICE_HOOKS = [
 _ADVICE_FRAME = frozenset("""truth secret secrets tip tips hack hacks mistake
 mistakes sign signs thing things way ways reason reasons rule rules lesson
 lessons fix fixes stop avoid never make makes get gets fail fails failed better
-best good bad real actually no one nobody everyone""".split())
+best good bad real actually no one nobody everyone what tells tell told talks
+you""".split())
 
 # D42 (judge loop, cycle 12): DETERMINER RULE helper — spoken dialogue never
 # uses a bare product noun. "the" (neutral) beats "this" (avoids "this about
@@ -2413,7 +2427,11 @@ def pick_hook(ctx, rng):
     # it names the hook noun (short form), not the D76 differentiator.
     ctx["hook_source"] = "fallback"
     if concept == "challenge":
-        fb = f"Nobody mentions no {ctx.get('challenge_noun', ctx['category'])}."
+        # D113 (pipeline v2): "Nobody mentions no X." is not English and
+        # names no span — the fallback now carries both the D35 day-count
+        # contract and the noun: "21 days, no phone before bed."
+        fb = (f"{ctx.get('span_n', '30')} days, no "
+              f"{ctx.get('challenge_noun', ctx['category'])}.")
     else:
         noun = (_hook_nouns(ctx)[-1][1] if concept == "product"
                 else ctx["category"])
