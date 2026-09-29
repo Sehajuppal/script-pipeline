@@ -1479,9 +1479,16 @@ def _variant_action(t, by):
                     f"repost {rest} as-is.")
         return main_cut[0].upper() + main_cut[1:] + f"; retire {rest} as they are."
     if d == "inconclusive":
+        p = by.get(prim)
+        others = "/".join(v for v in sorted(by) if v != prim) or "the alternates"
+        if p is not None and p["trial"]:
+            where = next((x for x in p["permalinks"] if x), None) or p["media_ids"][0]
+            return (f"Keep the primary {prim} as the main cut — graduate its Trial Reel "
+                    f"({where}) or post the master as is — and log 'no difference'; "
+                    f"don't graduate {others}.")
         return (f"Keep the primary {prim} as the main cut and log 'no difference'"
-                + ("" if prim in by else f" ({prim} itself was not posted)")
-                + "; don't graduate a trial variant.")
+                + ("" if p is not None else f" ({prim} itself was not posted)")
+                + f"; don't graduate {others}.")
     return ("Keep testing: don't decide between looks; run `python3 -m vsp.feedback "
             "variants` again after the next look.")
 
