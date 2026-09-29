@@ -1477,7 +1477,7 @@ def overlay_truncate(s, max_words=3):
         lab = [t["w"] for t in toks if t["low"] in ("after", "before", "today")]
         if lab:
             return lab[-1].upper()
-        ws = [t["w"] for t in toks[:max_words]]
+        ws = [t["w"] for t in toks if not t["price"]][:max_words]
         while len(ws) > 1 and ws[-1].lower() in _OV_FUNC:
             ws = ws[:-1]
         return " ".join(ws).upper()
@@ -2132,11 +2132,14 @@ def _hook_candidates(ctx, pool, ai, lex, fam_pref):
             if ai and _HOOK_FIRST_PERSON.search(r):
                 break         # D137: no shorter form fixes a first person
             if lex is not None:
+                ptxt = str(ctx.get("prompt_text") or "")
                 if (lex.FALLBACK_HOOK.match(r) or lex.VAGUE_HOOK.search(r)
                         or lex.SLOP.search(r) or lex.ABSOLUTE.search(r)
                         or lex.GENERIC_BAIT.search(r)
-                        or (lex.first_match(lex.SOCIAL_PROOF, r)
-                            and not ctx.get("proof"))
+                        # D136: per pattern, exactly like the gate — proof of
+                        # a kind the prompt did not supply never renders
+                        or any(rx.search(r) and not rx.search(ptxt)
+                               for rx in lex.SOCIAL_PROOF)
                         or (ai and lex.first_match(lex.AI_FIRST_PERSON, r))):
                     break     # D136/D137/D139/D141/R02 — gate lexicon
             cw = [w.lower().strip(".'’") for w in r.split()]
@@ -2149,6 +2152,8 @@ def _hook_candidates(ctx, pool, ai, lex, fam_pref):
             anchored = (bool(words & focus) or bool(re.search(r"\d", r))
                         or (not ai and bool(_HOOK_FIRST_PERSON.search(r))))
             ov = overlay_truncate(r.split('.')[0])   # what build_beats renders
+            if lex is not None and not lex.overlay_is_clean(ov, r)[0]:
+                continue      # D144: never draft a hook whose card the gate rejects
             ov_words = {_hook_stem(w) for w in re.findall(r"[A-Za-z0-9][A-Za-z0-9'’.-]*", ov)}
             ov_focus = "|" in ov or bool(ov_words & focus)
             if concept == "product" and fmt == "review":
