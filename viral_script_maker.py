@@ -2363,10 +2363,21 @@ def pick_hook(ctx, rng):
     # rendered: "template" | "pinned" | "fallback" (D145), and the returned
     # family is the family of the line that rendered.
     fam = NICHE_HOOK.get(ctx["niche"], "curiosity-gap")
-    if _PACK and not _NO_RESEARCH:  # research bridge: live niche rankings override static map
-        live = (_PACK.get("niche_hooks") or {}).get(ctx["niche"])
-        if live and live[0]["category"] in HOOKS:
-            fam = live[0]["category"]
+    if _PACK and not _NO_RESEARCH:
+        # WS-INT (D148): live research — the first mappable family in the
+        # niche's WHOLE ranked list, across the research niches the maker
+        # niche maps to (vsp.research; never proof-first/bait, never a
+        # first-person-anecdote family for an AI presenter, D136/D137). The
+        # old override looked the MAKER niche up in the pack's research-niche
+        # keys and read only rank 0, so it almost never fired.
+        try:
+            from vsp import research as _vres
+            live = _vres.live_hook_family(_PACK, ctx["niche"], ctx.get("presenter"),
+                                          families=tuple(HOOKS))
+        except Exception:
+            live = None
+        if live in HOOKS:
+            fam = live
     auth = NICHE_AUTHORITY.get(ctx["niche"])
     # determinism (GEN-B): exactly one draw from the script rng, mixed with a
     # stable digest of the concept (crc32, not hash(): PYTHONHASHSEED-proof)
@@ -4071,7 +4082,14 @@ def research_notes(ctx, presenter, fmt, fam):
         notes.append(f"LIVE RESEARCH (pack {str(_PACK.get('generated_at', ''))[:10]}, "
                      f"{_PACK.get('reels_total', 0)} reels): "
                      f"top hook families now: {top3}; top patterns: {pat3}.")
-        fresh = _PACK.get("fresh_hook_lines", [])[:3]
+        # WS-INT: in-niche spoken hook lines only (vsp.research) — the pack's
+        # global first three were all comedy annotator notes ("(visual open,
+        # playground backdrop)") cited on every script. None -> no line.
+        try:
+            from vsp import research as _vres
+            fresh = _vres.niche_fresh_lines(_PACK, ctx["niche"], 3)
+        except Exception:
+            fresh = []
         for fr in fresh:
             notes.append(f"Fresh from the DB ({fr.get('account')}, {fr.get('niche')}): "
                          f"\"{fr.get('hook')}\"")
