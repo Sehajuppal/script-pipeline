@@ -47,7 +47,7 @@ DEFAULTS = {
     },
     "classify": {"llm": "auto", "llm_max_calls": 50},
     "transcribe": {"enabled": False, "seconds": 3.5, "max_per_run": 20,
-                   "keywords": []},
+                   "keywords": [], "sources": ["own_render", "media_url"]},
     "vendor_rows": "include",         # include | exclude  (research doc §7)
 }
 

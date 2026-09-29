@@ -94,6 +94,9 @@ def fixture_home(root):
 #   FixtureTransport(routes)   a vsp.ingest.graph transport serving canned
 #                              responses; records every call; unmatched
 #                              requests raise LookupError (never the network)
+#   graph_routes(...)          the standard FixtureTransport route table for
+#                              the canned Graph API + ASR endpoint
+#   own_insights_response(id)  /insights body for an own FIXTURE reel
 #   build_ingest_fixture_db(p) the legacy fixture DB migrated to the ingest
 #                              schema plus a few ingested FIXTURE reels
 #   hermetic_ingest_env()      context manager: temp VSP_VIRAL_DB /

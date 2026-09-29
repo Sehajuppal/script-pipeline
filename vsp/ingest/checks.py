@@ -29,7 +29,6 @@ import hashlib
 import io
 import json
 import os
-import shutil
 import sqlite3
 import traceback
 from datetime import timedelta
@@ -62,10 +61,6 @@ class _Checks:
         self.lines.append(f"{self.title}: {len(self.lines) - n_fail} passed, "
                           f"{n_fail} failed")
         return self.ok, list(self.lines)
-
-
-def _quiet():
-    return contextlib.ExitStack()
 
 
 @contextlib.contextmanager

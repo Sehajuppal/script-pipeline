@@ -611,7 +611,7 @@ def report(con, now=None, path=None, window=WINDOW):
     lab = labels(con, window=window)
     fams, glob = posteriors(lab)
     posts = lab["posts"]
-    L = [f"# PERFORMANCE — what is working for this account", "",
+    L = ["# PERFORMANCE — what is working for this account", "",
          f"Updated {u.sql_ts(now_dt)} UTC by `python3 -m vsp.feedback report`. "
          f"{len(posts)} labelled own reels (last {window}), "
          f"{sum(1 for p in posts if p['linked'])} linked to a script. A post is a "
@@ -751,7 +751,6 @@ def _plain_english(lab, fams, glob):
 
 
 def _account_lines(con, posts, now_dt):
-    u = _util()
     since = (now_dt - timedelta(days=14)).strftime("%Y-%m-%d")
     rows = con.execute("SELECT date, breakdown, value FROM account_metrics WHERE metric="
                        "'follows_and_unfollows' AND date >= ? ORDER BY date DESC",

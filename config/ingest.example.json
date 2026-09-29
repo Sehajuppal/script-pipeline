@@ -45,6 +45,7 @@
   "retention_days": 30
  },
  "classify": {"llm": "auto", "llm_max_calls": 50},
- "transcribe": {"enabled": false, "seconds": 3.5, "max_per_run": 20, "keywords": []},
+ "transcribe": {"_comment": "optional Muse Voice Transcribe of the first 3.5 s (key VSP_ASR_API_KEY, falls back to VSP_LLM_API_KEY; needs ffmpeg). Only your own renders and media_url items the API returned; text is kept, audio deleted.",
+                "enabled": false, "seconds": 3.5, "max_per_run": 20, "keywords": [], "sources": ["own_render", "media_url"]},
  "vendor_rows": "include"
 }
