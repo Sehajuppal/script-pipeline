@@ -538,7 +538,14 @@ def is_proof(tid, beat, g, c, first=False):
     if beat == "EVIDENCE BEAT":
         return not (tid in REACTION_TYPES or is_talking_head(tid))
     if beat == "PAYOFF":
-        return tid in RESULT_TYPES or tid in USE_TYPES
+        # integration (2026-09-29, D157 parity): every non-face PAYOFF shot
+        # carries the verdict or result — a text card over motion showing
+        # "headaches: 4 days" is a result shot too. Only faces / reactions
+        # (the presenter's own verdict read) are not proof.
+        if tid in RESULT_TYPES or tid in USE_TYPES:
+            return True
+        needs = (lib(tid) or {}).get("needs") or []
+        return not (tid in REACTION_TYPES or is_talking_head(tid) or "face" in needs)
     if beat == "DEMO BEAT":
         return (tid in USE_TYPES or tid in RESULT_TYPES) and bool(g.get("test"))
     if tid == "screen-insert" and beat in ("EVIDENCE BEAT", "PAYOFF"):

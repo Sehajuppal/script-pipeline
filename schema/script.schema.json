@@ -735,10 +735,18 @@
           "type": "object",
           "properties": {
             "spoken_by_s": {
-              "type": "number"
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
             },
             "on_screen_by_s": {
-              "type": "number"
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
             },
             "caption_first_60": {
               "type": "boolean"

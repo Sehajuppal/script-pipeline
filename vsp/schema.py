@@ -149,7 +149,11 @@ DISCOVERY_SCHEMA = {
         "primary_keyword": {"type": "string", "minLength": 1},
         "secondary_keywords": _STRS, "search_intents": _STRS,
         "placement": {"type": "object", "properties": {
-            "spoken_by_s": _NUM, "on_screen_by_s": _NUM,
+            # null = the keyword is not spoken / not on screen by 3.0 s
+            # (integration 2026-09-29: the contract example showed numbers
+            # only; "not placed" is a real, rubric-scored state — R24/D161)
+            "spoken_by_s": {"type": ["number", "null"], "minimum": 0},
+            "on_screen_by_s": {"type": ["number", "null"], "minimum": 0},
             "caption_first_60": _BOOL, "hashtag": _TAG, "cover_text": _BOOL}},
         "comment_word": _TEXT,
         "cover": {"type": "object", "properties": {

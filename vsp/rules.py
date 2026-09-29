@@ -404,11 +404,42 @@ def _first3(text):
     return tuple(L.norm(_txt(text)).split()[:3])
 
 
+SENTENCE_STOP = re.compile(r"(?<=[.!?])\s+")
+CLAUSE_STOP = re.compile(r"(?<=;)\s+")
+# a list introduced by a negated lead-in ("Never: A; B; AI-generated music.",
+# "Avoid: …", "Not allowed: …") negates every item up to the sentence end —
+# splitting it at ";" would strip the last items of their negation (the
+# integration false positive on the TikTok licensing note, 2026-09-29)
+NEG_LEAD_IN = re.compile(r"^\W*(?:never|don'?t|do not|avoid|not allowed|no|"
+                         r"banned|blocked|prohibited|forbidden)\b[^:;.]{0,40}:",
+                         re.I)
+
+
+# ...but an affirmative instruction inside that list ("Never: X; use AI
+# music instead") is its own clause and is read without the lead-in
+AFFIRM_CLAUSE = re.compile(r"^\W*(?:use|add|pick|choose|try|prefer|opt for|"
+                           r"go with|switch to|put|layer|pair)\b|\binstead\b", re.I)
+
+
 def sentences(text):
-    """Lines split at sentence/clause ends (. ; ! ?) — the negation scope."""
+    """Lines split at sentence ends (. ! ?) and then at clause ends (;) —
+    the negation scope. A sentence opened by a negated lead-in keeps its
+    list items together with the lead-in (NEG_LEAD_IN); affirmative
+    instruction clauses inside it stand alone (AFFIRM_CLAUSE)."""
     for ln in (text or "").splitlines():
-        for s in SENTENCE_END.split(ln):
-            if s.strip():
+        for sent in SENTENCE_STOP.split(ln):
+            if not sent.strip():
+                continue
+            clauses = [c for c in CLAUSE_STOP.split(sent) if c.strip()]
+            if NEG_LEAD_IN.match(sent):
+                listed = [c for c in clauses if not AFFIRM_CLAUSE.search(c)]
+                if listed:
+                    yield " ".join(listed)
+                for c in clauses:
+                    if AFFIRM_CLAUSE.search(c):
+                        yield c
+                continue
+            for s in clauses:
                 yield s
 
 
@@ -1304,13 +1335,27 @@ def check_d159(script, bundle_text, ctx):
                    f"({', '.join(_q(x, 30) for x in titles[:3])}) — never name a "
                    f"commercial track (only library search queries may be quoted, "
                    f"on a 'search' line)")
-    for sent in sentences(body):   # clause scope: "…; blocked on TikTok"
-        m = _affirmed(AI_MUSIC, sent)
-        if m and (re.search(r"\btiktok\b", sent, re.I) or not PLATFORM_WORD.search(sent)):
-            out.append(f"D159: AI music recommended for TikTok "
-                       f"({_q(sent.strip(), 60)}) — no AI music on TikTok "
-                       f"commercial content")
+    # platform scope: the sentence's own platform words, else the line's
+    # label ("- Instagram: Meta Sound Collection — … AI music only from a
+    # paid plan …" is Instagram advice); a sentence with no platform in the
+    # sentence or its line is unscoped and counts as TikTok advice
+    flagged = None
+    for ln in body.splitlines():
+        line_scope = PLATFORM_WORD.findall(ln.split(":", 1)[0]) if ":" in ln else []
+        for sent in sentences(ln):   # clause scope: "…; blocked on TikTok"
+            m = _affirmed(AI_MUSIC, sent)
+            if not m:
+                continue
+            scope = PLATFORM_WORD.findall(sent) or line_scope
+            if not scope or any(re.match(r"tiktok", p, re.I) for p in scope):
+                flagged = sent
+                break
+        if flagged:
             break
+    if flagged:
+        out.append(f"D159: AI music recommended for TikTok "
+                   f"({_q(flagged.strip(), 60)}) — no AI music on TikTok "
+                   f"commercial content")
     m = _affirmed(MUSIC_IN_MASTER, body)
     if m:
         out.append(f"D159: the brief bakes music into the master "

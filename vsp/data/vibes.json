@@ -3034,8 +3034,6 @@
   "hook_family": {
    "listicle": "showcase",
    "challenge": "challenge",
-   "day-counter": "challenge",
-   "showcase": "showcase",
    "routine": "routine",
    "advice": "advice"
   },
@@ -3057,7 +3055,8 @@
     "advice"
    ]
   ],
-  "default": "product"
+  "default": "product",
+  "_note_hook_family": "integration 2026-09-29: 'showcase' and 'day-counter' are also product hook families (vsp.hooks), so they no longer imply a concept; beat types and prompt markers decide"
  },
  "EVIDENCE": {
   "tiktok-cbp": {
