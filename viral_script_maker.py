@@ -271,6 +271,14 @@ def _niche_for(low, skip=()):
 def _key_hit(key, text):
     return re.search(r"(?<![a-z0-9])(?:eye)?" + re.escape(key) +
                      r"(?:s|es|ies|y)?(?![a-z0-9])", text.lower()) is not None
+
+# D11/D140 (GEN-B): creator-craft vocabulary — routes ADVICE topics to
+# education (parse_prompt) and scopes their caption to the creator community
+# (_scoped_tags). Only ever applied to advice topics: on a product, "hooks"
+# are wall hooks.
+_CREATOR_TOPIC = re.compile(
+    r"\b(hooks?|views|followers|algorithm|content|creators?|reels?|captions?|"
+    r"thumbnails?|engagement|audience|videos?)\b", re.I)
 NICHE_HOOK = {  # from the playbook's niche mapping
  "gadgets": "curiosity-gap", "tech": "curiosity-gap", "tools": "curiosity-gap",
  "pets": "transformation",  # D11: pet products demo a visible before/after
@@ -725,6 +733,17 @@ CAPTION_TAGS = {
  # D134 (judge loop, cycle 35): outdoors caption community — the camping-gear
  # class captions on #campingtok, not #viral.
  "outdoors": ["#campingtok", "#outdoors", "#campinggear"],
+ # D140 (GEN-B, pipeline v2): education and commentary are routable niches
+ # (NICHE_KEYWORDS) with no caption community — both fell to the generic
+ # default. Creator-craft advice ("why your hooks fail") is sub-scoped in
+ # _scoped_tags to the creator community.
+ "education": ["#learnontiktok", "#studytok", "#studytips"],
+ "education-creator": ["#contentcreator", "#creatortips", "#socialmediatips"],
+ "commentary": ["#commentary", "#newstok"],
+ # D140 (GEN-B): generic-only tags carry no niche signal (Instagram/TikTok
+ # recommendation) and fail gate 1. Kept only as the last-resort shape;
+ # build_caption derives a category tag for the default niche instead
+ # (_default_tags: "#waterbottle #productreview").
  "default": ["#viral", "#fyp", "#ugc"],
 }
 
@@ -1078,9 +1097,7 @@ def parse_prompt(prompt):
         # niche=default (#viral #fyp #ugc); the router's lexicon + research
         # voters route it education. Creator terms only count on the ADVICE
         # branch — on a product, "hooks" is a wall hook, not a lesson.
-        if re.search(r"\b(hooks?|views|followers|algorithm|content|creators?|"
-                     r"reels?|captions?|thumbnails?|engagement|audience|"
-                     r"videos?)\b", low):
+        if _CREATOR_TOPIC.search(low):
             niche = "education"
         else:
             niche = _niche_for(low)  # D11 (GEN-B): word-start/regex matching
@@ -1088,9 +1105,15 @@ def parse_prompt(prompt):
                 if t not in {"a","an","the","my","for","with","and","of","to","your","about","why","how"}]
         # D15 note: advice "category" is the topic's HEAD noun (first keyword),
         # not the tail — "why your hooks fail" → HOOKS, not "fail".
+        # D15 (GEN-B): framing words and verbs are never the head — "the
+        # truth about protein" was category "truth" ("Comment TRUTH", "this
+        # truth mistake"), "how to fix your posture" was "fix", "tips for
+        # better sleep" was "tips"; the head is the first remaining noun.
+        head = next((t for t in toks if t not in _ADVICE_FRAME
+                     and not t.endswith("ing")), None)
         return {"concept": "advice", "product": topic, "price": price,
                 "niche": niche, "fit": "neutral",
-                "category": toks[0] if toks else "videos"}
+                "category": head or (toks[0] if toks else "videos")}
     # D77 (judge loop, cycle 19): the preposition strip needs word boundaries —
     # "birdhouse with motion camera" matched the "on" inside "motion" and
     # parsed product="camera" (the cycle-4/13 (about|for|on) bug class, new
@@ -1206,6 +1229,10 @@ def parse_prompt(prompt):
          "visible before-and-after proof"))
     return {"concept": "product", "product": product, "price": price, "niche": niche,
             "fit": fit, "category": category, "named_competitor": None,
+            # D136 (GEN-B): social proof the PROMPT supplied ("4.9★",
+            # "10,000 sold") — the only proof a hook may render; None keeps
+            # every proof-first template out of the draw.
+            "proof": _prompt_proof(p),
             # A7 + D5 (judge loop cycle 2): payoff must subvert a NAMED expectation
             # and the contract must name the same MEASURABLE in hook and payoff.
             # "the one thing Xs are supposed to do" is banned as contract language.
@@ -1344,7 +1371,7 @@ thing things detail just make makes sense quit making posting killing needs
 need held won changed really actually even still never always again first
 better best most every least everyone everything nothing something someone
 anyone look looks looking got get gets watch wait happened happens instead
-done doing asleep""".split())
+done doing asleep tell tells told know knows explained""".split())
 _OV_TRAIL = frozenset("""wrong alone anyway again honestly instead yet already
 too first today now daily""".split())
 _OV_STARTERS = frozenset("no every one zero all most each any".split())
@@ -1452,13 +1479,20 @@ def overlay_truncate(s, max_words=3):
     run = list(pool[best])
     # an over-long run sheds its weak edges before the tail cut, so the cut
     # never beheads the noun ("trash can nobody mentions" -> "TRASH CAN",
-    # not "CAN NOBODY MENTIONS")
+    # not "CAN NOBODY MENTIONS"); a still-long NAME keeps its compound head
+    # ("limited edition water bottle" -> "WATER BOTTLE", not "EDITION WATER
+    # BOTTLE"), a leading quantifier yields first ("no social media apps"
+    # -> "SOCIAL MEDIA APPS")
     if len(run) > max_words:
         while run[-1]["low"] in _OV_WEAK and _strong(run[:-1]):
             run.pop()
         while (len(run) > max_words and run[0]["low"] in _OV_WEAK
                and run[0]["low"] not in _OV_STARTERS and _strong(run[1:])):
             run.pop(0)
+        if len(run) > max_words and run[0]["low"] in _OV_STARTERS:
+            run = run[1:]
+        if len(run) > max_words:
+            run = run[-(max_words - 1):] if max_words > 1 else run[-1:]
     run = run[-max_words:]
     while len(run) > 1 and run[0]["low"] in _OV_FUNC:
         run = run[1:]
@@ -1795,12 +1829,20 @@ SHOWCASE_HOOKS = [
 # beats cover. (family, template, requirement): "why" = the topic is a
 # why/how question; "creator" = the topic is creator craft (niche education).
 ADVICE_HOOKS = [
- ("curiosity-gap", "{Topic}? It's the first 3 seconds.", "why"),
- ("curiosity-gap", "{Topic}? Here's the fix.", "why"),
- ("curiosity-gap", "One {category_sg} mistake is killing your views.", "creator"),
- ("negative-command", "Stop making this {category_sg} mistake.", None),
- ("negative-command", "Stop posting {category_pl} that fail.", "creator"),
+ ("curiosity-gap", "{Topic}? It's the first 3 seconds.", ("why", "creator")),
+ ("curiosity-gap", "{Topic}? Here's the fix.", ("why",)),
+ ("curiosity-gap", "One {category_sg} mistake is killing your views.", ("creator",)),
+ ("negative-command", "Stop making this {category_sg} mistake.", ()),
+ ("negative-command", "Stop posting {category_pl} that fail.", ("creator",)),
+ ("curiosity-gap", "{Topic}, explained.", ()),
 ]
+# advice framing words: never the topic's head noun (parse_prompt's advice
+# category) — "the truth about protein" is about protein, "tips for better
+# sleep" about sleep
+_ADVICE_FRAME = frozenset("""truth secret secrets tip tips hack hacks mistake
+mistakes sign signs thing things way ways reason reasons rule rules lesson
+lessons fix fixes stop avoid never make makes get gets fail fails failed better
+best good bad real actually no one nobody everyone""".split())
 
 # D42 (judge loop, cycle 12): DETERMINER RULE helper — spoken dialogue never
 # uses a bare product noun. "the" (neutral) beats "this" (avoids "this about
@@ -1853,6 +1895,15 @@ def _hook_lexicon():
         return lexicon
     except Exception:
         return None
+
+def _prompt_proof(p):
+    """D136 (GEN-B): the social-proof phrase the prompt itself supplies (the
+    gate's own SOCIAL_PROOF patterns), else None."""
+    lex = _hook_lexicon()
+    if lex is None:
+        return None
+    m = lex.first_match(lex.SOCIAL_PROOF, p or "")
+    return m.group(0).strip() if m else None
 
 def _adj_like(w):
     lw = w.lower()
@@ -2049,9 +2100,10 @@ def _hook_candidates(ctx, pool, ai, lex, fam_pref):
                 continue      # D120: screen-class payoffs only
             if "with no {noun}" in line and re.match(r"\w+ing\b", cnoun):
                 continue      # "with no buying coffee" -> the "without" form
-        if req == "why" and not re.match(r"(why|how)\b", str(ctx.get("product", "")), re.I):
+        req = tuple(req or ())
+        if "why" in req and not re.match(r"(why|how)\b", str(ctx.get("product", "")), re.I):
             continue
-        if req == "creator" and ctx.get("niche") != "education":
+        if "creator" in req and ctx.get("niche") != "education":
             continue
         for pv, noun in levels:
             try:
@@ -2072,9 +2124,12 @@ def _hook_candidates(ctx, pool, ai, lex, fam_pref):
                             and not ctx.get("proof"))
                         or (ai and lex.first_match(lex.AI_FIRST_PERSON, r))):
                     break     # D136/D137/D139/D141/R02 — gate lexicon
-            if noun and len(re.findall(r"\b%s\b" % re.escape(
-                    noun.split()[-1].lower()), r.lower())) > 1:
-                continue      # "the lamp is the best lamp" — doubled noun
+            cw = [w.lower().strip(".'’") for w in r.split()]
+            cw = [re.sub(r"[^a-z0-9'-]", "", w) for w in cw]
+            cw = [w for w in cw if len(w) >= 3 and w not in _OV_FUNC
+                  and w not in ("day", "days")]
+            if len(cw) != len(set(cw)):
+                continue      # "the lamp is the best lamp", "how to fix ... the fix"
             words = {_hook_stem(w) for w in re.findall(r"[A-Za-z0-9][A-Za-z0-9'’.-]*", r)}
             anchored = (bool(words & focus) or bool(re.search(r"\d", r))
                         or (not ai and bool(_HOOK_FIRST_PERSON.search(r))))
@@ -2953,12 +3008,55 @@ def _beauty_subcat(ctx):
         return "skin"
     return None  # unclassifiable beauty keeps the legacy beauty tags/word
 
+# D140 (GEN-B, pipeline v2): the default niche's tags are DERIVED from the
+# concept noun — "#waterbottle #productreview", "#officefinds
+# #amazonfinds", "#sourdough #sourdoughtips" — never the generic-only
+# "#viral #fyp #ugc" (no niche signal; gate-1 D140). A derived tag never
+# carries a gate MISMATCH stem (vsp/gates.MISMATCH: skincare/hair/makeup/
+# fitness/cooking) and is never itself generic (lexicon.GENERIC_TAGS).
+_TAG_MISMATCH_STEMS = ("skincare", "hair", "makeup", "fitness", "cooking")
+_TAG_GENERIC = frozenset({"fyp", "foryou", "foryoupage", "viral", "ugc",
+                          "trending", "explore", "reels", "tiktok", "fy",
+                          "xyzbca"})
+
+def _tag(text):
+    t = re.sub(r"[^a-z0-9]", "", str(text).lower())
+    return "#" + t if len(re.sub(r"[^a-z]", "", t)) >= 3 else None
+
+def _default_tags(ctx):
+    c = ctx.get("concept", "product")
+    if c == "showcase":
+        base = [f"{ctx.get('domain', '')} finds", "amazon finds"]
+    elif c == "advice":
+        cat = singular(str(ctx.get("category", "")))
+        base = [cat, f"{cat} tips"]
+    elif c == "product":
+        base = [_hook_nouns(ctx)[0][1], "product review"]
+    else:
+        base = []
+    lex = _hook_lexicon()
+    generic = set(getattr(lex, "GENERIC_TAGS", ())) | _TAG_GENERIC
+    out = []
+    for b in base:
+        t = _tag(b)
+        if (t and t[1:] not in generic and t not in out
+                and not any(s in t for s in _TAG_MISMATCH_STEMS)):
+            out.append(t)
+    return out or ["#productreview"]
+
 def _scoped_tags(ctx):
     if ctx.get("niche") == "beauty":
         sub = _beauty_subcat(ctx)
         if sub:
             return _BEAUTY_SUBCAT_TAGS[sub][0]
-    return CAPTION_TAGS.get(ctx["niche"], CAPTION_TAGS["default"])
+    # D140 (GEN-B): creator-craft advice captions on the creator community,
+    # other education on the study community
+    if (ctx.get("niche") == "education" and ctx.get("concept") == "advice"
+            and _CREATOR_TOPIC.search(str(ctx.get("product", "")))):
+        return CAPTION_TAGS["education-creator"]
+    if ctx.get("niche") in CAPTION_TAGS and ctx.get("niche") != "default":
+        return CAPTION_TAGS[ctx["niche"]]
+    return _default_tags(ctx)   # D140 (GEN-B): never generic-only
 
 def _cta_word(ctx):
     # D107: beauty comment word is sub-category scoped ("comment HAIR" on hair
@@ -3006,7 +3104,7 @@ def build_caption(ctx, hookline, fmt, presenter):
     # tag the routine community (#morningroutine/#5amclub), never #viral.
     elif ctx.get("concept") == "routine":
         tags = (CAPTION_TAGS["routine"] if ctx.get("niche") == "wellness"
-                else CAPTION_TAGS.get(ctx["niche"], CAPTION_TAGS["default"]))
+                else _scoped_tags(ctx))   # D140 (GEN-B): never the generic default
         method = (f"The {ctx['routine_time']} Rule" if ctx.get("niche") == "wellness"
                   else ctx["routine_label"].title())
         lines = [hookline, "",
@@ -3027,12 +3125,22 @@ def build_caption(ctx, hookline, fmt, presenter):
         # the spoken CTA is skimmed). Same keyword as the bait beat, or the
         # funnel splits.
         cta_word = _cta_word(ctx)  # D107: beauty sub-category scoped
+        # D61 (GEN-B): the POV line names the object ("the trash can"), not
+        # the D76 differentiator tail ("the lid that finally delivered").
+        pov_noun = (_hook_nouns(ctx)[0][1] if ctx.get("concept") == "product"
+                    else ctx["category"])
         lines = [hookline, "",
-                 f"POV: the {ctx['category']} that finally delivered.",
+                 f"POV: the {pov_noun} that finally delivered.",
                  "", f"Comment {cta_word} for the full link list 👇", ""]
     else:
         lines = [hookline, "",
                  "Follow for the daily breakdown.", ""]
+        # D59/R14 (GEN-B): the advice bait's keyword ("comment HOOKS — I'll
+        # send you the free 3-second hooks-fix checklist", build_beats) echoes
+        # in the caption, like every product caption's keyword line.
+        if ctx.get("concept") == "advice":
+            lines[2:2] = [f"Comment {ctx['category'].upper()} for the free "
+                          f"3-second checklist 👇", ""]
     if presenter == "ai":
         lines.append("made with an AI persona")
         lines.append("")
