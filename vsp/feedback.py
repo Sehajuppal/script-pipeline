@@ -2,11 +2,12 @@
 Instagram insight snapshots -> labels -> learned/priors.json (read by the
 maker's hook-family choice) + learned/PERFORMANCE.md.
 
-    python3 -m vsp.feedback link --media-id ID --manifest PATH [--trial]
+    python3 -m vsp.feedback link --media-id ID --manifest PATH [--trial] [--variant B]
     python3 -m vsp.feedback link --auto [--search DIR ...]
     python3 -m vsp.feedback pull [--no-link]
     python3 -m vsp.feedback learn
     python3 -m vsp.feedback report
+    python3 -m vsp.feedback variants [--slug S | --sha SHA8] [--json]
     python3 -m vsp.feedback status | selfcheck
 
 THE CAPTION TAG. Put `#vsp-<first 8 hex chars of script_sha256>` anywhere in
@@ -25,6 +26,32 @@ What a link stores (posts table): the manifest's script_summary (prompt,
 niche, hook_family, hook_source, hook, presenter, format, duration_s, seed,
 candidate_seed, script_sha256); without a script_summary the script.json
 next to the manifest is read (its sha256 = script_sha256).
+
+VARIANTS (pipeline v2.1, docs/CREATIVE-PLAN.md §1.5). An alternate opening
+posted on its own (e.g. a Trial Reel) is `hook_variants[*]` of the script.
+The tag may carry its letter, `#vsp-<sha8>B`; without a tag, `link --auto`
+matches the CAPTION FINGERPRINT: the posted caption's first line with words
+(NFKC, lowercase, hashtags / @mentions / URLs / emoji / punctuation
+stripped, spaces collapsed) against every candidate script's caption first
+line (and its Instagram discovery caption) = the primary variant A, and each
+`hook_variants[*].caption_line` = that variant. Candidates: manifest.json
+under outputs/ + VSP_FEEDBACK_SEARCH + --search, script.json next to it,
+manifest `created` (else its mtime) before the post and at most 60 days
+earlier (FP_WINDOW_DAYS). Exact match or token Jaccard >= 0.8
+(FP_MIN_JACCARD); the best match wins deterministically: exact, then higher
+Jaccard, then the newest run, then script sha, variant order, path. A
+tagged post without a letter takes its variant from the fingerprint within
+that script, else the primary (the master cut opens with variant A). The
+link also stores variant_id and, from script.json, that variant's archetype
++ visual_type, direction.vibe, direction.tone.voice and
+discovery.primary_keyword (NULL for scripts without them).
+
+`variants`: for every script with >= 2 posted variants that have snapshots,
+hold = views x (1 - skip rate) (percent/fraction as in learn), posterior
+Beta(1 + holds, 1 + skips) per variant, P(best) + expected loss from
+VARIANT_POLICY["draws"] seeded Monte Carlo draws, the VARIANT_POLICY stop
+rule (docs/research/hooks-deep-dive.md §3.6) -> winner found / keep testing
+/ inconclusive + a concrete action -> learned/VARIANTS.md.
 
 pull: for every own reel (vsp.ingest `own` registers them), one lifetime
 insights snapshot per checkpoint of about 24 h, 48 h, 7 d and 28 d
@@ -47,6 +74,11 @@ Beta-Bernoulli per (maker niche, hook family) with prior Beta(1, 1):
 alpha = 1 + successes, beta = 1 + failures, n = posts; `global` pools the
 niches per family. learned/priors.json follows learned/README.md exactly
 (schema_version 1, updated_at, metric "composite", families, global).
+Priors v2: the same labels and Beta(1, 1) per (niche, key) + global for the
+vsp.priors SECTIONS archetype / visual_type / vibe / tone (posts whose key
+is known and a creative_vocab id) under "sections"; schema_version is 2
+when any section has data, else the file is exactly v1 (old readers keep
+working).
 Paths: config.learned_dir() / config.priors_path() (VSP_LEARNED_DIR).
 """
 import argparse
@@ -54,9 +86,11 @@ import hashlib
 import json
 import math
 import os
+import random
 import re
 import statistics
 import sys
+import unicodedata
 from datetime import timedelta
 
 from vsp import config
@@ -74,6 +108,14 @@ INSIGHT_COLUMNS = {"views": "views", "reach": "reach", "likes": "likes",
                    "reels_skip_rate": "skip_rate"}
 _SHA = re.compile(r"^[0-9a-f]{64}$")
 _SKIP_DIRS = {".git", "__pycache__", "node_modules", ".venv", "venv"}
+# v2.1 creative layer (docs/CREATIVE-PLAN.md §1.5, §1.6)
+CREATIVE_COLUMNS = ("variant_id", "hook_archetype", "visual_type", "vibe", "tone",
+                    "primary_keyword")                       # posts columns
+SUMMARY_CREATIVE_KEYS = ("vibe", "tone", "hook_archetype", "visual_type",
+                         "variant_ids", "primary_keyword")    # manifest §1.6
+VARIANT_TAG = re.compile(r"#vsp-([0-9a-fA-F]{8})([A-Za-z])?(?!\w)")
+FP_WINDOW_DAYS = 60          # a fingerprint only matches runs <= 60 days before the post
+FP_MIN_JACCARD = 0.8         # ... exactly, or with token Jaccard >= 0.8
 
 
 class LinkError(ValueError):
@@ -87,6 +129,195 @@ def _util():
 
 def tag_for(sha256):
     return "vsp-" + str(sha256)[:8].lower()
+
+
+# ------------------------------------------------- variant tag + fingerprint
+def parse_tag(caption):
+    """'#vsp-<sha8>[<variant letter>]' anywhere in a caption -> ('vsp-<sha8>',
+    'B' | None); (None, None) without a tag. The 9th character is the variant
+    letter (uppercased), so '#vsp-0a1b2c3dB' is script 0a1b2c3d, variant B."""
+    m = VARIANT_TAG.search(caption) if isinstance(caption, str) else None
+    if not m:
+        return None, None
+    return "vsp-" + m.group(1).lower(), (m.group(2).upper() if m.group(2) else None)
+
+
+_FP_URL = re.compile(r"(?i)\b(?:https?://|www\.)\S+")
+_FP_HASHTAG = re.compile(r"#vsp-\w+|#(?!\d+\b)\w+")      # "#1 mistake" keeps its 1
+_FP_MENTION = re.compile(r"(?<![\w.@])@[\w.]*\w")
+_FP_APOSTROPHE = re.compile(r"(?<=\w)['\u2019\u02bc](?=\w)")   # don't -> dont
+
+
+def fingerprint(text):
+    """Caption fingerprint (module doc): the first line with words left after
+    NFKC + lowercasing and stripping hashtags (#vsp-... included), @mentions,
+    URLs, emoji and punctuation, spaces collapsed. '' when nothing is left."""
+    if not isinstance(text, str):
+        return ""
+    t = unicodedata.normalize("NFKC", text).replace("\r\n", "\n").replace("\r", "\n")
+    for line in t.split("\n"):
+        line = _FP_MENTION.sub(" ", _FP_HASHTAG.sub(" ", _FP_URL.sub(" ", line)))
+        out = []
+        for ch in _FP_APOSTROPHE.sub("", line).casefold():
+            cat = unicodedata.category(ch)[0]
+            if cat in "LN":
+                out.append(ch)
+            elif cat != "M":             # marks (variation selectors, keycaps) vanish
+                out.append(" ")          # emoji, punctuation, symbols, ZWJ -> space
+        fp = " ".join("".join(out).split())
+        if fp:
+            return fp
+    return ""
+
+
+def jaccard(a, b):
+    """Token Jaccard of two fingerprints (0.0 when either is empty)."""
+    sa, sb = set(str(a).split()), set(str(b).split())
+    if not sa or not sb:
+        return 0.0
+    return len(sa & sb) / len(sa | sb)
+
+
+def _dig(obj, *keys):
+    for k in keys:
+        if not isinstance(obj, dict):
+            return None
+        obj = obj.get(k)
+    return obj
+
+
+def _clean_id(v, limit=80):
+    if isinstance(v, str):
+        v = " ".join(v.split())
+        if v:
+            return v[:limit]
+    return None
+
+
+def load_script(manifest_path):
+    """The script.json next to a manifest (or in a run folder) -> dict or
+    None. Never raises."""
+    try:
+        mp = os.path.abspath(manifest_path)
+        d = mp if os.path.isdir(mp) else os.path.dirname(mp)
+        with open(os.path.join(d, "script.json"), encoding="utf-8") as f:
+            s = json.load(f)
+        return s if isinstance(s, dict) else None
+    except (OSError, ValueError, TypeError, RecursionError):
+        return None
+
+
+def hook_variants(script):
+    """[(ID, variant dict)] from script["hook_variants"] (ids uppercased,
+    first occurrence wins, script order)."""
+    out, seen = [], set()
+    hv = script.get("hook_variants") if isinstance(script, dict) else None
+    for v in hv if isinstance(hv, list) else []:
+        vid = _clean_id(v.get("id"), 8) if isinstance(v, dict) else None
+        if vid and vid.upper() not in seen:
+            seen.add(vid.upper())
+            out.append((vid.upper(), v))
+    return out
+
+
+def primary_variant(script):
+    """The is_primary variant's id, else "A" (contract: variant A is primary)."""
+    for vid, v in hook_variants(script):
+        if v.get("is_primary") is True:
+            return vid
+    return "A"
+
+
+def caption_fingerprints(script):
+    """[(variant_id, fingerprint, tokens)] a posted caption can match: the
+    script caption's first line and the Instagram discovery caption's first
+    line (the primary variant), then each hook_variants[*].caption_line."""
+    if not isinstance(script, dict):
+        return []
+    prim = primary_variant(script)
+    raw = [(prim, script.get("caption")),
+           (prim, _dig(script, "discovery", "platforms", "instagram", "caption"))]
+    raw += [(vid, v.get("caption_line")) for vid, v in hook_variants(script)]
+    out, seen = [], set()
+    for vid, text in raw:
+        fp = fingerprint(text)
+        if fp and (vid, fp) not in seen:
+            seen.add((vid, fp))
+            out.append((vid, fp, frozenset(fp.split())))
+    return out
+
+
+def _fp_score(fp, cand_fp, cand_tokens, min_jaccard=FP_MIN_JACCARD):
+    """-> (exact, jaccard) when the fingerprints match (exact, or token
+    Jaccard >= min_jaccard), else None."""
+    if not fp or not cand_fp:
+        return None
+    if fp == cand_fp:
+        return True, 1.0
+    toks = set(fp.split())
+    union = len(toks | cand_tokens)
+    j = len(toks & cand_tokens) / union if union else 0.0
+    return (False, j) if j >= min_jaccard - 1e-9 else None
+
+
+def match_in_script(caption, script):
+    """Best variant of ONE script for a posted caption -> (variant_id,
+    exact, jaccard) or None (no time window: the script is already known)."""
+    fp = fingerprint(caption)
+    best = None
+    for order, (vid, cfp, ctoks) in enumerate(caption_fingerprints(script)):
+        sc = _fp_score(fp, cfp, ctoks)
+        if sc is not None:
+            key = (not sc[0], -sc[1], order)
+            if best is None or key < best[0]:
+                best = (key, (vid, sc[0], sc[1]))
+    return best[1] if best else None
+
+
+def resolve_variant(script, sha256, caption=None, explicit=None):
+    """Which opening a post used -> (variant_id | None, how). how: explicit
+    (--variant / a fingerprint match across scripts) > tag (this script's
+    #vsp-<sha8><letter>) > fingerprint (within this script) > primary (a
+    v2.1 script's master cut opens with its primary variant) > None."""
+    if explicit:
+        return str(explicit).strip().upper(), "explicit"
+    tag, letter = parse_tag(caption)
+    if letter and tag == tag_for(sha256):
+        return letter, "tag"
+    m = match_in_script(caption, script) if caption else None
+    if m:
+        return m[0], "fingerprint"
+    if hook_variants(script):
+        return primary_variant(script), "primary"
+    return None, None
+
+
+def script_creative(script, variant_id=None, summary=None):
+    """{hook_archetype, visual_type, vibe, tone, primary_keyword} for a posts
+    row. script.json first: the matched variant's archetype + visual_type,
+    direction.vibe, direction.tone.voice, discovery.primary_keyword; then the
+    manifest script_summary's §1.6 fields (their archetype / visual type are
+    the primary's, so they only fill the primary). Unknown -> None."""
+    s = script if isinstance(script, dict) else {}
+    var = dict(hook_variants(s)).get(variant_id) if variant_id else None
+    tone = _dig(s, "direction", "tone")
+    out = {"hook_archetype": _clean_id(var.get("archetype")) if var else None,
+           "visual_type": _clean_id(var.get("visual_type")) if var else None,
+           "vibe": _clean_id(_dig(s, "direction", "vibe")),
+           "tone": _clean_id(tone.get("voice") if isinstance(tone, dict) else tone),
+           "primary_keyword": _clean_id(_dig(s, "discovery", "primary_keyword"), 120)}
+    ss = (summary or {}).get("creative") if isinstance(summary, dict) else None
+    if isinstance(ss, dict):
+        t = ss.get("tone")
+        fb = {"vibe": ss.get("vibe"), "primary_keyword": ss.get("primary_keyword"),
+              "tone": t.get("voice") if isinstance(t, dict) else t}
+        if variant_id is not None and variant_id == primary_variant(s) and var is None:
+            fb.update(hook_archetype=ss.get("hook_archetype"),
+                      visual_type=ss.get("visual_type"))
+        for k, v in fb.items():
+            if out.get(k) is None:
+                out[k] = _clean_id(v, 120 if k == "primary_keyword" else 80)
+    return out
 
 
 # ------------------------------------------------------------------ link
@@ -108,6 +339,8 @@ def load_summary(manifest_path):
     if isinstance(ss, dict) and ss.get("script_sha256"):
         out = {k: ss.get(k) for k in SUMMARY_KEYS}
         out["from"] = "script_summary"
+        out["creative"] = {k: ss[k] for k in SUMMARY_CREATIVE_KEYS
+                           if ss.get(k) is not None}
     else:
         sp = os.path.join(os.path.dirname(mp), "script.json")
         if not os.path.isfile(sp):
@@ -137,7 +370,9 @@ def load_summary(manifest_path):
                "duration_s": s.get("duration_s"),
                "seed": s.get("seed", seeds.get("root", args.get("seed"))),
                "candidate_seed": sel.get("seed"),
-               "script_sha256": hashlib.sha256(raw).hexdigest(), "from": "script.json"}
+               "script_sha256": hashlib.sha256(raw).hexdigest(), "from": "script.json",
+               "creative": {}}
+    out["created"] = man.get("created") if isinstance(man.get("created"), str) else None
     sha = str(out.get("script_sha256") or "").lower()
     if not _SHA.match(sha):
         raise LinkError(f"{mp}: script_sha256 {out.get('script_sha256')!r} is not a "
@@ -159,20 +394,40 @@ def load_summary(manifest_path):
     return out
 
 
-def link(con, media_id, manifest_path, trial=False, now=None, summary=None):
-    """Link one posted reel to the run that produced it. -> posts row dict."""
+def link(con, media_id, manifest_path, trial=False, now=None, summary=None,
+         variant=None, script=None, variant_from=None):
+    """Link one posted reel to the run that produced it and to the opening
+    it used (resolve_variant: `variant` > the caption's #vsp-<sha8><letter>
+    > its fingerprint within the script > the primary; a re-link without
+    new evidence keeps the stored variant). -> posts row dict (+
+    "variant_from": how the variant was decided)."""
+    from vsp.ingest.db import table_columns
     u = _util()
     mid = str(media_id or "").strip()
     if not re.fullmatch(r"[0-9]{5,25}", mid):
         raise LinkError(f"--media-id {media_id!r} must be the numeric Instagram media id "
                         f"(GET /{{ig-user-id}}/media, or `python3 -m vsp.ingest own`)")
+    if variant is not None and not re.fullmatch(r"[A-Za-z]", str(variant).strip()):
+        raise LinkError(f"--variant {variant!r} must be one letter: A = the primary "
+                        f"opening, B, C … = the script's hook_variants ids")
     s = summary or load_summary(manifest_path)
+    sc = script if script is not None else load_script(s.get("manifest_path")
+                                                       or manifest_path)
     now_ts = u.sql_ts(u.parse_ts(now) or u.utcnow())
-    reel = con.execute("SELECT url, posted_at, is_own FROM reels WHERE platform="
+    reel = con.execute("SELECT url, posted_at, is_own, caption FROM reels WHERE platform="
                        "'instagram' AND media_id=?", (mid,)).fetchone()
     if reel is not None and not reel["is_own"]:
         raise LinkError(f"media {mid} is in the research DB as someone else's reel "
                         f"(is_own=0) — only your own reels can be linked")
+    have = set(table_columns(con, "posts"))
+    old = con.execute("SELECT * FROM posts WHERE media_id=?", (mid,)).fetchone()
+    vid, how = resolve_variant(sc, s["script_sha256"], reel["caption"] if reel else None,
+                               variant)
+    if variant is not None and variant_from:
+        how = variant_from
+    if (old is not None and how in ("primary", None) and "variant_id" in old.keys()
+            and old["variant_id"] and old["script_sha256"] == s["script_sha256"]):
+        vid, how = old["variant_id"], "kept"
     row = {"media_id": mid, "permalink": reel["url"] if reel else None,
            "posted_at": reel["posted_at"] if reel else None,
            "script_sha256": s["script_sha256"], "slug": s.get("slug"),
@@ -182,8 +437,9 @@ def link(con, media_id, manifest_path, trial=False, now=None, summary=None):
            "duration_s": s.get("duration_s"), "seed": s.get("seed"),
            "manifest_path": s.get("manifest_path"), "is_trial": 1 if trial else 0,
            "linked_at": now_ts, "hook": s.get("hook"),
-           "candidate_seed": s.get("candidate_seed")}
-    old = con.execute("SELECT is_trial FROM posts WHERE media_id=?", (mid,)).fetchone()
+           "candidate_seed": s.get("candidate_seed"), "variant_id": vid}
+    row.update(script_creative(sc, vid, s))
+    row = {k: v for k, v in row.items() if k in have}     # a legacy posts table
     if old is not None:
         row["is_trial"] = 1 if (trial or old["is_trial"]) else 0
         sets = ", ".join(f"{k}=?" for k in row if k != "media_id")
@@ -198,7 +454,7 @@ def link(con, media_id, manifest_path, trial=False, now=None, summary=None):
                     "WHERE platform='instagram' AND media_id=?",
                     (s["tag"], row["is_trial"], mid))
     con.commit()
-    return row
+    return dict(row, variant_from=how)
 
 
 def search_roots(extra=None, env=None):
@@ -236,40 +492,137 @@ def index_manifests(roots, max_files=20000):
     return idx
 
 
+def fingerprint_index(roots, max_files=20000):
+    """Fingerprint candidates: every manifest.json under `roots` whose
+    script.json yields caption fingerprints -> [{"manifest", "summary",
+    "script", "created" (aware UTC: manifest `created`, else its mtime),
+    "fps": [(variant_id, fingerprint, tokens)]}], sorted by (created, path)."""
+    u = _util()
+    out, seen = [], 0
+    for root in roots:
+        for dp, dns, fns in os.walk(root):
+            dns[:] = sorted(d for d in dns if d not in _SKIP_DIRS)
+            if "manifest.json" not in fns:
+                continue
+            seen += 1
+            if seen > max_files:
+                return sorted(out, key=lambda c: (c["created"], c["manifest"]))
+            mp = os.path.join(dp, "manifest.json")
+            try:
+                s = load_summary(mp)
+            except LinkError:
+                continue
+            sc = load_script(mp)
+            fps = caption_fingerprints(sc)
+            created = u.parse_ts(s.get("created"))
+            if created is None:
+                try:
+                    created = u.parse_ts(os.path.getmtime(mp))
+                except OSError:
+                    created = None
+            if fps and created is not None:
+                out.append({"manifest": mp, "summary": s, "script": sc,
+                            "created": created, "fps": fps})
+    out.sort(key=lambda c: (c["created"], c["manifest"]))
+    return out
+
+
+def match_caption(caption, posted_at, index, window_days=FP_WINDOW_DAYS,
+                  min_jaccard=FP_MIN_JACCARD):
+    """Best fingerprint match of a posted caption among `index` runs created
+    before `posted_at` and at most `window_days` earlier -> ({"candidate",
+    "variant_id", "exact", "jaccard", "ties"}, None) or (None, reason).
+    Ranking: exact > higher Jaccard > newer run > script sha > variant order >
+    path; "ties" counts other scripts with the same (exact, Jaccard)."""
+    u = _util()
+    fp = fingerprint(caption)
+    if not fp:
+        return None, "no caption text"
+    posted = u.parse_ts(posted_at)
+    if posted is None:
+        return None, "no posted_at"
+    lo = posted - timedelta(days=window_days)
+    hits = []
+    for c in index:
+        if not (lo <= c["created"] < posted):
+            continue
+        for order, (vid, cfp, ctoks) in enumerate(c["fps"]):
+            sc = _fp_score(fp, cfp, ctoks, min_jaccard)
+            if sc is not None:
+                hits.append(((not sc[0], -round(sc[1], 12), -c["created"].timestamp(),
+                              c["summary"]["script_sha256"], order, c["manifest"]),
+                             c, vid, sc))
+    if not hits:
+        return None, "no fingerprint match"
+    hits.sort(key=lambda h: h[0])
+    key, c, vid, (exact, j) = hits[0]
+    ties = {h[1]["summary"]["script_sha256"] for h in hits if h[0][:2] == key[:2]}
+    return {"candidate": c, "variant_id": vid, "exact": exact, "jaccard": j,
+            "ties": len(ties) - 1}, None
+
+
 def link_auto(con, roots=None, now=None):
-    """Link own reels whose caption carries #vsp-<sha8> (see module doc)."""
-    from vsp.ingest.jobs import script_tag
+    """Link own reels to the runs (and variants) that made them: the
+    caption's #vsp-<sha8>[<letter>] tag, else its caption fingerprint (see
+    module doc). Report keys of v2.0 are unchanged; linked entries add
+    variant_id + by ("tag" | "fingerprint"); "fingerprint" sums up the
+    untagged reels that were tried."""
     rows = con.execute(
-        "SELECT r.media_id, r.caption, r.script_slug FROM reels r WHERE r.is_own = 1 "
-        "AND r.platform = 'instagram' AND r.media_id IS NOT NULL AND NOT EXISTS "
-        "(SELECT 1 FROM posts p WHERE p.media_id = r.media_id) ORDER BY r.posted_at"
-    ).fetchall()
+        "SELECT r.media_id, r.caption, r.script_slug, r.posted_at FROM reels r WHERE "
+        "r.is_own = 1 AND r.platform = 'instagram' AND r.media_id IS NOT NULL AND NOT "
+        "EXISTS (SELECT 1 FROM posts p WHERE p.media_id = r.media_id) "
+        "ORDER BY r.posted_at, r.media_id").fetchall()
     rep = {"candidates": len(rows), "linked": [], "untagged": 0, "unmatched": [],
-           "ambiguous": [], "roots": list(roots or [])}
-    todo = []
+           "ambiguous": [], "roots": list(roots or []),
+           "fingerprint": {"tried": 0, "linked": 0, "not_linked": {}}}
+    todo, loose = [], []
     for r in rows:
-        tag = r["script_slug"] or script_tag(r["caption"])
+        tag, letter = parse_tag(r["caption"])
+        if not tag and r["script_slug"]:
+            tag = str(r["script_slug"]).lower()
         if not tag:
             rep["untagged"] += 1
+            loose.append(r)
             continue
-        todo.append((r["media_id"], tag))
-    if not todo:
-        return rep
-    idx = index_manifests(rep["roots"])
-    for mid, tag in todo:
-        cands = idx.get(tag[4:12], {})
-        if not cands:
-            rep["unmatched"].append({"media_id": mid, "tag": tag})
-            continue
-        if len(cands) > 1:
-            rep["ambiguous"].append({"media_id": mid, "tag": tag,
-                                     "scripts": sorted(cands)})
-            continue
-        (sha, paths), = cands.items()
-        mp = max(paths)[1]                      # the newest run of that script
-        row = link(con, mid, mp, now=now)
-        rep["linked"].append({"media_id": mid, "tag": tag, "manifest": mp,
-                              "niche": row["niche"], "hook_family": row["hook_family"]})
+        todo.append((r["media_id"], tag, letter))
+    if todo:
+        idx = index_manifests(rep["roots"])
+        for mid, tag, letter in todo:
+            cands = idx.get(tag[4:12], {})
+            if not cands:
+                rep["unmatched"].append({"media_id": mid, "tag": tag})
+                continue
+            if len(cands) > 1:
+                rep["ambiguous"].append({"media_id": mid, "tag": tag,
+                                         "scripts": sorted(cands)})
+                continue
+            (sha, paths), = cands.items()
+            mp = max(paths)[1]                  # the newest run of that script
+            row = link(con, mid, mp, now=now)
+            rep["linked"].append({"media_id": mid, "tag": tag, "manifest": mp,
+                                  "niche": row["niche"], "hook_family": row["hook_family"],
+                                  "variant_id": row.get("variant_id"), "by": "tag",
+                                  "variant_from": row.get("variant_from")})
+    if loose:
+        fidx = fingerprint_index(rep["roots"])
+        fpr = rep["fingerprint"]
+        for r in loose:
+            fpr["tried"] += 1
+            m, why = match_caption(r["caption"], r["posted_at"], fidx)
+            if m is None:
+                fpr["not_linked"][why] = fpr["not_linked"].get(why, 0) + 1
+                continue
+            c = m["candidate"]
+            row = link(con, r["media_id"], c["manifest"], now=now, summary=c["summary"],
+                       variant=m["variant_id"], script=c["script"],
+                       variant_from="fingerprint")
+            fpr["linked"] += 1
+            rep["linked"].append({"media_id": r["media_id"], "tag": c["summary"]["tag"],
+                                  "manifest": c["manifest"], "niche": row["niche"],
+                                  "hook_family": row["hook_family"],
+                                  "variant_id": row.get("variant_id"), "by": "fingerprint",
+                                  "exact": m["exact"], "jaccard": round(m["jaccard"], 4),
+                                  "ties": m["ties"]})
     return rep
 
 
@@ -814,12 +1167,305 @@ def status(con, now=None):
 
 
 # --------------------------------------------------------------- selfcheck
+LEARN_FIXTURES = os.path.join(config.REPO, "tests", "fixtures", "learn")
+_V20_POSTS_DDL = (  # the posts table as pipeline v2.0 created it (hook + candidate_seed)
+    "CREATE TABLE posts(media_id TEXT PRIMARY KEY, permalink TEXT, posted_at TEXT, "
+    "script_sha256 TEXT, slug TEXT, prompt TEXT, niche TEXT, hook_family TEXT, "
+    "hook_source TEXT, presenter TEXT, format TEXT, duration_s REAL, seed INTEGER, "
+    "manifest_path TEXT, is_trial INTEGER DEFAULT 0, linked_at TEXT, hook TEXT, "
+    "candidate_seed INTEGER)")
+
+
 def selfcheck():
-    """Hermetic self-check -> (ok, lines): temp DB (VSP_VIRAL_DB), temp
-    learned dir (VSP_LEARNED_DIR), canned Graph API responses from
-    tests/fixtures/ig, network disabled; the caller's env is restored."""
+    """Hermetic self-check -> (ok, lines): the v2.0 loop
+    (vsp.ingest.checks.run_feedback: temp DB via VSP_VIRAL_DB, temp learned
+    dir via VSP_LEARNED_DIR, canned Graph API responses from tests/fixtures/ig,
+    network disabled) + selfcheck_v21() (variant linking, priors v2,
+    variants, report sections, determinism) on tests/fixtures/learn. The
+    caller's env is restored."""
     from vsp.ingest.checks import run_feedback
-    return run_feedback()
+    ok1, lines1 = run_feedback()
+    ok2, lines2 = selfcheck_v21()
+    return ok1 and ok2, list(lines1) + list(lines2)
+
+
+class _Checker:
+    def __init__(self, title):
+        self.title, self.lines, self.ok = title, [], True
+
+    def check(self, name, cond, detail=""):
+        cond = bool(cond)
+        self.lines.append(f"{'PASS' if cond else 'FAIL'} {name}"
+                          + (f" — {detail}" if detail not in ("", None) else ""))
+        self.ok = self.ok and cond
+        return cond
+
+    def step(self, name, fn, *a):
+        import traceback
+        try:
+            return fn(*a)
+        except Exception as e:  # noqa: BLE001 — a crash is a failure, never fatal
+            tb = traceback.format_exc().strip().splitlines()[-3:]
+            self.check(name, False, f"crashed: {type(e).__name__}: {e} | "
+                       + " | ".join(t.strip() for t in tb))
+            return None
+
+    def result(self):
+        n_fail = sum(1 for x in self.lines if x.startswith("FAIL"))
+        self.lines.append(f"{self.title}: {len(self.lines) - n_fail} passed, "
+                          f"{n_fail} failed")
+        return self.ok, list(self.lines)
+
+
+def selfcheck_v21():
+    """-> (ok, lines) for the v2.1 layer, hermetic (vsp.fixtures.
+    hermetic_ingest_env): synthetic manifests + the contract-shaped
+    script.json fixtures in tests/fixtures/learn, a temp research DB."""
+    from vsp.fixtures import hermetic_ingest_env
+    C = _Checker("vsp.feedback v2.1 selfcheck (variants, fingerprints, priors v2)")
+    repo_learned = os.path.join(config.REPO, "learned")
+    before = sorted(os.listdir(repo_learned)) if os.path.isdir(repo_learned) else []
+    try:
+        with hermetic_ingest_env("vsp_feedback_v21_") as ctx:
+            for k in ("VSP_FEEDBACK_SEARCH", "VSP_NO_PRIORS"):
+                os.environ.pop(k, None)
+            C.step("tag + fingerprint units", _sc_units, C)
+            C.step("migration on a legacy DB", _sc_migration, C, ctx)
+            sc = C.step("scenario", _sc_build, C, ctx)
+            if sc:
+                try:
+                    for name, fn in (("link", _sc_link),):
+                        C.step(name, fn, C, ctx, sc)
+                finally:
+                    sc["con"].close()
+    except Exception as e:  # noqa: BLE001
+        C.check("v2.1 selfcheck harness", False, f"{type(e).__name__}: {e}")
+    C.check("hermetic: repo learned/ untouched",
+            (sorted(os.listdir(repo_learned)) if os.path.isdir(repo_learned) else [])
+            == before)
+    return C.result()
+
+
+def _sc_units(C):
+    C.check("tag: #vsp-<sha8><letter> -> variant, #vsp-<sha8> -> none; glued / short "
+            "tags rejected",
+            parse_tag("x #vsp-0A1b2c3dB y") == ("vsp-0a1b2c3d", "B") and
+            parse_tag("#vsp-0a1b2c3d #fyp") == ("vsp-0a1b2c3d", None) and
+            parse_tag("#vsp-0a1b2c3de.") == ("vsp-0a1b2c3d", "E") and
+            parse_tag("#vsp-0a1b2c3dxy") == (None, None) and
+            parse_tag("#vsp-0a1b2c3") == (None, None) and parse_tag(None) == (None, None))
+    fp = fingerprint("🔥🔥\n#ad #vsp-0a1b2c3dB\nDon’t buy a FROTHER… until you see "
+                     "this! 👀 @brand.co https://x.co/a #milkfrother")
+    C.check("fingerprint: first line with words; NFKC + lowercase; hashtags, #vsp "
+            "tag, @mentions, URLs, emoji, punctuation stripped",
+            fp == "dont buy a frother until you see this" and
+            fingerprint("#1 mistake: 𝐓𝐡𝐞 foam👩‍🍳") == "1 mistake the foam" and
+            fingerprint("#only #tags 🔥") == "" and fingerprint(None) == "", repr(fp))
+    a = fingerprint("This sunset lamp turns any bedroom into golden hour.")
+    ta = frozenset(a.split())
+    C.check("jaccard edges: 8/10 = 0.8 accepted, 8/11 rejected, reordered = 1.0 but "
+            "not exact",
+            _fp_score(fingerprint("This sunset lamp turns any room into golden hour"),
+                      a, ta) == (False, 0.8) and
+            _fp_score(fingerprint("This sunset lamp turns any room into a golden hour"),
+                      a, ta) is None and _fp_score(a, a, ta) == (True, 1.0) and
+            _fp_score("golden hour into any bedroom turns lamp sunset this", a, ta)
+            == (False, 1.0) and abs(jaccard(a, "this sunset lamp") - 1 / 3) < 1e-12)
+
+
+def _sc_migration(C, ctx):
+    import sqlite3
+    from vsp.fixtures import build_fixture_db
+    from vsp.ingest import db as idb
+    p = os.path.join(ctx.tmp, "legacy-v20.db")
+    build_fixture_db(p)                      # research-agent tables ...
+    raw = sqlite3.connect(p)                 # ... + a v2.0 posts table with a row
+    raw.execute(_V20_POSTS_DDL)
+    raw.execute("INSERT INTO posts(media_id, niche, hook_family, script_sha256, "
+                "is_trial) VALUES ('17900000000009001', 'home', 'bold-claim', ?, 1)",
+                ("ab" * 32,))
+    raw.commit()
+    raw.close()
+    con = idb.connect(p)
+    try:
+        acts = set(con.migration_actions)
+        row = con.execute("SELECT * FROM posts WHERE media_id='17900000000009001'"
+                          ).fetchone()
+        C.check("migration: a v2.0 posts table gains variant_id, hook_archetype, "
+                "visual_type, vibe, tone, primary_keyword; old rows keep their values",
+                {f"posts +{c}" for c in CREATIVE_COLUMNS} <= acts and row is not None
+                and row["hook_family"] == "bold-claim" and row["is_trial"] == 1 and
+                all(row[c] is None for c in CREATIVE_COLUMNS),
+                sorted(a for a in acts if a.startswith("posts")))
+        C.check("migration: idempotent, ingest schema_version unchanged",
+                idb.migrate(con) == [] and idb.schema_version(con) == idb.SCHEMA_VERSION)
+    finally:
+        con.close()
+
+
+def _sc_build(C, ctx):
+    """Runs (manifest + script.json) and own reels + snapshots from
+    tests/fixtures/learn/scenario.json -> scenario dict (holds the open DB)."""
+    from vsp.ingest import db as idb
+    u = _util()
+    with open(os.path.join(LEARN_FIXTURES, "scenario.json"), encoding="utf-8") as f:
+        scn = json.load(f)
+    search = os.path.join(ctx.tmp, "search")
+    os.environ["VSP_FEEDBACK_SEARCH"] = search
+    runs = {}
+    for m in scn["manifests"]:
+        with open(os.path.join(LEARN_FIXTURES, m["script"]), encoding="utf-8") as f:
+            script = json.load(f)
+        script.update(m.get("patch") or {})
+        raw = (json.dumps(script, indent=1, ensure_ascii=False) + "\n").encode("utf-8")
+        where, name = m["dir"].split("/", 1)
+        d = os.path.join(ctx.outputs if where == "outputs" else search, name)
+        os.makedirs(d, exist_ok=True)
+        with open(os.path.join(d, "script.json"), "wb") as f:
+            f.write(raw)
+        sha = hashlib.sha256(raw).hexdigest()
+        summ = {k: script.get(k) for k in ("prompt", "niche", "hook_family", "hook_source",
+                                           "presenter", "format", "duration_s")}
+        summ.update(hook=next((h.get("dialogue") for h in script.get("hook_stack") or []
+                               if isinstance(h, dict) and h.get("dialogue")), None),
+                    seed=script.get("seed", 701), candidate_seed=9001, script_sha256=sha)
+        hv = hook_variants(script)
+        if hv:                                   # the integrator's §1.6 fields
+            prim = dict(hv)[primary_variant(script)]
+            summ.update(vibe=_dig(script, "direction", "vibe"),
+                        tone=_dig(script, "direction", "tone", "voice"),
+                        hook_archetype=prim.get("archetype"),
+                        visual_type=prim.get("visual_type"),
+                        variant_ids=[v for v, _ in hv],
+                        primary_keyword=_dig(script, "discovery", "primary_keyword"))
+        man = {"schema_version": 1, "created": m["created"],
+               "seeds": {"root": 701, "candidates": [701]}, "args": {"seed": 701},
+               "outputs": {"script.json": sha}, "script_summary": summ}
+        with open(os.path.join(d, "manifest.json"), "w", encoding="utf-8") as f:
+            json.dump(man, f, indent=1)
+        runs[name] = {"dir": d, "manifest": os.path.join(d, "manifest.json"),
+                      "sha": sha, "script": script}
+    now = scn["now"]
+    con = idb.connect(ctx.db, create=True)
+    reels = {}
+    for r in scn["reels"]:
+        cap = re.sub(r"\{sha8:([\w-]+)\}", lambda mm: runs[mm.group(1)]["sha"][:8],
+                     r["caption"])
+        con.execute("INSERT INTO reels(platform, media_id, url, caption, posted_at, "
+                    "is_own, is_trial, media_type, media_product_type, source, "
+                    "analyzed_at) VALUES ('instagram', ?, ?, ?, ?, 1, 0, 'VIDEO', "
+                    "'REELS', 'ig_own', ?)",
+                    (r["media_id"], f"https://www.instagram.com/reel/FIXTUREv21{r['key']}/",
+                     cap, r["posted_at"], now))
+        s = r.get("snapshot")
+        if s:
+            at = u.sql_ts(u.parse_ts(r["posted_at"]) + timedelta(hours=s["age_h"]))
+            con.execute("INSERT INTO reel_metrics(media_id, captured_at, age_h, views, "
+                        "reach, shares, saves, avg_watch_ms, skip_rate, source) VALUES "
+                        "(?,?,?,?,?,?,?,?,?,?)",
+                        (r["media_id"], at, s["age_h"], s["views"], s["reach"],
+                         s["shares"], s["saves"], s["avg_watch_ms"], s["skip_rate"],
+                         "fixture"))
+        reels[r["key"]] = dict(r, caption=cap)
+    con.commit()
+    C.check("scenario: 6 runs (3 identical-caption frother runs, 1 under "
+            "VSP_FEEDBACK_SEARCH, 1 legacy v2.0 script) + 13 own reels",
+            len(runs) == 6 and len(reels) == 13 and
+            len({x["sha"] for x in runs.values()}) == 6)
+    return {"now": now, "runs": runs, "reels": reels, "con": con}
+
+
+def _sc_link(C, ctx, sc):
+    con, runs, reels, now = sc["con"], sc["runs"], sc["reels"], sc["now"]
+    rep = link_auto(con, roots=search_roots(), now=now)
+    by = {x["media_id"]: x for x in rep["linked"]}
+    bad = []
+    for key, r in reels.items():
+        e, x = r["expect"], by.get(r["media_id"])
+        if e["by"] is None:
+            if x is not None:
+                bad.append(f"{key} linked")
+            continue
+        ok = (x is not None and x["by"] == e["by"] and x["variant_id"] == e["variant"]
+              and x["manifest"] == runs[e["run"]]["manifest"]
+              and all(x.get(k) == e[k] for k in ("exact", "jaccard", "ties",
+                                                   "variant_from") if k in e))
+        if not ok:
+            bad.append(f"{key}: {x and {k: x.get(k) for k in ('by', 'variant_id', 'exact', 'jaccard', 'ties', 'variant_from')}}")  # noqa: E501
+    C.check("link --auto: every scenario reel links (or not) as expected — tags with "
+            "and without a letter, fingerprints to variants A/B/C", not bad, "; ".join(bad))
+    fpr = rep["fingerprint"]
+    C.check("link --auto: report — 13 unlinked, 5 tagged, 8 fingerprint tries, 6 "
+            "linked, 2 without a match; v2.0 keys kept",
+            rep["candidates"] == 13 and rep["untagged"] == 8 and fpr["tried"] == 8 and
+            fpr["linked"] == 6 and fpr["not_linked"] == {"no fingerprint match": 2} and
+            not rep["unmatched"] and not rep["ambiguous"] and len(rep["linked"]) == 11,
+            json.dumps(fpr))
+    mid = {k: r["media_id"] for k, r in reels.items()}
+    C.check("fingerprint window: a run created after the post is never used (FE -> "
+            "the older run; FB not -> the 09-27 re-run); 59 days links, 62 days doesn't",
+            by[mid["FE"]]["manifest"] == runs["electric-milk-frother-old"]["manifest"]
+            and by[mid["FB"]]["manifest"] == runs["electric-milk-frother"]["manifest"]
+            and mid["G1"] in by and mid["G2"] not in by)
+    C.check("fingerprint Jaccard: 0.8 links (LA), 0.73 doesn't (LX); the best of "
+            "equal matches is the newest run (FB ties 1 older identical run)",
+            by[mid["LA"]]["jaccard"] == 0.8 and not by[mid["LA"]]["exact"] and
+            mid["LX"] not in by and by[mid["FB"]]["ties"] == 1)
+    rows = {r["media_id"]: dict(r) for r in con.execute("SELECT * FROM posts")}
+    want = {"FB": ("B", "proof-first", "result-reveal", "clean-aesthetic", "confident",
+                   "milk frother"),
+            "LA": ("A", "bold-claim", "result-reveal", "cozy-calm", "warm", "sunset lamp"),
+            "PC": ("C", "pov", "pov-hands", "clean-aesthetic", "calm", "silk pillowcase"),
+            "G1": ("A", None, None, None, None, None),
+            "G3": (None, None, None, None, None, None)}
+    got = {k: tuple(rows[mid[k]][c] for c in CREATIVE_COLUMNS) for k in want}
+    C.check("link: posts gets variant_id + that variant's archetype / visual_type, "
+            "direction vibe + tone.voice, discovery keyword; legacy scripts -> NULL; "
+            "hook_family unchanged",
+            got == want and rows[mid["FB"]]["hook_family"] == "curiosity-gap" and
+            rows[mid["PC"]]["niche"] == "beauty", json.dumps(got)[:200])
+    for k in ("FB", "FC", "LA", "LB"):          # mark the trials (no read-side flag)
+        run = next(n for n, x in runs.items() if x["manifest"] == by[mid[k]]["manifest"])
+        link(con, mid[k], runs[run]["manifest"], trial=True, now=now)
+    after = {r["media_id"]: (r["variant_id"], r["is_trial"]) for r in con.execute(
+        "SELECT media_id, variant_id, is_trial FROM posts")}
+    C.check("link --trial re-link keeps each variant (tag / fingerprint re-read)",
+            [after[mid[k]] for k in ("FB", "FC", "LA", "LB")] ==
+            [("B", 1), ("C", 1), ("A", 1), ("B", 1)])
+    try:
+        link(con, mid["LX"], runs["sunset-lamp"]["manifest"], variant="BB")
+        refused = False
+    except LinkError:
+        refused = True
+    import contextlib
+    import io
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        code = main(["--json", "link", "--media-id", mid["LX"], "--manifest",
+                     runs["sunset-lamp"]["manifest"], "--variant", "c"])
+    try:
+        out = json.loads(buf.getvalue())
+    except ValueError:
+        out = {}
+    C.check("cli: link --variant C (explicit) stores C's archetype + visual type; a "
+            "bad --variant is refused",
+            refused and code == 0 and out.get("variant_id") == "C" and
+            out.get("hook_archetype") == "question" and
+            out.get("visual_type") == "text-first" and
+            out.get("variant_from") == "explicit", str(out)[:160])
+    con.execute("DELETE FROM posts WHERE media_id=?", (mid["LX"],))   # back to the
+    con.execute("UPDATE reels SET script_slug=NULL WHERE media_id=?", (mid["LX"],))
+    con.commit()                                                     # scenario
+    C.check("unit: script_creative falls back to the manifest's §1.6 fields for the "
+            "primary only", script_creative(None, "A", {"creative": {
+                "vibe": "raw-ugc", "tone": "deadpan", "hook_archetype": "question",
+                "visual_type": "text-first", "primary_keyword": "desk lamp"}}) == {
+                "hook_archetype": "question", "visual_type": "text-first",
+                "vibe": "raw-ugc", "tone": "deadpan", "primary_keyword": "desk lamp"}
+            and script_creative(None, "B", {"creative": {"hook_archetype": "question",
+                                                         "vibe": "raw-ugc"}})
+            == {"hook_archetype": None, "visual_type": None, "vibe": "raw-ugc",
+                "tone": None, "primary_keyword": None})
 
 
 # --------------------------------------------------------------------- CLI
@@ -839,8 +1485,13 @@ def _parser():
     p.add_argument("--media-id")
     p.add_argument("--manifest", help="outputs/<slug>/manifest.json (or its folder)")
     p.add_argument("--trial", action="store_true", help="it was posted as a Trial Reel")
+    p.add_argument("--variant", metavar="ID",
+                   help="the opening that was posted (A = primary, B, C … = "
+                        "hook_variants ids); default: the caption's #vsp-<sha8><letter> "
+                        "tag or fingerprint, else the primary")
     p.add_argument("--auto", action="store_true",
-                   help="match own-media captions carrying #vsp-<sha8>")
+                   help="match own-media captions by #vsp-<sha8>[<letter>] tag, else "
+                        "by caption fingerprint (first line vs script/variant captions)")
     p.add_argument("--search", action="append", default=[],
                    help="extra folder to search for manifest.json (repeatable)")
     p = sub.add_parser("pull", help="insight snapshots at ~24h/48h/7d/28d")
@@ -882,23 +1533,31 @@ def main(argv=None):
         if a.cmd == "link":
             if a.auto:
                 rep = link_auto(con, roots=search_roots(a.search))
+                fpr = rep["fingerprint"]
                 _out(rep, a.json, f"linked {len(rep['linked'])} of {rep['candidates']} "
                      f"unlinked own reels; untagged {rep['untagged']}, no manifest for "
                      f"{[u['tag'] for u in rep['unmatched']]}, ambiguous "
-                     f"{len(rep['ambiguous'])}; searched {rep['roots']}")
+                     f"{len(rep['ambiguous'])}; searched {rep['roots']}\n"
+                     f"caption fingerprint: linked {fpr['linked']} of {fpr['tried']} "
+                     f"untagged; not linked {fpr['not_linked']}; variants "
+                     + (", ".join(f"{x['media_id']}={x['variant_id']}"
+                                  for x in rep["linked"] if x.get("variant_id"))
+                        or "none"))
                 return 0
             if not (a.media_id and a.manifest):
                 print("link needs --media-id ID --manifest PATH (or --auto)",
                       file=sys.stderr)
                 return 2
             try:
-                row = link(con, a.media_id, a.manifest, trial=a.trial)
+                row = link(con, a.media_id, a.manifest, trial=a.trial, variant=a.variant)
             except LinkError as e:
                 print(f"link refused: {e}", file=sys.stderr)
                 return 2
             _out(row, a.json, f"linked {row['media_id']} -> {row['manifest_path']} "
                  f"({row['niche']} / {row['hook_family']}, tag vsp-"
-                 f"{row['script_sha256'][:8]}{', trial' if row['is_trial'] else ''})")
+                 f"{row['script_sha256'][:8]}{', trial' if row['is_trial'] else ''}"
+                 + (f", variant {row['variant_id']} ({row.get('variant_from')})"
+                    if row.get("variant_id") else "") + ")")
             return 0
         if a.cmd == "pull":
             from vsp.ingest import jobs
