@@ -11,15 +11,20 @@ subset validator.
 
 The schema describes what viral_script_maker.generate() emits (additional
 properties are allowed — the maker may add keys, D145/D146 added
-hook_source / series_plan). Validator subset: type (incl. type lists),
+hook_source / series_plan; pipeline v2.1 adds the optional creative keys
+direction / hook_variants / discovery / creative_warnings, $defs with enums
+from vsp/creative_vocab.py). Validator subset: type (incl. type lists),
 required, properties, additionalProperties, items, enum, const, pattern,
-minItems, maxItems, minLength, minimum, maximum, $ref (local "#/$defs/..").
-Schema-valid is not gate-valid: the gates still own the semantics.
+minItems, maxItems, minLength, maxLength, minimum, maximum, $ref (local
+"#/$defs/.."). Schema-valid is not gate-valid: the gates still own the
+semantics.
 """
 import json
 import os
 import re
 import sys
+
+from vsp import creative_vocab as _CV
 
 SCHEMA_ID = "urn:vsp:schema:script:1"
 WINDOW_PATTERN = r"^\d+(?:\.\d+)?\s*[\u2013-]\s*\d+(?:\.\d+)?\s*s$"
@@ -34,6 +39,143 @@ _ITEM_PROPS = {
     "dialogue": _TEXT, "rehook": _TEXT, "on_screen": _TEXT, "delivery": _TEXT,
     "direction": _TEXT, "shot_direction": _TEXT, "note": _TEXT,
     "payoff_contract": _TEXT, "match_cut": _TEXT,
+}
+
+# ---- pipeline v2.1 creative keys (docs/CREATIVE-PLAN.md §1.1-1.3): all
+# optional, enums from vsp/creative_vocab.py, additional properties allowed.
+# The gates (D154-D156) own the cross-field semantics; the schema pins shape.
+_STRS = {"type": "array", "items": _TEXT}
+_NUM = {"type": "number"}
+_BOOL = {"type": "boolean"}
+_ENERGY = {"type": "integer", "minimum": 1, "maximum": 5}
+_GRADE = {"enum": ["P", "S", "M", "A"]}
+_TAG = {"type": "string", "pattern": r"^#\w+$"}
+
+
+def _pair(lo=None, hi=None):
+    item = {"type": "number"}
+    if lo is not None:
+        item["minimum"] = lo
+    if hi is not None:
+        item["maximum"] = hi
+    return {"type": "array", "minItems": 2, "maxItems": 2, "items": item}
+
+
+def _tags(n):
+    return {"type": "array", "maxItems": n, "items": _TAG}
+
+
+DIRECTION_SCHEMA = {
+    "type": "object", "required": ["vibe"],
+    "description": "§1.1 vsp.direction.direct() — vibe, tone, pacing, music "
+                   "lane, look, camera, voice (gate D156)",
+    "properties": {
+        "schema_version": {"const": 1},
+        "vibe": {"enum": list(_CV.VIBES)},
+        "vibe_reason": _TEXT,
+        "secondary_vibe": {"enum": list(_CV.VIBES) + [None]},
+        "tone": {"type": "object", "properties": {
+            "voice": {"enum": list(_CV.TONES)},
+            "allowed": {"type": "array", "items": {"enum": list(_CV.TONES)}},
+            "humor": {"enum": ["none", "light", "high"]}, "notes": _TEXT}},
+        "energy": _ENERGY,
+        "pacing": {"type": "object", "properties": {
+            "target_wpm": _pair(140, 200), "avg_shot_s": _pair(0),
+            "cuts_per_10s": _pair(0),
+            "max_static_s": {"type": "number", "minimum": 0, "maximum": 3.5},
+            "pattern_interrupt_s": {"type": "number", "minimum": 0}}},
+        "energy_curve": {"type": "array", "items": {
+            "type": "object", "required": ["type", "energy"],
+            "properties": {"t": _TEXT, "type": _TEXT, "energy": _ENERGY}}},
+        "music": {"type": "object", "properties": {
+            "moods": _STRS, "bpm": _pair(30, 250), "genres": _STRS,
+            "vo_ducking_db": {"type": "number", "maximum": 0}, "sfx": _STRS,
+            "in_master": {"const": False,
+                          "description": "music is added at upload (D156)"},
+            "search_queries": _STRS,
+            "licensing": {"type": "object", "properties": {
+                p: {"type": "object", "properties": {"library": _TEXT,
+                                                     "note": _TEXT}}
+                for p in _CV.PLATFORMS}}}},
+        "look": {"type": "object", "properties": {
+            "lighting": _TEXT, "palette_names": _STRS,
+            "palette_hex": {"type": "array", "items": {
+                "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$"}},
+            "grade": _TEXT, "set": _TEXT, "wardrobe": _TEXT}},
+        "camera": {"type": "object", "properties": {
+            "style": _TEXT, "lens": _TEXT,
+            "movement": {"type": "array", "items": {"enum": list(_CV.CAMERA_MOVES)}}}},
+        "text_style": {"type": "object", "properties": {
+            "case": _TEXT, "weight": _TEXT,
+            "max_words_per_card": {"type": "integer", "minimum": 1, "maximum": 3},
+            "placement": _TEXT}},
+        "transitions": _STRS, "showmanship": _TEXT,
+        "voice": {"type": "object", "properties": {
+            "presenter": {"enum": ["ai", "human"]}, "spec": _TEXT}},
+        "do": _STRS, "dont": _STRS,
+        "evidence": {"type": "array", "items": {"type": "object", "properties": {
+            "claim": _TEXT, "grade": _GRADE, "source": _TEXT}}},
+    },
+}
+
+HOOK_VARIANT_SCHEMA = {
+    "type": "object", "required": ["id", "archetype", "verbal", "visual_type"],
+    "description": "§1.2 one alternate opening; variant A = the script's hook",
+    "properties": {
+        "id": {"type": "string", "pattern": "^[A-J]$"},
+        "is_primary": _BOOL,
+        "archetype": {"enum": list(_CV.HOOK_ARCHETYPES)},
+        "family": _TEXT,
+        "verbal": {"type": "string", "minLength": 1},
+        "overlay": _TEXT,
+        "visual_type": {"enum": list(_CV.VISUAL_TYPES)},
+        "visual": _TEXT, "audio": _TEXT, "caption_line": _TEXT,
+        "score": _NUM,
+        "features": {"type": "object", "additionalProperties": _NUM},
+        "reasons": _STRS,
+    },
+}
+
+_TOGGLES = {p: {"type": "object", "properties": {k: _BOOL}} for p, k in (
+    ("tiktok", "is_aigc"), ("instagram", "is_ai_generated"),
+    ("youtube_shorts", "containsSyntheticMedia"))}
+
+DISCOVERY_SCHEMA = {
+    "type": "object", "required": ["primary_keyword"],
+    "description": "§1.3 vsp.discovery.build() — keywords, placement, cover, "
+                   "per-platform packaging (gates D155, rubric D161)",
+    "properties": {
+        "schema_version": {"const": 1},
+        "primary_keyword": {"type": "string", "minLength": 1},
+        "secondary_keywords": _STRS, "search_intents": _STRS,
+        "placement": {"type": "object", "properties": {
+            "spoken_by_s": _NUM, "on_screen_by_s": _NUM,
+            "caption_first_60": _BOOL, "hashtag": _TAG, "cover_text": _BOOL}},
+        "comment_word": _TEXT,
+        "cover": {"type": "object", "properties": {
+            "frame_s": {"type": "number", "minimum": 0}, "text": _TEXT,
+            "safe_box": _TEXT, "why": _TEXT}},
+        "platforms": {"type": "object", "properties": {
+            "tiktok": {"type": "object", "properties": {
+                "caption": _TEXT, "hashtags": _tags(5),
+                "keywords_to_suggest": _STRS, "toggles": _TOGGLES["tiktok"],
+                "notes": _STRS}},
+            "instagram": {"type": "object", "properties": {
+                "caption": _TEXT, "hashtags": _tags(5), "description_line": _TEXT,
+                "toggles": _TOGGLES["instagram"],
+                "trial_reels": {"type": "object", "properties": {
+                    "recommended": _BOOL, "protocol": _TEXT}},
+                "notes": _STRS}},
+            "youtube_shorts": {"type": "object", "properties": {
+                "title": {"type": "string", "maxLength": 100},
+                "description": _TEXT, "hashtags": _tags(15),
+                "related_video": {"type": ["string", "null"]},
+                "toggles": _TOGGLES["youtube_shorts"], "notes": _STRS}}}},
+        "posting": {"type": "array", "items": {"type": "object", "properties": {
+            "item": _TEXT, "grade": {"enum": ["P", "S", "M", "A", "myth"]},
+            "source": _TEXT}}},
+        "checklist": _STRS,
+    },
 }
 
 SCRIPT_SCHEMA = {
@@ -71,12 +213,23 @@ SCRIPT_SCHEMA = {
         "series_plan": {"type": "object",
                         "description": "D146: backs a part-2 CTA"},
         "seed": {"type": ["integer", "null"]},
+        "direction": {"$ref": "#/$defs/direction"},
+        "hook_variants": {"type": "array", "minItems": 3, "maxItems": 5,
+                          "items": {"$ref": "#/$defs/hook_variant"},
+                          "description": "§1.2 (gate D154)"},
+        "discovery": {"$ref": "#/$defs/discovery"},
+        "creative_warnings": {"type": "array", "items": _TEXT,
+                              "description": "vsp.creative.enrich module "
+                                             "errors (a run must carry none)"},
     },
     "$defs": {
         "hook_item": {"type": "object", "required": ["type"],
                       "properties": _ITEM_PROPS},
         "beat": {"type": "object", "required": ["t", "type"],
                  "properties": _ITEM_PROPS},
+        "direction": DIRECTION_SCHEMA,
+        "hook_variant": HOOK_VARIANT_SCHEMA,
+        "discovery": DISCOVERY_SCHEMA,
     },
 }
 
@@ -124,6 +277,8 @@ def _check(v, sch, path, root, errs):
     if isinstance(v, str):
         if "minLength" in sch and len(v) < sch["minLength"]:
             errs.append(f"{path}: shorter than {sch['minLength']} character(s)")
+        if "maxLength" in sch and len(v) > sch["maxLength"]:
+            errs.append(f"{path}: longer than {sch['maxLength']} character(s)")
         if "pattern" in sch and not re.search(sch["pattern"], v):
             errs.append(f"{path}: {_short(v)} does not match {sch['pattern']}")
     if _TYPES["number"](v):
