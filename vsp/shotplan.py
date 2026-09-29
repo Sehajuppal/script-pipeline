@@ -268,6 +268,11 @@ _TEST_RE = re.compile(
     r"(?i)\btest(?:s|ed|ing)?\b|\bproof\b|\bresults?\b|before[- ]and[- ]after|\bbefore\b[^.]{0,40}\bafter\b|"
     r"\bheld\b|\blasted\b|\bstill works\b|\bafter \d+|\bday \d+|\b\d+(?:\.\d+)?\s?(?:days?|weeks?|months?|hours?|"
     r"hrs?|minutes?|mins?|seconds?|%|x)\b|\bmeasur|\bverdict\b")
+# a time-span / durable result claim ("after 7 days", "Day 21", "held all week")
+_SPAN_RE = re.compile(r"(?i)\bafter \d+\s*(?:days?|weeks?|months?|nights?)\b|\bday\s*\d+\b|"
+                      r"\b\d+\s*(?:days?|weeks?|months?|nights?)\b|\ball week\b|\bweek[- ]one\b|\bheld all\b")
+TIME_MARKERS = ("timestamp-proof-insert", "matched-before", "matched-after", "split-before-after",
+                "day-counter-selfie", "timelapse-process", "match-cut-transform")
 _BEFORE_AFTER_RE = re.compile(r"(?i)before[- ]and[- ]after|\bbefore\b[^.]{0,40}\bafter\b|side[- ]by[- ]side")
 
 
@@ -1165,6 +1170,14 @@ def plan(script, shots, ctx=None):
             st["risk"].append(sh["ai_risk"])
             st["used"][eff] = st["used"].get(eff, 0) + 1
     _repair(out, c)
+    if _SPAN_RE.search(all_text + " " + (script.get("prompt") or "")) and \
+            not any(sh["shot_type"] in TIME_MARKERS for sh in out):
+        # research §1: a "7 days" claim with no time marker proves nothing
+        for j, sh in enumerate(out):
+            if _beat(sh) == "PAYOFF" and not sh.get("explicit") and \
+                    _force(out, j, "timestamp-proof-insert", c,
+                           "the copy claims a time-span result: a real date or reading must show it"):
+                break
     _human_by_3s(out, c)
     _setups(out, c)
     _coverage(out, c)
@@ -1235,6 +1248,41 @@ def _retype(out, j, c, avoid_scale=None, need_face=False):
         sh["light_preset"] = _light(eff, c)
         return True
     return False
+
+
+def _force(out, j, tid, c, why):
+    """Put proof type tid at shot j if every neighbourhood rule still holds."""
+    sh = out[j]
+    L = lib(tid)
+    if j == 0 or sh["shot_type"] == "loop-return-frame" or not fits_product(tid, c):
+        return False
+    if c["lane"] == "ai" and "face" in L["needs"]:
+        return False
+    if (j > 0 and out[j - 1]["shot_type"] == tid) or (j + 1 < len(out) and out[j + 1]["shot_type"] == tid):
+        return False
+    scales = [x["scale"] for x in out]
+    scales[j] = L["scale"]
+    if _scale_run(scales, j):
+        return False
+    trial = dict(sh)
+    sub_i = 0 if not is_sub(sh) else ord(str(sh["n"])[-1]) - 97
+    f0 = _frame0_desc(out[0]["direction"])
+    _apply(trial, tid, L["move"], c, f0, sub_i, None, False)
+    ths = [gate_talking_head(x) for x in out]
+    ths[j] = gate_talking_head(trial)
+    if _th_run(ths, j) or (not is_sub(sh) and _dur(sh["s"], sh["e"]) > STATIC_MAX and L["move"] == "static"):
+        return False
+    _apply(sh, tid, L["move"], c, f0, sub_i, None, False)
+    sh["purpose"] = "proof"
+    sh["needs"] = list(L["needs"])
+    sh["ai_risk"] = L["ai_risk"]
+    sh["ai_fallback"] = L["ai_fallback"]
+    sh["ai_swapped_from"] = None
+    sh["real_footage"] = True
+    sh["real_footage_why"] = _proof_why(tid, _beat(sh), False) if c["lane"] == "ai" else None
+    sh["why"] = why
+    sh["light_preset"] = _light(tid, c)
+    return True
 
 
 def _scale_run(scales, j):
