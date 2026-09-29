@@ -251,7 +251,9 @@ def check_d144(script, bundle_text, ctx):
     if not ov:
         return []
     n = len(L.norm(ov).split())
-    if n > 3:
+    # a split-screen label pair ("DAY 1 | DAY 7", D25/D135) is two labels,
+    # not a phrase — lexicon.overlay_is_clean caps each side at 2 words
+    if n > 3 and "|" not in ov:
         return [f"D144: frame-0 overlay {_q(ov, 40)} is {n} words — the "
                 f"overlay is <=3 words (D17)"]
     hook = verbal_hook(script)

@@ -2048,7 +2048,9 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
             # run, baseline 36/990) — concept-safe fallbacks.
             payoff = (f"Verdict: BUY — "
                       f"{ctx.get('purpose_proof') or ctx.get('measured_short') or 'it did the job'}.")
-            payoff_on_screen = (f"VERDICT: BUY — for {ctx.get('who_for') or DEFAULT_WHO} · "
+            _who = ctx.get('who_for') or DEFAULT_WHO.format(
+                category=ctx['category'], category_s=plural(ctx['category']))
+            payoff_on_screen = (f"VERDICT: BUY — for {_who} · "
                                 f"expected {ctx.get('expected_flop') or 'it to flop'}, "
                                 f"but {ctx.get('surprise') or 'it held up'}")
         elif fmt == "transformation":

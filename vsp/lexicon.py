@@ -124,11 +124,18 @@ def overlay_is_clean(overlay, hook):
     ov = (overlay or "").strip()
     if not ov:
         return True, "no overlay"
+    # label pair "X | Y" (each side <= 2 words): "BEFORE | AFTER",
+    # "DAY 1 | DAY 7" (D25/D135 transformation frame-0) — a split-screen
+    # label, not a phrase, so it is exempt from the 3-word phrase count
+    if "|" in ov:
+        sides = [norm(x).split() for x in ov.split("|")]
+        if len(sides) == 2 and all(1 <= len(x) <= 2 for x in sides):
+            return True, "label pair"
+        return False, "malformed label pair"
     w = norm(ov).split()
     if not 1 <= len(w) <= 3:
         return False, f"{len(w)} words"
-    if "|" in ov or ":" in ov or set(w) <= LABEL_WORDS | {"1", "3", "7", "14",
-                                                           "21", "30"}:
+    if ":" in ov or set(w) <= LABEL_WORDS | {"1", "3", "7", "14", "21", "30"}:
         return True, "label form"
     h = norm(hook).split()
     for i in range(len(h) - len(w) + 1):
