@@ -581,10 +581,7 @@ def _unit_priors_tiebreak_only():
     from vsp.gates import gate1
     probs = []
     d = tempfile.mkdtemp(prefix="vsp_unit_tiebreak_")
-    fams = sorted(set(vsm.HOOKS) | {"challenge", "listicle"})
-    ab = [(40, 8), (8, 40), (22, 20), (30, 12), (12, 30), (18, 18)]
-    strong = {f: {"alpha": ab[i % len(ab)][0], "beta": ab[i % len(ab)][1],
-                  "n": 50} for i, f in enumerate(fams)}
+    strong = _strong_priors()
     thin = {f: dict(v, n=2) for f, v in strong.items()}
     for name, tbl in (("strong", strong), ("thin", thin)):
         _write_json(os.path.join(d, name, "priors.json"),
@@ -717,8 +714,9 @@ def _unit_hook_pack_loader():
 # Full pipeline runs (not --script-json) inside the self-test's temp outputs
 # root, fixture viral.db and an empty temp learned/ dir. Each check is
 # (name, fn(h)) -> [problems]; h is vsp.selftest's harness: h.run(args,
-# learned=None) runs pipeline.py, h.py(code) runs python, h.out(name) is a
-# fresh temp dir, h.learned(name) a fresh learned/ dir, h.state is shared
+# learned=None, env=None) runs pipeline.py, h.py(code, args=(), env=None)
+# runs python (env: per-run overrides, None = unset), h.out(name) is a fresh
+# temp dir path, h.learned(name) a fresh learned/ dir, h.state is shared
 # between checks (run in order).
 
 E2E_PROMPT = "portable door lock"
@@ -728,10 +726,32 @@ E2E_ARTIFACTS = ("script.json", "bundle.md", "brief.md", "validation-report.md",
 SUMMARY_KEYS = ("prompt", "niche", "hook_family", "hook_source", "hook",
                 "presenter", "format", "duration_s", "seed", "candidate_seed",
                 "script_sha256")
+# the pipeline --json summary (docs/ws-int-notes.md)
+JSON_KEYS = ("status", "exit_code", "outdir", "artifacts", "winner", "rubric",
+             "route", "warnings", "gates", "failed_stage", "stages",
+             "script_summary")
 
 
 def _fail_run(r):
     return [f"exit {r.returncode}\n{r.stdout[-700:]}{r.stderr[-400:]}"]
+
+
+def _load(path):
+    import json
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def _stage_lines(stdout):
+    """{stage n: status} from the report's stage lines (crash = 'CRASH')."""
+    import re
+    out = {}
+    for n, st in re.findall(r"^stage (\d+) \([^)]+\): (OK|FAIL|SKIPPED|BYPASSED)\b",
+                            stdout, re.M):
+        out[int(n)] = st
+    for n in re.findall(r"^STAGE (\d+) FAILED \(", stdout, re.M):
+        out[int(n)] = "CRASH"
+    return out
 
 
 def _srt_problems(text):
@@ -767,14 +787,22 @@ def _e2e_normal(h):
     if r.returncode != 0:
         return _fail_run(r)
     probs = []
-    got = sorted({int(a or b) for a, b in re.findall(
-        r"^(?:stage (\d+) \([^)]+\): (?:OK|FAIL|SKIPPED|BYPASSED)\b"
-        r"|STAGE (\d+) FAILED \()", r.stdout, re.M)})
-    if got != list(range(1, 11)):
-        probs.append(f"stage lines present: {got}")
+    st = _stage_lines(r.stdout)
+    if sorted(st) != list(range(1, 11)):
+        probs.append(f"stage lines present: {sorted(st)}")
+    # a clean run: nothing FAILed or crashed; repair only runs when no
+    # candidate passed (research may be SKIPPED if the pack is unusable)
+    bad = {n: s for n, s in st.items()
+           if s != "OK" and not (n == 6 and s == "SKIPPED")
+           and not (n == 2 and s == "SKIPPED")}
+    if bad:
+        probs.append(f"stage statuses not clean: {bad}")
     for want in ("gate 1 (script): PASS", "gate 2 (brief): PASS", "\nwarnings:"):
         if want not in r.stdout:
             probs.append(f"report lacks {want.strip()!r}")
+    if not re.search(r"^stage 3 \(generate\): OK — 8 candidate\(s\) \(seeds 701, ",
+                     r.stdout, re.M):
+        probs.append("stage 3 line: default best-of-8 must start at the raw seed 701")
     missing = [f for f in E2E_ARTIFACTS if not os.path.isfile(os.path.join(out, f))]
     if missing:
         probs.append(f"missing artifacts: {missing}")
@@ -800,6 +828,15 @@ def _e2e_normal(h):
         gr = json.load(f)
     if gr.get("status") != "pass" or gr.get("exit_code") != 0:
         probs.append(f"gate-report.json status {gr.get('status')}/{gr.get('exit_code')}")
+    # D149: candidate 0 is the raw seed; the manifest records every sub-seed
+    seeds = (m.get("seeds") or {}).get("candidates") or []
+    cands = gr.get("candidates") or []
+    if (len(seeds) != 8 or seeds[0] != 701 or len(cands) != 8
+            or [c.get("seed") for c in cands] != seeds):
+        probs.append(f"candidate seeds wrong: manifest {seeds[:3]}…, "
+                     f"gate-report {[c.get('seed') for c in cands][:3]}…")
+    if (gr.get("selected") or {}).get("via") != "selection":
+        probs.append(f"winner not chosen by selection: {gr.get('selected')}")
     if not any(x.get("type") == "span" for x in trace.read(os.path.join(out, "trace.jsonl"))):
         probs.append("trace.jsonl has no spans")
     h.state["normal"] = out
@@ -823,19 +860,36 @@ def _e2e_parity(h):
     with open(os.path.join(out, "script.json"), encoding="utf-8") as f:
         piped = json.load(f)
     h.state["parity_script"] = piped
+    probs = []
     if direct != piped:
         diff = sorted(k for k in set(direct) | set(piped) if direct.get(k) != piped.get(k))
-        return [f"--candidates 1 script differs from generate(seed=701): keys {diff}"]
-    return []
+        probs.append(f"--candidates 1 script differs from generate(seed=701): keys {diff}")
+    seeds = (_load(os.path.join(out, "manifest.json")).get("seeds") or {})
+    if seeds.get("root") != 701 or seeds.get("candidates") != [701]:
+        probs.append(f"--candidates 1 manifest seeds {seeds} (want root 701, [701])")
+    return probs
 
 
 def _e2e_replay(h):
+    import json
     import os
     if "normal" not in h.state:
         return ["no manifest (e2e-normal-run failed)"]
-    r = h.run(["--replay", os.path.join(h.state["normal"], "manifest.json")])
+    man = os.path.join(h.state["normal"], "manifest.json")
+    r = h.run(["--replay", man])
     if r.returncode != 0 or "replay: OK" not in r.stdout:
         return _fail_run(r)
+    r = h.run(["--replay", man, "--json"])
+    try:
+        d = json.loads(r.stdout)
+    except ValueError as e:
+        return [f"--replay --json stdout is not one JSON document: {e}: {r.stdout[:200]!r}"]
+    rep = d.get("replay") or {}
+    if (r.returncode, d.get("status"), d.get("exit_code")) != (0, "reproduced", 0) \
+            or not rep.get("expected_sha256") \
+            or rep.get("expected_sha256") != rep.get("actual_sha256"):
+        return [f"--replay --json: exit {r.returncode}, status {d.get('status')}, "
+                f"sha {rep.get('expected_sha256')} -> {rep.get('actual_sha256')}"]
     return []
 
 
@@ -848,14 +902,23 @@ def _e2e_json(h):
     except ValueError as e:
         return [f"--json stdout is not one JSON document: {e}: {r.stdout[:200]!r}"]
     probs = []
-    for k in ("status", "exit_code", "outdir", "artifacts", "winner", "rubric",
-              "route", "warnings", "gates"):
+    for k in JSON_KEYS:
         if k not in d:
             probs.append(f"--json summary lacks {k!r}")
     if d.get("status") != "pass" or d.get("exit_code") != r.returncode or r.returncode:
         probs.append(f"--json status {d.get('status')} exit {d.get('exit_code')}/{r.returncode}")
     if "# Validation report" in r.stdout:
         probs.append("--json also printed the report text")
+    if d.get("artifacts") != list(E2E_ARTIFACTS):
+        probs.append(f"--json artifacts {d.get('artifacts')} (want all {len(E2E_ARTIFACTS)})")
+    stages = d.get("stages") or []
+    if len(stages) != 10 or not all(isinstance(s, str) for s in stages):
+        probs.append(f"--json stages: {stages}")
+    ss = d.get("script_summary") or {}
+    if [k for k in SUMMARY_KEYS if k not in ss]:
+        probs.append(f"--json script_summary lacks {[k for k in SUMMARY_KEYS if k not in ss]}")
+    if (d.get("winner") or {}).get("seed") != ss.get("candidate_seed") or d.get("failed_stage"):
+        probs.append(f"--json winner {d.get('winner')} / failed_stage {d.get('failed_stage')}")
     return probs
 
 
@@ -884,9 +947,13 @@ def _e2e_malformed_pack(h):
 
 
 def _e2e_hook_pack_slots(h):
-    """Only the approved, known-slot pack loads; its id is recorded."""
+    """Only the approved, known-slot pack loads; its id is recorded. An
+    approved pack whose template uses an unknown {slot} is rejected: the
+    template never reaches HOOKS, the pack id is never recorded, and the
+    rejection is on stderr and in the report's warnings section."""
     import json
     import os
+    import re
     learned = h.learned("packs")
     hp = os.path.join(learned, "hook_packs")
     _write_json(os.path.join(hp, "a-ok.json"), {
@@ -905,15 +972,202 @@ def _e2e_hook_pack_slots(h):
         return _fail_run(r)
     probs = []
     with open(os.path.join(out, "script.json"), encoding="utf-8") as f:
-        s = json.load(f)
+        raw = f.read()
+    s = json.loads(raw)
     if s.get("hook_packs") != ["selftest-approved"]:
         probs.append(f"script hook_packs {s.get('hook_packs')} (want ['selftest-approved'])")
+    if "brandname" in raw:
+        probs.append("the unknown {brandname} slot reached script.json")
     if "unknown slot(s) {brandname}" not in r.stderr:
         probs.append("unknown-slot template not rejected with a stderr warning")
+    if not re.search(r"^- learned: hook pack b-slot\.json: .*unknown slot\(s\) \{brandname\}",
+                     r.stdout, re.M):
+        probs.append("unknown-slot rejection missing from the report's warnings section")
     with open(os.path.join(out, "manifest.json"), encoding="utf-8") as f:
         m = json.load(f)
-    if (m.get("learned") or {}).get("hook_packs", {}).get("loaded") != ["selftest-approved"]:
+    hp = (m.get("learned") or {}).get("hook_packs") or {}
+    if hp.get("loaded") != ["selftest-approved"]:
         probs.append("manifest learned.hook_packs.loaded is wrong")
+    if sorted(hp.get("files") or {}) != ["a-ok.json", "b-slot.json", "c-proposed.json"] \
+            or not all(hp["files"].values()):
+        probs.append(f"manifest learned.hook_packs.files not hashed: {hp.get('files')}")
+    return probs
+
+
+def _strong_priors():
+    """A global priors table with n >= 3 for every hook family (so every
+    quality tie across families is steered)."""
+    import viral_script_maker as vsm
+    fams = sorted(set(vsm.HOOKS) | {"challenge", "listicle"})
+    ab = [(40, 8), (8, 40), (22, 20), (30, 12), (12, 30), (18, 18)]
+    return {f: {"alpha": ab[i % len(ab)][0], "beta": ab[i % len(ab)][1], "n": 50}
+            for i, f in enumerate(fams)}
+
+
+def _e2e_priors(h):
+    """Priors through the real CLI: the pick is steered (priors_used), the
+    same priors file gives byte-identical script.json in separate processes
+    with different hash seeds, the manifest pins the file's sha256,
+    --replay reproduces it (the recorded VSP_LEARNED_DIR is pinned), and
+    VSP_NO_PRIORS=1 restores the no-priors output byte for byte."""
+    import hashlib
+    import os
+    learned = h.learned("priors")
+    pri = _write_json(os.path.join(learned, "priors.json"),
+                      {"schema_version": 1, "metric": "hook_rate",
+                       "families": {}, "global": _strong_priors()})
+    with open(pri, "rb") as f:
+        pri_sha = hashlib.sha256(f.read()).hexdigest()
+    raws, outs = [], []
+    for hs in ("0", "1"):
+        out = h.out("priors-hashseed-" + hs)
+        r = h.run([E2E_PROMPT, "--presenter", "ai", "--out-dir", out],
+                  learned=learned, env={"PYTHONHASHSEED": hs})
+        if r.returncode != 0:
+            return _fail_run(r)
+        with open(os.path.join(out, "script.json"), "rb") as f:
+            raws.append(f.read())
+        outs.append(out)
+    probs = []
+    if raws[0] != raws[1]:
+        probs.append("same seed + same priors file gave different script.json "
+                     "across processes (PYTHONHASHSEED 0 vs 1)")
+    import json
+    s = json.loads(raws[0].decode("utf-8"))
+    if "priors_used" not in s:
+        probs.append("priors never steered the pick (check is vacuous)")
+    lp = (_load(os.path.join(outs[0], "manifest.json")).get("learned") or {}).get("priors") or {}
+    if lp.get("sha256") != pri_sha or not lp.get("valid") or lp.get("disabled"):
+        probs.append(f"manifest learned.priors does not pin the file: {lp}")
+    r = h.run(["--replay", os.path.join(outs[0], "manifest.json")])
+    if r.returncode != 0 or "replay: OK" not in r.stdout:
+        probs.append("--replay of a priors-steered run did not reproduce it: "
+                     + _fail_run(r)[0])
+    if "normal" in h.state:
+        out = h.out("priors-off")
+        r = h.run([E2E_PROMPT, "--presenter", "ai", "--out-dir", out],
+                  learned=learned, env={"VSP_NO_PRIORS": "1"})
+        if r.returncode != 0:
+            return probs + _fail_run(r)
+        with open(os.path.join(out, "script.json"), "rb") as f:
+            off = f.read()
+        with open(os.path.join(h.state["normal"], "script.json"), "rb") as f:
+            base = f.read()
+        if off != base:
+            probs.append("VSP_NO_PRIORS=1 output != the no-priors run's script.json")
+    return probs
+
+
+# A child that runs pipeline.main() with viral_script_maker.generate wrapped
+# to inject one defect into EVERY candidate: argv = repo, mode, pipeline args.
+# "repairable": a parenthetical staging note in a spoken line (D44, which
+# vsp.repair strips); "unrepairable": an invented price in the caption (D37,
+# never repaired).
+_INJECT_CODE = r"""
+import sys
+repo, mode = sys.argv[1], sys.argv[2]
+sys.path.insert(0, repo)
+import viral_script_maker as vsm
+_generate = vsm.generate
+def generate(*a, **k):
+    s = _generate(*a, **k)
+    if mode == "repairable":
+        b = next(b for b in s["beats"][2:] if b.get("dialogue"))
+        b["dialogue"] = "(smiling) " + b["dialogue"]
+    else:
+        s["caption"] = s["caption"] + " Only $19."
+    return s
+vsm.generate = generate
+import pipeline
+sys.argv = ["pipeline.py"] + sys.argv[3:]
+pipeline.main()
+"""
+
+
+def _e2e_repair(h):
+    """Stage 6: nothing passes gate 1 -> the rule-keyed repair fixes the
+    best failing candidate -> the run ships with every artifact."""
+    import os
+    out = h.out("repair")
+    r = h.py(_INJECT_CODE, args=(h.repo, "repairable", E2E_PROMPT, "--presenter", "ai",
+                                 "--candidates", "3", "--out-dir", out))
+    if r.returncode != 0:
+        return _fail_run(r)
+    probs = []
+    st = _stage_lines(r.stdout)
+    if (st.get(4), st.get(5), st.get(6), st.get(9)) != ("FAIL", "FAIL", "OK", "OK"):
+        probs.append(f"stage 4/5/6/9 statuses {st.get(4)}/{st.get(5)}/{st.get(6)}/{st.get(9)} "
+                     "(want FAIL/FAIL/OK/OK)")
+    if "gate 1 (script): PASS" not in r.stdout or "[D44]" not in r.stdout:
+        probs.append("report lacks the repaired gate-1 PASS / the [D44] repair")
+    missing = [f for f in E2E_ARTIFACTS if not os.path.isfile(os.path.join(out, f))]
+    if missing:
+        return probs + [f"missing artifacts after repair: {missing}"]
+    gr = _load(os.path.join(out, "gate-report.json"))
+    reps = gr.get("repairs") or []
+    if (gr.get("selected") or {}).get("via") != "repair" or not reps \
+            or not reps[-1].get("passed") or "D44" not in (reps[-1].get("rules") or []):
+        probs.append(f"gate-report selected/repairs wrong: {gr.get('selected')} {reps}")
+    with open(os.path.join(out, "script.json"), encoding="utf-8") as f:
+        if "(smiling)" in f.read():
+            probs.append("the repaired script.json still carries the staging note")
+    return probs
+
+
+def _e2e_loud_failure(h):
+    """An unrepairable gate-1 failure fails loudly: exit 1, the later stages
+    SKIPPED, report + script + manifest + trace + gate-report written, and
+    every stale bundle/brief/export from an earlier run removed; --json
+    reports the same failure."""
+    import json
+    import os
+    import re
+    out = h.out("loud-failure")
+    os.makedirs(out)
+    stale = ("bundle.md", "brief.md", "captions.srt", "captions.vtt", "captions.json",
+             "shotlist.csv", "shots.json")
+    for f in stale:
+        with open(os.path.join(out, f), "w", encoding="utf-8") as fh:
+            fh.write("stale from an earlier run\n")
+    args = (h.repo, "unrepairable", E2E_PROMPT, "--presenter", "ai", "--candidates", "2",
+            "--out-dir", out)
+    r = h.py(_INJECT_CODE, args=args)
+    probs = []
+    if r.returncode != 1:
+        return _fail_run(r)
+    st = _stage_lines(r.stdout)
+    want = {4: "FAIL", 5: "FAIL", 6: "FAIL", 7: "SKIPPED", 8: "SKIPPED", 9: "SKIPPED",
+            10: "OK"}
+    if any(st.get(n) != s for n, s in want.items()):
+        probs.append(f"stage statuses {st} (want {want} for 4-10)")
+    if not re.search(r"^gate 1 \(script\): FAIL — D37: ", r.stdout, re.M):
+        probs.append("report lacks the legacy 'gate 1 (script): FAIL — D37: …' line")
+    left = sorted(os.listdir(out))
+    if left != sorted(["script.json", "validation-report.md", "manifest.json",
+                       "trace.jsonl", "gate-report.json"]):
+        probs.append(f"failing run left {left}")
+    gr = _load(os.path.join(out, "gate-report.json"))
+    m = _load(os.path.join(out, "manifest.json"))
+    if (gr.get("status"), gr.get("exit_code"), (gr.get("failed_stage") or {}).get("n"),
+            (gr.get("selected") or {}).get("via")) != ("gate1_fail", 1, 4, "best_failing"):
+        probs.append(f"gate-report status/exit/failed_stage/via: {gr.get('status')}/"
+                     f"{gr.get('exit_code')}/{gr.get('failed_stage')}/{gr.get('selected')}")
+    if (m.get("status"), m.get("exit_code")) != ("gate1_fail", 1) \
+            or not (m.get("outputs") or {}).get("script.json"):
+        probs.append(f"manifest status/exit {m.get('status')}/{m.get('exit_code')}")
+    out2 = h.out("loud-failure-json")
+    r = h.py(_INJECT_CODE, args=args[:-1] + (out2, "--json"))
+    try:
+        d = json.loads(r.stdout)
+    except ValueError as e:
+        return probs + [f"--json on a failing run is not one JSON document: {e}: "
+                        f"{r.stdout[:200]!r}"]
+    if (r.returncode, d.get("status"), d.get("exit_code"), d.get("failed_stage")) != \
+            (1, "gate1_fail", 1, "gate 1"):
+        probs.append(f"--json failure: exit {r.returncode}, {d.get('status')}/"
+                     f"{d.get('exit_code')}/{d.get('failed_stage')}")
+    if not any(str(x).startswith("D37") for x in (d.get("gates") or {}).get("gate1") or []):
+        probs.append(f"--json gates.gate1 lacks D37: {d.get('gates')}")
     return probs
 
 
@@ -923,7 +1177,10 @@ def e2e_checks():
             ("e2e-replay-reproduces", _e2e_replay),
             ("e2e-json-summary", _e2e_json),
             ("e2e-malformed-hook-pack-ignored", _e2e_malformed_pack),
-            ("e2e-hook-pack-unknown-slot-rejected", _e2e_hook_pack_slots)]
+            ("e2e-hook-pack-unknown-slot-rejected", _e2e_hook_pack_slots),
+            ("e2e-priors-deterministic", _e2e_priors),
+            ("e2e-repair-stage-6", _e2e_repair),
+            ("e2e-failing-run-is-loud", _e2e_loud_failure)]
 
 
 # modules other workstreams own; each may expose selfcheck() -> (ok, lines)

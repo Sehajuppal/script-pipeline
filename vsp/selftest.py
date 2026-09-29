@@ -15,8 +15,13 @@ options for pipeline-v2 cases:
   {"only": "D136"}              every failure message must start with D136
   {"env": {"VSP_FIXTURE_OK": None}}  per-case env override (None = unset)
 unit_cases() are in-process contract checks (registry order, DELIVERABLE
-sync, a brief make_shotlist can never emit, ...), run after the pipeline
-cases.
+sync, a brief make_shotlist can never emit, the learned-state readers, ...),
+run after the pipeline cases. e2e_checks() are full 10-stage CLI runs
+(fn(harness) -> [problems]); every child also reads an empty temp learned/
+dir. Last, OPTIONAL_SELFCHECKS (vsp.ingest, vsp.feedback, vsp.improve —
+built on other branches) run in a child each when importlib.util.find_spec
+finds them: selfcheck() -> (ok, lines) must return ok; an absent module (or
+one without selfcheck()) is only noted.
 """
 import hashlib
 import json
@@ -71,21 +76,26 @@ class _Harness:
         self.repo = config.REPO
         self.state = {}
 
-    def _env(self, learned=None):
+    def _env(self, learned=None, env=None):
         e = dict(self.env)
         if learned:
             e["VSP_LEARNED_DIR"] = learned
+        for k, v in (env or {}).items():      # per-run overrides; None = unset
+            if v is None:
+                e.pop(k, None)
+            else:
+                e[k] = str(v)
         return e
 
-    def run(self, args, learned=None, timeout=300):
+    def run(self, args, learned=None, timeout=300, env=None):
         return subprocess.run([sys.executable, self.pipeline] + list(args),
                               capture_output=True, text=True, timeout=timeout,
-                              env=self._env(learned))
+                              env=self._env(learned, env))
 
-    def py(self, code, learned=None, timeout=300, args=()):
+    def py(self, code, learned=None, timeout=300, args=(), env=None):
         return subprocess.run([sys.executable, "-c", code] + list(args),
                               capture_output=True, text=True, timeout=timeout,
-                              env=self._env(learned))
+                              env=self._env(learned, env))
 
     def out(self, name):
         p = os.path.join(self.tmp, "e2e", name)
@@ -250,7 +260,8 @@ def run(pipeline_path, keep=False):
         if f.read() != before:
             fails.append("no-clobber: --out-dir onto the input rewrote it")
     # WS-INT: full 10-stage runs (normal run, seed parity, replay, --json,
-    # hook packs), then the other workstreams' optional selfcheck()s
+    # hook packs, priors, repair, loud failure), then the other workstreams'
+    # optional selfcheck()s
     h = _Harness(pipeline_path, tmp, env)
     e2e = e2e_checks()
     for name, fn in e2e:
