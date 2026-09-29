@@ -59,7 +59,7 @@ Tracked ids: every D-number plus lettered sub-ids (D17b, D89b, D90b, B4a). The s
 | D34 | MAKER | COMMENT-WORD = NICHE NOUN | 20. JUDGE-LOOP PATCHES (cycle 11) — 2026-09-27 … | viral_script_maker.py×5 |
 | D35 | MAKER | HOOK-PAYOFF CONTRACT PAIRING | 20. JUDGE-LOOP PATCHES (cycle 11) — 2026-09-27 … | viral_script_maker.py×18, vsp/improve/evolve.py×2, vsp/rubric.py×2 |
 | D36 | GATE | TRANSFORMATION SUBJECT-NOUN RULE | 23. JUDGE-LOOP PATCHES (beauty one-off) — 2026-… | viral_script_maker.py×9, vsp/creative_vocab.py×1, vsp/gates.py×2, vsp/improve/diagnose.py×1, vsp/repair.py×6, vsp/rules.py×2, vsp/select.py×1 |
-| D37 | GATE | PRICE NEVER INVENTED | 24. JUDGE-LOOP PATCHES (cycle 12) — 2026-09-27 … | make_shotlist.py×2, viral_script_maker.py×13, vsp/creative_vocab.py×1, vsp/gates.py×3, vsp/improve/diagnose.py×1, vsp/improve/evolve.py×3, vsp/improve/guard.py×1, vsp/lexicon.py×3, vsp/repair.py×1, vsp/rules.py×8, vsp/selftest_cases.py×10 |
+| D37 | GATE | PRICE NEVER INVENTED | 24. JUDGE-LOOP PATCHES (cycle 12) — 2026-09-27 … | make_shotlist.py×2, viral_script_maker.py×13, vsp/creative_vocab.py×1, vsp/gates.py×3, vsp/improve/diagnose.py×1, vsp/improve/evolve.py×3, vsp/improve/guard.py×1, vsp/lexicon.py×5, vsp/repair.py×1, vsp/rules.py×8, vsp/selftest_cases.py×10 |
 | D38 | MAKER | FITNESS-EQUIPMENT PRE-CHECK | 24. JUDGE-LOOP PATCHES (cycle 12) — 2026-09-27 … | viral_script_maker.py×3 |
 | D39 | MAKER | AI-CURATED TRANSFORMATION | 24. JUDGE-LOOP PATCHES (cycle 12) — 2026-09-27 … | viral_script_maker.py×2 |
 | D40 | MAKER | TRANSFORMATION PAYOFF = TRANSFORMATION RESULT | 24. JUDGE-LOOP PATCHES (cycle 12) — 2026-09-27 … | viral_script_maker.py×9, vsp/improve/evolve.py×1 |
@@ -178,13 +178,13 @@ Tracked ids: every D-number plus lettered sub-ids (D17b, D89b, D90b, B4a). The s
 | D151 | GATE | FIXTURE REFERENCE REELS NEVER SHIP | §66 — PIPELINE v2 (2026-09-28) | vsp/creative_vocab.py×1, vsp/improve/diagnose.py×1, vsp/rules.py×4, vsp/selftest.py×1, vsp/selftest_cases.py×3 |
 | D152 | PIPELINE | EXPORT CONTRACT | §66 — PIPELINE v2 (2026-09-28) | pipeline.py×2, vsp/captions.py×1, vsp/exporters.py×1, vsp/schema.py×2 |
 | D153 | PIPELINE | MANIFEST + TRACE ON EVERY RUN | §66 — PIPELINE v2 (2026-09-28) | pipeline.py×4, vsp/manifest.py×1, vsp/trace.py×2 |
-| D154 | GATE | HOOK-VARIANT INTEGRITY | §68 — PIPELINE v2.1 CREATIVE LAYER (2026-09-29) | evals/scorecard.py×2, vsp/creative_eval.py×3, vsp/rules.py×24, vsp/schema.py×2, vsp/selftest.py×1, vsp/selftest_cases.py×53 |
+| D154 | GATE | HOOK-VARIANT INTEGRITY | §68 — PIPELINE v2.1 CREATIVE LAYER (2026-09-29) | evals/scorecard.py×2, vsp/creative_eval.py×3, vsp/rules.py×24, vsp/schema.py×2, vsp/selftest.py×1, vsp/selftest_cases.py×54 |
 | D155 | GATE | DISCOVERY PACKAGING INTEGRITY | §68 — PIPELINE v2.1 CREATIVE LAYER (2026-09-29) | evals/scorecard.py×2, vsp/creative_eval.py×3, vsp/lexicon.py×1, vsp/rubric.py×2, vsp/rules.py×25, vsp/schema.py×1, vsp/selftest.py×1, vsp/selftest_cases.py×44 |
-| D156 | GATE | DIRECTION INTEGRITY | §68 — PIPELINE v2.1 CREATIVE LAYER (2026-09-29) | evals/scorecard.py×2, vsp/creative_eval.py×3, vsp/rubric.py×2, vsp/rules.py×38, vsp/schema.py×3, vsp/selftest.py×1, vsp/selftest_cases.py×43 |
-| D157 | GATE | SHOT-PLAN INTEGRITY | §68 — PIPELINE v2.1 CREATIVE LAYER (2026-09-29) | evals/scorecard.py×4, vsp/creative_eval.py×6, vsp/rules.py×22, vsp/selftest.py×1, vsp/selftest_cases.py×19 |
-| D158 | GATE | NO FAKE URGENCY, SCARCITY OR OFFERS | §68 — PIPELINE v2.1 CREATIVE LAYER (2026-09-29) | evals/scorecard.py×2, vsp/creative_eval.py×3, vsp/creative_vocab.py×1, vsp/lexicon.py×3, vsp/rules.py×8, vsp/selftest.py×1, vsp/selftest_cases.py×12 |
-| D159 | GATE | MUSIC LANE STATED IN THE BRIEF | §68 — PIPELINE v2.1 CREATIVE LAYER (2026-09-29) | evals/scorecard.py×3, vsp/creative_eval.py×3, vsp/rules.py×10, vsp/selftest.py×1, vsp/selftest_cases.py×13 |
-| D160 | GATE | AI RENDER-PROMPT HYGIENE | §68 — PIPELINE v2.1 CREATIVE LAYER (2026-09-29) | evals/scorecard.py×3, vsp/creative_eval.py×5, vsp/rules.py×9, vsp/selftest.py×1, vsp/selftest_cases.py×12 |
+| D156 | GATE | DIRECTION INTEGRITY | §68 — PIPELINE v2.1 CREATIVE LAYER (2026-09-29) | evals/scorecard.py×2, vsp/creative_eval.py×3, vsp/rubric.py×2, vsp/rules.py×37, vsp/schema.py×3, vsp/selftest.py×1, vsp/selftest_cases.py×46 |
+| D157 | GATE | SHOT-PLAN INTEGRITY | §68 — PIPELINE v2.1 CREATIVE LAYER (2026-09-29) | evals/scorecard.py×4, vsp/creative_eval.py×7, vsp/rules.py×22, vsp/selftest.py×1, vsp/selftest_cases.py×21 |
+| D158 | GATE | NO FAKE URGENCY, SCARCITY OR OFFERS | §68 — PIPELINE v2.1 CREATIVE LAYER (2026-09-29) | evals/scorecard.py×2, vsp/creative_eval.py×3, vsp/creative_vocab.py×1, vsp/lexicon.py×3, vsp/rules.py×8, vsp/selftest.py×1, vsp/selftest_cases.py×19 |
+| D159 | GATE | MUSIC LANE STATED IN THE BRIEF | §68 — PIPELINE v2.1 CREATIVE LAYER (2026-09-29) | evals/scorecard.py×3, vsp/creative_eval.py×3, vsp/rules.py×10, vsp/selftest.py×1, vsp/selftest_cases.py×16 |
+| D160 | GATE | AI RENDER-PROMPT HYGIENE | §68 — PIPELINE v2.1 CREATIVE LAYER (2026-09-29) | evals/scorecard.py×3, vsp/creative_eval.py×5, vsp/rules.py×10, vsp/selftest.py×1, vsp/selftest_cases.py×16 |
 | D161 | PIPELINE | DISCOVERY KEYWORD PLACEMENT | §68 — PIPELINE v2.1 CREATIVE LAYER (2026-09-29) | evals/scorecard.py×1, vsp/creative_eval.py×1, vsp/lexicon.py×1, vsp/rubric.py×2, vsp/schema.py×1 |
 | B4a | GATE | KEYWORD CTA TEMPLATE | 23. JUDGE-LOOP PATCHES (beauty one-off) — 2026-… | evals/scorecard.py×1, make_shotlist.py×3, pipeline.py×1, tools/fast_eval.py×1, tools/smoke_delivery.py×1, viral_script_maker.py×6, vsp/gates.py×2, vsp/improve/diagnose.py×1, vsp/lexicon.py×1, vsp/repair.py×1, vsp/rules.py×3, vsp/trace.py×1 |
 
