@@ -42,7 +42,8 @@ Self-test was green on 3.9 and 3.12 at every commit.
 | a503cbd | make_shotlist: showcase keeps product framing; a maker direction leads a split |
 | ff5259c | tools/smoke_delivery: flow section |
 | adc7768 | make_shotlist: capitalise the default persona name |
-| (this) | docs/ws-delivery-notes.md |
+| 55ec4de | docs/ws-delivery-notes.md |
+| 23df29c | make_shotlist: tolerate null beat types and non-dict beat entries |
 
 **Files touched.**
 - Modified: `make_shotlist.py`.
