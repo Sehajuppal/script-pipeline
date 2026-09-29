@@ -67,9 +67,26 @@ hook templates under statistical guardrails.
   `make_shotlist.py` shots + brief · `research_bridge.py` research pack.
 - `vsp/` support package: router, research, select, repair, gates/rules,
   captions/exporters/schema, manifest/trace, ingest, feedback, improve, llm.
-- `RULES.md` the rulebook (D1–D153; §66 is pipeline v2). `docs/` design,
-  research and scorecards. `learned/` the self-improvement state (priors,
-  hook packs, ledger, diagnosis, tasks).
+  v2.1 creative layer:
+  - `direction.py`: vibe, tone, pacing, music, look
+  - `hooks.py`: A/B alternate openings
+  - `shotplan.py`: 58 typed shot types, real-footage flags
+  - `discovery.py`: keywords and per-platform packaging
+  - `creative.py`: the enrich hook and the post-repair `resync`
+  - tables in `vsp/data/*.json`
+- A run writes `direction.md`, `hooks.md` and `posting.md` next to the
+  bundle. `manifest.json` → `script_summary` records vibe, tone, opening
+  archetype, visual type, variant ids and the search keyword.
+- `RULES.md` the rulebook (D1–D161):
+  - §66 pipeline v2
+  - §67 agent packaging
+  - §68 the v2.1 creative rules D154–D161
+  - §69 the v2.1 integration evidence
+
+  `docs/` holds design, research and scorecards (`docs/SCORECARD-v2.1.md`).
+  `learned/` holds the self-improvement state: priors (v2 adds archetype,
+  visual type, vibe and tone), hook packs, `VARIANTS.md`, ledger, diagnosis
+  and tasks.
 
 ## Where to start when improving
 

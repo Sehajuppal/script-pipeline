@@ -52,8 +52,9 @@ python3 -m vsp.ingest doctor
 hermes -p vsp cron create "every day at 6am" --no-agent --script vsp-selftest.sh --deliver local --name vsp-selftest
 hermes -p vsp cron create "every day at 6:30am" --no-agent --script vsp-feed-daily.sh --deliver local --name vsp-feed-daily
 hermes -p vsp cron create "every 1h" --no-agent --script vsp-feedback-hourly.sh --deliver local --name vsp-feedback-hourly
+hermes -p vsp cron create "every 12h" --no-agent --script vsp-variants.sh --deliver local --name vsp-variants
 hermes -p vsp cron create "every day at 7am" \
-  "Follow the vsp-feedback skill: run learn and report, then summarise what changed in learned/PERFORMANCE.md." \
+  "Follow the vsp-feedback skill: run learn and report, then summarise what changed in learned/PERFORMANCE.md and which alternate openings learned/VARIANTS.md says to graduate." \
   --skill vsp-feedback --workdir "$VSP_REPO" --name vsp-learn
 hermes -p vsp cron create "every monday 9am" \
   "Follow the vsp-self-improve skill: run a full cycle, then take the top task from learned/TASKS.md, work it on a new branch, and open a PR only if 'python3 -m vsp.improve verify' prints ACCEPT." \
@@ -70,8 +71,10 @@ its PR, then `hermes -p vsp cron resume vsp-improve`.
  (latest reels per niche)                                                │
                                                                          ▼
  your posted reels ──► vsp.feedback ──► learned/priors.json ──► viral_script_maker
- (skip rate, watch time,                                          ▲   (hook choice)
-  shares, saves)                                                  │
+ (skip rate, watch time,   │                                      ▲   (hook choice)
+  shares, saves;           └──► variants ──► learned/VARIANTS.md  │
+  Trial Reels of the            (A/B of the alternate openings,   │
+  alternate openings)            #vsp-<sha8><letter>)             │
                                                                   │
  vsp.improve cycle: measure (golden + holdout + capability)       │
    → diagnose (DIAGNOSIS.md, TASKS.md)                            │

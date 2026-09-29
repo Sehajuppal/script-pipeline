@@ -3204,3 +3204,108 @@ opening prompt hygiene, D157/D159/D160 findings).
   urgency/offer form without the prompt supplying it now fail gate 1 —
   that is the rule, not a regression (fixtures and stored outputs keep
   their outcomes).
+
+
+## §69 — PIPELINE v2.1 INTEGRATION EVIDENCE (2026-09-29)
+
+No new D-numbers. The finishing pass made the maker, hooks and shot plan
+satisfy the §68 contract and rubric (fix the maker, never the gate). No gate
+rule was removed or loosened; `tools/rule_coverage.py --check` passes.
+
+### What changed (code)
+
+- **Vibe cadence (R21, D156).** `vsp.direction._pacing` takes each vibe's
+  `avg_shot_s` band, clipped to the shot library's `SHOT_RULES.cadence`
+  (hype-energy 1.2 → 1.25). `max_static_s` is the vibe's own cap:
+  - hype-energy 2.0 s
+  - playful and cinematic 2.5 s
+  - clean, story and reveal 3.0 s
+  - never above D48's 3.5 s
+
+  `vsp.shotplan` turns every static shot longer than the cap into a slow
+  push-in, and a final pass re-checks after the swap passes. Calm
+  directions (band from ≥ 2.5 s) allow sub-shots up to the band's end
+  (≤ 4.5 s).
+- **Alternate openings (R22, R27, VARIANT_POLICY).**
+  - Every opening gets its own frame-0 card. A card that repeats another
+    (the same content words up to product-name words) takes the line's next
+    clean card (`vsp.hooks.card_options`): a contiguous ≤3-word phrase of
+    the line, never a cut product name or count, never a weak one-word card
+    (D144).
+  - Near-duplicates are screened on content trigrams and on
+    function-word trigrams (the product words are dropped), so shared codas
+    such as "… Here's the after." are caught.
+  - The old 1/3-Jaccard fallback level is gone.
+  - A new-archetype pass runs before any repeat. Strict → text-distinct →
+    legacy fallbacks mean no script loses the variants it had.
+- **Keyword by 3 s (R24, D161).**
+  - The discovery keyword is the first hook-noun render level when it is a
+    longer form of the compound with the same head ("sunrise alarm lamp"
+    for "alarm lamp"). It falls back when it does not fit 8 words.
+  - Among equal hooks, a keyword-speaking line wins the draw. With two or
+    more such lines tied, only they are drawn from. A lone one gets 3
+    tickets, so one template never becomes every run's hook.
+  - Challenge noun-phrase keywords get two day-count templates ("No sugar
+    challenge, day 21: what changed?").
+  - A 3-word routine label is spoken whole ("Day 14 of my 5AM morning
+    routine.").
+  - Quality, strength and the learned prior still rank first.
+- **Maker cards.**
+  - Trailing adverbs leave the card ("POV: PILLOWCASE ACTUALLY" →
+    "POV: SILK PILLOWCASE").
+  - POV labels never start on a single letter ("POV: C SERUM").
+  - The frame-0 direction drops the stale "85% watch sound-off" claim
+    (most Reels plays are sound-on; the card keeps it readable muted).
+- **Pipeline.**
+  - Stage 9 writes `direction.md`, `hooks.md` (the A/B sheet) and
+    `posting.md`.
+  - `script_summary` gains `vibe`, `tone`, `hook_archetype`,
+    `visual_type`, `variant_ids` and `primary_keyword`.
+  - The stage-9 report line carries a creative summary.
+  - Stage-6 repair re-syncs variant A to the repaired hook
+    (`vsp.creative.resync`, logged as `sync`) before each regate. This
+    closes the §68 integration note on D44 repairs.
+
+### Verification (merged tree)
+
+- Self-test: 112 gate cases + 22 unit checks (new:
+  `v21-variant-a-follows-repair`) + 11 end-to-end checks (15 artifacts;
+  creative docs and summary keys checked) + no-clobber, plus every module
+  selfcheck. Green on Python 3.9 and 3.12.
+- fast_eval, golden + holdout × 15/30/60 s × 2 seeds (4,080 runs): e2e
+  100%, 0 gate failures, rubric mean 91.6 → 97.8.
+
+  | check | fails before | fails after |
+  |---|---|---|
+  | R21 | 2762 | 0 |
+  | R22 | 2991 | 168 |
+  | R24 | 2244 | 789 |
+  | R27 | 360 | 0 |
+
+  Maker-level distinct primary hooks per 1,360 runs fell 725 → 650. That
+  is the keyword preference's cost, stated rather than hidden.
+- Scorecard, v2.1 harness, 990 golden runs (`docs/SCORECARD-v2.1.md`):
+
+  | metric | baseline | v2.0 | v2.1 |
+  |---|---|---|---|
+  | e2e | 0% | 100% | 100% |
+  | rubric (R01–R28) | 56.2 | 77.6 | 98.7 |
+  | distinct hooks | 3.5% | 28.5% | 38.5% |
+  | distinct-2 | 0.0229 | 0.0784 | 0.0935 |
+  | independent hook strength | 45.3 | 62.9 | 75.5 |
+
+  Other v2.1 golden figures:
+  - 4.73 openings per script
+  - keyword placement 93.2%
+  - shot plan pass 100%
+  - cadence inside the direction's band 72.8%
+
+  Holdout (1,050 runs, never tuned on): e2e 100%, rubric 97.7, keyword
+  placement 76.8%.
+- Open (documented, not gated):
+  - R23 disagreement on transformation loops (evaluator vs generator
+    scorer)
+  - R24 residual: practice-challenge pins, advice "tips" keywords, long
+    product keywords
+  - cozy-calm cadence under its band
+  - creator-specific advice content
