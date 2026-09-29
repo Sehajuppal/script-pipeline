@@ -1687,6 +1687,9 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
     advice_bank = Bank(rng, ADVICE_BEATS)
     story_bank = Bank(rng, STORY_BEATS)
     def t(x): return round(x, 1)
+    # D143: initialised up front (replaces the locals().get() hack) — every
+    # branch that pins a payoff card sets it.
+    payoff_on_screen = None
     # D13 (judge loop, cycle 6): FORMAT ≠ CONTENT MODE, v2. Concept routing is
     # tri-state: product prompts get product beats, advice topics get advice
     # beats, challenges get journey grammar — regardless of camera format
@@ -1812,7 +1815,8 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
             imperf_bank = Bank(rng, imp_pool)
             imp = imperf_bank.draw().format(product=ctx["product"],
                                            category=ctx["category"])
-            beats.append({"t": "3.0–5.0s", "type": "IMPERFECTION BEAT",
+            # D143: no fixed window — _fit_timeline sizes it from its words.
+            beats.append({"type": "IMPERFECTION BEAT",
                 "dialogue": imp,
                 "delivery": "Candid, unpolished — the flaw first (E7, D12). "
                             "No cover-up, no polished read.",
@@ -1835,8 +1839,7 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
                 product=ctx["product"], category=ctx["category"],
                 category_s=plural(ctx["category"]),
                 n=rng.choice([2, 3, 4]))
-            rj_start = edu_base
-            beats.append({"t": f"{t(rj_start)}–{t(rj_start + 2.0)}s", "type": "REJECTION HISTORY",
+            beats.append({"type": "REJECTION HISTORY",
                 "dialogue": rej,
                 "delivery": "Candid reviewer register — the credibility beat (D28).",
                 # D41 (judge loop, cycle 15): the old re-hook ("Here's the one
@@ -1849,7 +1852,6 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
         # education beats (F103: educational > evaluative sales pitch for personas)
         n_edu = max(1, int(D // 18))
         for i in range(n_edu):
-            start = edu_base + i * (D * 0.32 / n_edu)
             edu = edu_bank.draw().format(
                 product=ctx["product"], category=ctx["category"],
                 problem=f"the thing every {singular(ctx['category'])} gets wrong",
@@ -1860,7 +1862,7 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
                 check1="build quality that survives daily use",
                 check2="setup under five minutes",
                 check3="does the core job without gimmicks")
-            beats.append({"t": f"{t(start)}–{t(start + D*0.30/n_edu)}s", "type": "EDUCATION BEAT",
+            beats.append({"type": "EDUCATION BEAT",
                 "dialogue": edu,
                 "delivery": "Unhurried, warm — trust-building register (F138).",
                 # D15 (judge loop, cycle 6, extended cycle 8): re-hook defaults are
@@ -1878,7 +1880,6 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
         # demo beats
         n_demo = max(1, int(D // 16))
         for i in range(n_demo):
-            start = D*0.38 + i * (D*0.30 / n_demo)
             # D96 (judge loop, cycle 23): the beat's test slots draw the demo
             # test event — never the old label defaults ("the side-by-side" /
             # "night-and-day difference" / "I put it through the real-world
@@ -1940,7 +1941,7 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
             if is_audio and i == 0:
                 demo = (f"Turn your volume up — listen: this {ctx['category']} "
                         f"fills the whole room. Hear that? No crackle, no hiss.")
-            beats.append({"t": f"{t(start)}–{t(start + D*0.28/n_demo)}s", "type": "DEMO BEAT",
+            beats.append({"type": "DEMO BEAT",
                 "dialogue": demo,
                 # D111 (gauntlet, cycle 12): display-only "TEST 1" counts as
                 # dangling numbering — single-test scripts carry bare "TEST".
@@ -2006,9 +2007,7 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
                 (f"Their Day 1, their Day {ctx.get('ndays', 7)} — one creator's "
                  f"full log with {_det(ctx['product'])}. Same body, same "
                  f"light — the split doesn't lie.")
-            ev_start = D*0.68
-            beats.append({"t": f"{t(ev_start)}–{t(ev_start + D*0.14)}s",
-                "type": "EVIDENCE BEAT",
+            beats.append({"type": "EVIDENCE BEAT",
                 "dialogue": ev_dialogue,
                 # D122 (gauntlet cycle 15): on_screen is render-exactly overlay
                 # copy (make_shotlist renders it verbatim as "ON-SCREEN TEXT
@@ -2162,7 +2161,6 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
         topic = ctx["product"]
         n_adv = max(2, int(D // 14))
         for i in range(n_adv):
-            start = 3 + i * (D * 0.62 / n_adv)
             adv = advice_bank.draw().format(
                 mistake="leading with your logo instead of the payoff",
                 fix="state the viewer's reward in the first sentence",
@@ -2171,7 +2169,7 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
                 topic_noun=topic, pattern="the hook promises, the video never delivers",
                 reward="watch time", wrong="likes",
                 thing1="a payoff contract", thing2="a re-hook every 8 seconds")
-            beats.append({"t": f"{t(start)}–{t(start + D*0.60/n_adv)}s", "type": "TEACHING BEAT",
+            beats.append({"type": "TEACHING BEAT",
                 "dialogue": adv,
                 "delivery": "Unhurried, warm — then punch the re-hook (F138 + Robins).",
                 "rehook": deck.draw().format(action="show the analytics")})
@@ -2212,24 +2210,20 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
              "BEAT THE CITY",
              "And here's what fourteen mornings did."),
         ]
-        base = 3.0
         if presenter == "human":
             # Routine imperfection = relapse honesty, not product failure.
             # D43: 2.5s window → ≤7 words at conversational pace.
             imp = rng.choice([
                 f"Day {ctx['streak']}: I slept straight through it.",
                 "Tuesday I snoozed an hour. Almost quit."])
-            beats.append({"t": f"{t(base)}–{t(base + 2.5)}s", "type": "IMPERFECTION BEAT",
+            beats.append({"type": "IMPERFECTION BEAT",
                 "dialogue": imp,
                 "delivery": "Candid, unpolished — relapse first (E7, D12).",
                 "rehook": f"{t_label} — here's how it actually starts."})
-            base = 5.5
-        # 5.5s / 5.5s / 5.0s ritual windows; dialogue kept ≤13 words so it
-        # fits at conversational pace (D43: ~3 wps).
+        # D143: ritual windows are content-sized by _fit_timeline (the old
+        # fixed 5.5s/5.5s/5.0s windows ignored the words).
         for i, (dlg, card, rh) in enumerate(acts):
-            start = base + i * 5.5 if i < 2 else base + 11.0
-            end = start + (5.5 if i < 2 else 5.0)
-            beats.append({"t": f"{t(start)}–{t(end)}s", "type": "RITUAL BEAT",
+            beats.append({"type": "RITUAL BEAT",
                 "dialogue": dlg,
                 "on_screen": card,
                 "delivery": "Present-tense, unhurried — let them co-live it (F45 ritual).",
@@ -2281,7 +2275,6 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
             # branch). Bank draws unique events per script.
             ev_bank = Bank(rng, _event_src)
             for i in range(n_st):
-                start = 3 + i * (D * 0.62 / n_st)
                 st = ch_bank.draw().format(
                     n=i+1, event=ev_bank.draw(), **_beat_kw
                 ).replace("1 days in", "1 day in")
@@ -2299,7 +2292,7 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
                 # (D2), and answered by the next beat (D45).
                 rh = ("Day 1 is where it almost fell apart." if i == 0
                       else f"Day {i+1}: the moment I almost quit.")
-                beats.append({"t": f"{t(start)}–{t(start + D*0.60/n_st)}s", "type": "STORY BEAT",
+                beats.append({"type": "STORY BEAT",
                     "dialogue": st,
                     "delivery": "Conversational, present-tense. Let the audience co-experience (F45 ritual).",
                     "rehook": rh})
@@ -2337,7 +2330,6 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
             # contract, never a substitution for the current one.
             n_st = max(2, int(D // 14))
             for i in range(n_st):
-                start = 3 + i * (D * 0.62 / n_st)
                 st = story_bank.draw().format(
                     n=i+1, quest=f"testing {ctx['product']}",
                     event="it did something I didn't expect",
@@ -2348,7 +2340,7 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
                 # meta-reference like "I show what happened next".
                 rehook_action = (f"Day {i+1} of {ctx['product']} testing — "
                                  f"the {ctx['category']} test the box never shows")
-                beats.append({"t": f"{t(start)}–{t(start + D*0.60/n_st)}s", "type": "STORY BEAT",
+                beats.append({"type": "STORY BEAT",
                     "dialogue": st,
                     "delivery": "Conversational, present-tense. Let the audience co-experience (F45 ritual).",
                     "rehook": deck.draw().format(action=rehook_action)})
@@ -2372,42 +2364,48 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
                    f"Tomorrow's test: frozen fruit in the {ctx['category']} — no lies.")
     # payoff delivery
     # D27 (judge loop, cycle 10): review scripts pin the verdict on screen.
-    payoff_beat = {"t": f"{t(D*0.72)}–{t(D*0.85)}s", "type": "PAYOFF",
+    payoff_beat = {"type": "PAYOFF",
         "dialogue": payoff,
         "delivery": "Slow down. Let the result land. No scripted laugh (F142)."}
-    if locals().get("payoff_on_screen"):
+    if payoff_on_screen:
         payoff_beat["on_screen"] = payoff_on_screen
     beats.append(payoff_beat)    # comment bait
-    beats.append({"t": f"{t(D*0.85)}–{t(D*0.94)}s", "type": "COMMENT BAIT",
+    beats.append({"type": "COMMENT BAIT",
         "dialogue": bait,
         "note": "Deliberate disagreement / fill-in-blank = comment engine (playbook §17)."})
     # CTA — late, never opening (playbook: 215/349 viral reels have no CTA; make yours explicit but last)
-    beats.append({"t": f"{t(D*0.94)}–{t(D)}s", "type": "CTA",
+    beats.append({"type": "CTA",
         "dialogue": cta,
         "delivery": "Brisk 160–180 wpm (F86)."})
-    # D65 (2026-09-27, prompt-pipeline regression): DE-OVERLAP PASS. The old
-    # fixed-fraction anchors (edu at edu_base, demo at D*0.38, evidence at
-    # D*0.68, payoff at D*0.72) overlapped by construction for common inputs
-    # (seed 902–906: edu/demo shared 2.6s on EVERY seed; transformation evidence
-    # overlapped the payoff) — the pipeline's D55 gate failed every fresh maker
-    # run loudly. Geometry fix only, no content change: walk beats in timeline
-    # order and push any beat that starts inside the previous beat's window to
-    # start where the previous ends. D43 (dialogue fits its window) is a
-    # separate content-budgeting problem — filed as pipeline-feedback for the
-    # judge loop; the gates keep failing loudly on it until the copy is
-    # budgeted.
-    beats.sort(key=lambda b: _bt(b))
-    cursor = 0.0
-    for b in beats:
-        s, e = _bt(b)
-        if s is None:
-            continue
-        if s < cursor - 0.05:
-            shift = cursor - s
-            b["t"] = f"{t(s + shift)}–{t(e + shift)}s"
-            s, e = s + shift, e + shift
-        cursor = max(cursor, e)
-    return fam, beats
+    # D143 (pipeline v2 — replaces the D65 de-overlap pass): TIMELINE FROM
+    # CONTENT. The old fixed-fraction anchors (edu at edu_base, demo at D*0.38,
+    # evidence at D*0.68, payoff D*0.72–0.85, bait D*0.85–0.94, CTA D*0.94–D,
+    # a 2.0s imperfection window for 20–34 words) never looked at the words,
+    # and D65 then shifted beats forward without re-timing the contract —
+    # 687/990 runs failed D43, 627 D74, 279 D94, 270 D78. Body beats are now
+    # appended in NARRATIVE ORDER with no window; _fit_timeline budgets the
+    # copy, sizes every window from its own words (vsp.timing.layout: tiled
+    # 3.0s→D, payoff inside the D7 72–85% band) and re-times the hook's
+    # "delivered at ~Xs" contract to the real payoff start (D94).
+    hook, body = _fit_timeline(beats[:2], beats[2:], D, presenter)
+    return fam, hook + body
+
+
+def _fit_timeline(hook, body, duration, presenter="ai"):
+    """D143: final spoken form -> content budget -> content-sized layout ->
+    payoff contract re-timed. Returns (hook_stack, body_beats)."""
+    from vsp import timing
+    D = float(duration)
+    body = [dict(b) for b in body]
+    # D63: the gates measure the final SPOKEN words — the voice pass runs
+    # before sizing (generate() re-applies it; it is idempotent).
+    for b in body:
+        for k in ("dialogue", "rehook"):
+            if b.get(k):
+                b[k] = humanize_dialogue(b[k])
+    laid, info = timing.layout(body, D, start=3.0)
+    hook = timing.retime_contract(hook, info["payoff_start"])
+    return hook, laid
 
 def _bt(b):
     """Parse a beat's 't' window ('3.0–7.4s') -> (start, end). Module-level so the
