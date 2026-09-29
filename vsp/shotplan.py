@@ -717,7 +717,7 @@ def _pick_frame0(g, c):
         vts = lib(first)["visual_types"] or ["product-in-action"]
         vt, src = vts[0], f"the {c['format'] or 'default'} recipe"
     cands = [t for t in _frame0_candidates(vt, rec, c) if _frame0_ok(t, c) and fits_product(t, c)]
-    if g.get("explicit") and re.search(r"(?i)\bhands?\b", g.get("direction") or ""):
+    if src == "the frame-0 direction" and re.search(r"(?i)\bhands?\b", g.get("direction") or ""):
         # the maker's frame 0 puts hands on the product: hands types first
         cands = [t for t in cands if "hands" in lib(t)["needs"]] + \
             [t for t in cands if "hands" not in lib(t)["needs"]]
@@ -1066,10 +1066,9 @@ def plan(script, shots, ctx=None):
                     if reframe:
                         base = _fill(FRAMING[eff], c)
                         prim = c.get("primary_variant") or {}
-                        if prim.get("visual") and prim.get("visual_type") == vt and eff == t:
-                            base = _tidy(re.sub(r"(?i)^frame[\s-]*0\b[^:]*:\s*", "",
-                                                str(prim["visual"])).replace('"', ""))
-                            base = re.sub(r"(?i)\bto camera\b", "toward the lens", base)
+                        pv = _clean_visual(prim.get("visual")) if prim.get("visual_type") == vt else ""
+                        if eff == t and len(pv.split()) >= 4:
+                            base = pv            # hook variant A's own frame-0 description
                         txt = _tidy("Frame 0: " + base[:1].lower() + base[1:] + ". " + _safe_sentences(g["direction"]))
                     explicit_text = txt
                 move = lib(eff)["move"]
