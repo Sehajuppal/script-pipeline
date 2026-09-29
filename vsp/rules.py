@@ -357,6 +357,549 @@ def check_d142(script, bundle_text, ctx):
     return out
 
 
+# ------------------------------------------- v2.1 gate-1 rules (RULES §68)
+# Each rule validates ONLY what is present: silent when its key (or, for
+# D158, a matching phrase) is absent, so legacy fixtures and --script-json
+# inputs keep their exact outcomes (docs/CREATIVE-PLAN.md §0.2). Messages:
+# "<id>: <what>" — one per distinct problem, capped at MAX_MSGS per rule.
+MAX_MSGS = 6
+LETTERS = "ABCDEFGHIJ"
+HV_TEXT_FIELDS = ("verbal", "overlay", "visual", "audio", "caption_line")
+HV_VIEWER_FIELDS = ("verbal", "overlay", "caption_line")
+AI_TOGGLES = {"tiktok": "is_aigc", "instagram": "is_ai_generated",
+              "youtube_shorts": "containsSyntheticMedia"}
+HASHTAG_CAPS = {"tiktok": 5, "instagram": 5, "youtube_shorts": 15}
+CAPTION_CAPS = {"tiktok": 2200, "instagram": 2200}    # DISC-06 hard limits
+YT_TITLE_MAX, YT_DESC_MAX_BYTES, COVER_MAX_WORDS = 100, 5000, 5
+WPM_RANGE = (140, 200)
+MAX_STATIC_S = 3.5
+HEX = re.compile(r"^#[0-9A-Fa-f]{6}$")
+GRADES = ("P", "S", "M", "A")
+HUMORS = ("none", "light", "high")
+AI_MUSIC = re.compile(r"\bAI[- ](?:generated )?(?:music|track|song|soundtrack|beat)s?\b|"
+                      r"\bgenerated (?:music|track|song)s?\b|\bsuno\b|\budio\b", re.I)
+NEGATION = re.compile(r"\b(?:no|never|not|don'?t|do not|avoid|without|nor|isn'?t)\b",
+                      re.I)
+SYNTH_VOICE = re.compile(r"\b(?:synthetic|AI[- ]generated|AI voice|generated voice|"
+                         r"text[- ]to[- ]speech|TTS|voice clone|cloned voice|"
+                         r"synthesi[sz]ed)\b", re.I)
+DISCLOSED = re.compile(r"\bdisclos\w*", re.I)
+HUMAN_CLAIM = re.compile(r"\b(?:human voice(?: only)?|human read|real (?:human|person)|"
+                         r"a real person|actual person|not (?:an? )?AI|not synthetic|"
+                         r"100% human|recorded by a human)\b", re.I)
+
+
+def _norm_ws(s):
+    return " ".join(_txt(s).split())
+
+
+def _first3(text):
+    return tuple(L.norm(text).split()[:3])
+
+
+def _negated(text, start, span=28):
+    """True when a negation word sits just before `start` in `text`."""
+    return bool(NEGATION.search(text[max(0, start - span):start]))
+
+
+def _affirmed(rx, text):
+    """First match of rx in text that is not negated (per line) or None."""
+    for ln in (text or "").splitlines():
+        for m in rx.finditer(ln):
+            if not _negated(ln, m.start()):
+                return m
+    return None
+
+
+def _prompt_claim_keys(prompt):
+    return {_claim_key(m.group(0)) for m in L.ABSOLUTE.finditer(prompt or "")}
+
+
+def claim_screens(text, ctx, ai=None):
+    """The primary-hook screens (D37, D136, D139, D141, D158, D31 braces,
+    + D137 when ai) applied to one viewer-facing string -> ['D37 price
+    '$25'', ...] (rule id + excerpt), in that order."""
+    t = _txt(text)
+    prompt = ctx["prompt"]
+    out = []
+    if not t.strip():
+        return out
+    if "{" in t or "}" in t:
+        out.append("D31 raw {slot}")
+    m = L.PRICE.search(t) or re.search(r"\$\d+", t)
+    if m and not L.price_in(prompt):
+        out.append(f"D37 price {_q(m.group(0), 20)}")
+    for rx in L.SOCIAL_PROOF:
+        m = rx.search(t)
+        if m and not rx.search(prompt):
+            out.append(f"D136 social proof {_q(m.group(0), 30)}")
+            break
+    m = L.GENERIC_BAIT.search(t)
+    if m:
+        out.append(f"D139 bait {_q(m.group(0), 30)}")
+    allowed = _prompt_claim_keys(prompt)
+    for m in L.ABSOLUTE.finditer(t):
+        if _claim_key(m.group(0)) not in allowed:
+            out.append(f"D141 absolute {_q(m.group(0), 30)}")
+            break
+    for pid, cls, hit in L.offer_urgency_hits(t, prompt):
+        out.append(f"D158 {cls} {_q(hit, 30)}")
+        break
+    if ai is None:
+        ai = ctx.get("presenter") == "ai"
+    if ai:
+        m = L.first_match(L.AI_FIRST_PERSON, t)
+        if m:
+            out.append(f"D137 lived experience {_q(m.group(0), 30)}")
+    return out
+
+
+def _cap(msgs, rid):
+    if len(msgs) > MAX_MSGS:
+        msgs = msgs[:MAX_MSGS - 1] + [f"{rid}: +{len(msgs) - MAX_MSGS + 1} more "
+                                      f"problem(s) of the same kind"]
+    return msgs
+
+
+def _overlay_words(ov):
+    return len(L.norm(ov).split())
+
+
+def check_d154(script, bundle_text, ctx):
+    """D154 (§1.2): hook_variants integrity. Silent when the key is absent."""
+    from vsp import creative_vocab as CV
+    hv = script.get("hook_variants")
+    if hv is None:
+        return []
+    if not isinstance(hv, list):
+        return [f"D154: hook_variants is a {type(hv).__name__}, not a list of "
+                f"variants"]
+    out = []
+    n = len(hv)
+    if not 3 <= n <= 5:
+        out.append(f"D154: {n} hook variant(s) — the contract is 3–5 (variant "
+                   f"A = the script's hook + 2–4 alternates)")
+    vs = [v for v in hv if isinstance(v, dict)]
+    if len(vs) != n:
+        out.append(f"D154: {n - len(vs)} hook variant(s) are not objects")
+    if not vs:
+        return out
+    ids = [_txt(v.get("id")) for v in vs]
+    if ids != list(LETTERS[:len(vs)]):
+        out.append(f"D154: variant ids {ids} — must be unique and lettered "
+                   f"A, B, C… in order")
+    prim = [i for i, v in enumerate(vs) if v.get("is_primary") is True]
+    if prim != [0] or any(v.get("is_primary") not in (None, False, True)
+                          for v in vs):
+        out.append(f"D154: is_primary on {[ids[i] for i in prim] or 'no variant'}"
+                   f" — exactly one primary, and it is variant A")
+    a = vs[0]
+    hook, it0 = verbal_hook(script), frame0_item(script)
+    f0 = _txt(it0.get("on_screen")) if it0 else ""
+    if _norm_ws(a.get("verbal")) != _norm_ws(hook):
+        out.append(f"D154: variant A verbal {_q(a.get('verbal'), 50)} != the "
+                   f"script's VERBAL HOOK {_q(hook, 50)}")
+    if _norm_ws(a.get("overlay")) != _norm_ws(f0):
+        out.append(f"D154: variant A overlay {_q(a.get('overlay'), 30)} != the "
+                   f"VISUAL TRIGGER on_screen {_q(f0, 30)}")
+    vts = [_txt(v.get("visual_type")) for v in vs]
+    bad_vt = [x for x in vts if x not in CV.VISUAL_TYPES]
+    if bad_vt:
+        out.append(f"D154: unknown visual_type {bad_vt} (creative_vocab.VISUAL_TYPES)")
+    dup_vt = sorted({x for x in vts if vts.count(x) > 1})
+    if dup_vt:
+        out.append(f"D154: visual_type repeated across variants {dup_vt} — "
+                   f"openings that share a frame-0 visual are one creative")
+    arcs = [_txt(v.get("archetype")) for v in vs]
+    bad_a = [x for x in arcs if x not in CV.HOOK_ARCHETYPES]
+    if bad_a:
+        out.append(f"D154: unknown archetype {bad_a} (creative_vocab.HOOK_ARCHETYPES)")
+    if len(vs) >= 4 and len(set(arcs)) < 3:
+        out.append(f"D154: {len(set(arcs))} distinct archetype(s) across "
+                   f"{len(vs)} variants — need at least 3")
+    f3 = [_first3(v.get("verbal")) for v in vs]
+    dup3 = sorted({" ".join(x) for x in f3 if x and f3.count(x) > 1})
+    if dup3:
+        out.append(f"D154: variants share their first three words {dup3}")
+    ai = ctx["presenter"] == "ai"
+    for v, vid in zip(vs, ids):
+        tag = f"variant {vid or '?'}"
+        verbal, ov = _txt(v.get("verbal")).strip(), _txt(v.get("overlay")).strip()
+        nw = len(verbal.split())
+        if not verbal or nw > 8:
+            out.append(f"D154: {tag} verbal is {nw} words (1–8): {_q(verbal, 60)}")
+        if ov:
+            if _overlay_words(ov) > 3 and "|" not in ov:
+                out.append(f"D154: {tag} overlay {_q(ov, 40)} is "
+                           f"{_overlay_words(ov)} words (<= 3)")
+            else:
+                ok, why = L.overlay_is_clean(ov, verbal)
+                if not ok:
+                    out.append(f"D154: {tag} overlay {_q(ov, 40)} is {why} "
+                               f"{_q(verbal, 50)}")
+        for k in HV_TEXT_FIELDS:
+            t = _txt(v.get(k))
+            if k not in HV_VIEWER_FIELDS:
+                if "{" in t or "}" in t:
+                    out.append(f"D154: {tag} {k} carries a raw {{slot}}")
+                continue
+            hits = claim_screens(t, ctx, ai=ai)
+            if hits:
+                out.append(f"D154: {tag} {k} {_q(t, 50)} fails the hook "
+                           f"screens ({', '.join(hits)})")
+        flags = CV.HOOK_ARCHETYPES.get(_txt(v.get("archetype"))) or {}
+        if ai and flags.get("human_only"):
+            out.append(f"D154: {tag} archetype {v.get('archetype')!r} is "
+                       f"human-only — an AI presenter has no lived story (D137)")
+        need = [(flags.get("requires_price"), L.price_in, "a price (D37)"),
+                (flags.get("requires_proof"), L.proof_in, "proof (D136)"),
+                (flags.get("requires_offer"), L.offer_in, "an offer (D158)")]
+        for req, fn, what in need:
+            if req and not fn(ctx["prompt"]):
+                out.append(f"D154: {tag} archetype {v.get('archetype')!r} "
+                           f"needs {what} and the prompt supplies none")
+    return _cap(out, "D154")
+
+
+def _line1(text):
+    for ln in _txt(text).splitlines():
+        if ln.strip():
+            return ln.strip()
+    return ""
+
+
+def _tags(text):
+    return [t.lower() for t in HASHTAG.findall(_txt(text))]
+
+
+def _link_names(groups):
+    from vsp.creative_vocab import LINK_GROUPS
+    return "/".join(repr(LINK_GROUPS[i][0]) for i in sorted(groups)) or "none"
+
+
+def _platform_texts(name, entry):
+    """(field, text) for the viewer-facing strings of one platform entry."""
+    keys = {"youtube_shorts": ("title", "description")}.get(
+        name, ("caption", "description_line"))
+    return [(k, _txt(entry.get(k))) for k in keys if _txt(entry.get(k)).strip()]
+
+
+def check_d155(script, bundle_text, ctx):
+    """D155 (§1.3): discovery packaging integrity. Silent when absent."""
+    from vsp.creative_vocab import link_groups_in
+    d = script.get("discovery")
+    if d is None:
+        return []
+    if not isinstance(d, dict):
+        return [f"D155: discovery is a {type(d).__name__}, not an object"]
+    out = []
+    kw = d.get("primary_keyword")
+    if kw is not None and not (isinstance(kw, str) and kw.strip()):
+        out.append("D155: primary_keyword is empty — nothing to place")
+        kw = None
+    ai = ctx["presenter"] == "ai"
+    cap_groups = link_groups_in(_txt(script.get("caption")))
+    plats = d.get("platforms")
+    if plats is not None and not isinstance(plats, dict):
+        out.append(f"D155: platforms is a {type(plats).__name__}, not an object")
+        plats = None
+    for name, entry in (plats or {}).items():
+        if not isinstance(entry, dict):
+            out.append(f"D155: platforms.{name} is not an object")
+            continue
+        texts = _platform_texts(name, entry)
+        tags = entry.get("hashtags")
+        if tags is not None and not (isinstance(tags, list)
+                                     and all(isinstance(t, str) for t in tags)):
+            out.append(f"D155: {name} hashtags is not a list of strings")
+            tags = []
+        bad = [t for t in tags or [] if not HASHTAG.fullmatch(t.strip())]
+        if bad:
+            out.append(f"D155: {name} hashtags {bad[:3]} are not '#tag' strings")
+        every = {t.strip().lstrip("#").lower() for t in tags or [] if t.strip()}
+        for _, t in texts:
+            every |= set(_tags(t))
+        cap = HASHTAG_CAPS.get(name)
+        if cap and len(every) > cap:
+            out.append(f"D155: {name} carries {len(every)} distinct hashtags "
+                       f"(max {cap})")
+        if every and all(t in L.GENERIC_TAGS for t in every):
+            out.append(f"D155: {name} hashtags are generic-only "
+                       f"({' '.join('#' + t for t in sorted(every))}) (D140)")
+        for field, t in texts:
+            hits = claim_screens(t, ctx, ai=ai)
+            if hits:
+                out.append(f"D155: {name} {field} fails the caption screens "
+                           f"({', '.join(hits)})")
+            groups = link_groups_in(t)
+            if len(groups) > 1 or not groups <= cap_groups:
+                out.append(f"D155: {name} {field} names a CTA destination the "
+                           f"script caption does not (D46: "
+                           f"{_link_names(groups)} vs caption "
+                           f"{_link_names(cap_groups)})")
+        if name in CAPTION_CAPS:
+            cap_txt = _txt(entry.get("caption"))
+            n16 = len(cap_txt.encode("utf-16-le")) // 2
+            if n16 > CAPTION_CAPS[name]:
+                out.append(f"D155: {name} caption is {n16} characters (max "
+                           f"{CAPTION_CAPS[name]})")
+        if name == "youtube_shorts":
+            title = _txt(entry.get("title"))
+            angle = "<" in title or ">" in title
+            if len(title) > YT_TITLE_MAX or angle:
+                out.append(f"D155: youtube_shorts title {_q(title, 40)} is "
+                           f"{len(title)} chars{' with < or >' if angle else ''}"
+                           f" (<= {YT_TITLE_MAX}, no < >)")
+            nb = len(_txt(entry.get("description")).encode("utf-8"))
+            if nb > YT_DESC_MAX_BYTES:
+                out.append(f"D155: youtube_shorts description is {nb} UTF-8 "
+                           f"bytes (max {YT_DESC_MAX_BYTES})")
+        disc_field = "description" if name == "youtube_shorts" else "caption"
+        body = _txt(entry.get(disc_field))
+        if ai and body.strip() and not L.has_ai_disclosure_line(body):
+            out.append(f"D155: presenter=ai but the {name} {disc_field} has no "
+                       f"AI disclosure line (D138)")
+        tog = entry.get("toggles")
+        if ai and isinstance(tog, dict) and name in AI_TOGGLES \
+                and AI_TOGGLES[name] in tog and tog[AI_TOGGLES[name]] is not True:
+            out.append(f"D155: presenter=ai but {name} toggles."
+                       f"{AI_TOGGLES[name]} is {tog[AI_TOGGLES[name]]!r} (must be true)")
+        if kw:
+            where = [("title", _txt(entry.get("title")))] \
+                if name == "youtube_shorts" else \
+                [("caption line 1", _line1(entry.get("caption")))]
+            for field, t in where:
+                if t and not L.keyword_in(t, kw):
+                    out.append(f"D155: primary keyword {_q(kw, 30)} missing "
+                               f"from the {name} {field} {_q(t, 50)}")
+    cover = d.get("cover")
+    if isinstance(cover, dict):
+        ct = _txt(cover.get("text"))
+        if len(ct.split()) > COVER_MAX_WORDS:
+            out.append(f"D155: cover text {_q(ct, 40)} is {len(ct.split())} "
+                       f"words (<= {COVER_MAX_WORDS})")
+        hits = claim_screens(ct, ctx, ai=ai)
+        if hits:
+            out.append(f"D155: cover text fails the screens ({', '.join(hits)})")
+        fs = cover.get("frame_s")
+        dur = script.get("duration_s") or 30
+        if fs is not None and not (isinstance(fs, (int, float))
+                                   and not isinstance(fs, bool)
+                                   and 0 <= fs <= float(dur)):
+            out.append(f"D155: cover frame_s {fs!r} is outside the video "
+                       f"(0–{dur}s)")
+    elif cover is not None:
+        out.append("D155: cover is not an object")
+    return _cap(out, "D155")
+
+
+def _sized_wpm(it):
+    """The rate the maker sized this item's window for (D43/D143): 150 wpm
+    when its delivery carries a SLOW_KEY, else 180."""
+    return 60.0 * G.words_per_sec(_txt(it.get("delivery")))
+
+
+def _pair(v, lo=None, hi=None):
+    """[a, b] numbers with a <= b (and within [lo, hi]) -> (a, b) or None."""
+    if not (isinstance(v, (list, tuple)) and len(v) == 2 and all(
+            isinstance(x, (int, float)) and not isinstance(x, bool) for x in v)):
+        return None
+    a, b = float(v[0]), float(v[1])
+    if a > b or (lo is not None and a < lo) or (hi is not None and b > hi):
+        return None
+    return a, b
+
+
+def _num(v):
+    return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+
+def check_d156(script, bundle_text, ctx):
+    """D156: direction integrity (ids, pacing, music lane, AI voice, energy
+    curve). Silent when script['direction'] is absent."""
+    from vsp import creative_vocab as CV
+    d = script.get("direction")
+    if d is None:
+        return []
+    if not isinstance(d, dict):
+        return [f"D156: direction is a {type(d).__name__}, not an object"]
+    out = []
+    if "schema_version" in d and d.get("schema_version") != 1:
+        out.append(f"D156: schema_version {d.get('schema_version')!r} (want 1)")
+    if "vibe" in d and d.get("vibe") not in CV.VIBES:
+        out.append(f"D156: vibe {d.get('vibe')!r} is not a creative_vocab.VIBES id")
+    sv = d.get("secondary_vibe")
+    if sv is not None and (sv not in CV.VIBES or sv == d.get("vibe")):
+        out.append(f"D156: secondary_vibe {sv!r} is not a second VIBES id")
+    tone = d.get("tone")
+    if tone is not None:
+        if not isinstance(tone, dict):
+            out.append("D156: tone is not an object")
+        else:
+            if "voice" in tone and tone.get("voice") not in CV.TONES:
+                out.append(f"D156: tone.voice {tone.get('voice')!r} is not a "
+                           f"creative_vocab.TONES id")
+            al = tone.get("allowed")
+            if al is not None and not (isinstance(al, list)
+                                       and all(x in CV.TONES for x in al)):
+                out.append(f"D156: tone.allowed {al!r} holds non-TONES ids")
+            if "humor" in tone and tone.get("humor") not in HUMORS:
+                out.append(f"D156: tone.humor {tone.get('humor')!r} (none|light|high)")
+    if "energy" in d and not (_num(d.get("energy")) and 1 <= d["energy"] <= 5):
+        out.append(f"D156: energy {d.get('energy')!r} is not 1–5")
+    pac = d.get("pacing")
+    if pac is not None:
+        if not isinstance(pac, dict):
+            out.append("D156: pacing is not an object")
+            pac = {}
+        if "target_wpm" in pac:
+            w = _pair(pac.get("target_wpm"), *WPM_RANGE)
+            if w is None:
+                out.append(f"D156: pacing.target_wpm {pac.get('target_wpm')!r} "
+                           f"— need [lo, hi] within {WPM_RANGE[0]}–{WPM_RANGE[1]} wpm")
+            else:
+                sized = [(_sized_wpm(it), _type(it)) for it in items(script)
+                         if _txt(it.get("dialogue")).strip()]
+                if sized:
+                    need, typ = max(sized)
+                    if w[1] < need:
+                        out.append(f"D156: pacing.target_wpm tops out at "
+                                   f"{w[1]:g} wpm but {typ} was sized for "
+                                   f"{need:g} wpm — pacing never asks for speech "
+                                   f"slower than the beat was sized for")
+        if "max_static_s" in pac:
+            ms = pac.get("max_static_s")
+            if not (_num(ms) and 0 < ms <= MAX_STATIC_S):
+                out.append(f"D156: pacing.max_static_s {ms!r} — must be "
+                           f"<= {MAX_STATIC_S} (D48)")
+        for k in ("avg_shot_s", "cuts_per_10s"):
+            if k in pac and (_pair(pac.get(k)) is None or _pair(pac.get(k))[0] <= 0):
+                out.append(f"D156: pacing.{k} {pac.get(k)!r} is not a positive "
+                           f"[lo, hi] pair")
+        if "pattern_interrupt_s" in pac and not (
+                _num(pac.get("pattern_interrupt_s")) and pac["pattern_interrupt_s"] > 0):
+            out.append(f"D156: pacing.pattern_interrupt_s "
+                       f"{pac.get('pattern_interrupt_s')!r} is not a positive number")
+    curve = d.get("energy_curve")
+    if curve is not None:
+        its = items(script)
+        if not isinstance(curve, list) or len(curve) != len(its):
+            out.append(f"D156: energy_curve has "
+                       f"{len(curve) if isinstance(curve, list) else 'no'} "
+                       f"entries for {len(its)} hook_stack + beats items — one "
+                       f"per item, script order")
+        else:
+            for i, (e, it) in enumerate(zip(curve, its)):
+                if not isinstance(e, dict):
+                    out.append(f"D156: energy_curve[{i}] is not an object")
+                    continue
+                if _txt(e.get("type")).strip().upper() != _type(it):
+                    out.append(f"D156: energy_curve[{i}] type "
+                               f"{_q(e.get('type'), 30)} != item {_q(_type(it), 30)}"
+                               f" (script order)")
+                if not (_num(e.get("energy")) and 1 <= e["energy"] <= 5):
+                    out.append(f"D156: energy_curve[{i}] energy "
+                               f"{e.get('energy')!r} is not 1–5")
+                (es, ee), (s, x) = G.parse_t(_txt(e.get("t"))), window(it)
+                if None not in (es, s) and (abs(es - s) > 0.05 or abs(ee - x) > 0.05):
+                    out.append(f"D156: energy_curve[{i}] t {_q(e.get('t'), 20)} "
+                               f"!= item t {_q(it.get('t'), 20)}")
+    mus = d.get("music")
+    if mus is not None:
+        if not isinstance(mus, dict):
+            out.append("D156: music is not an object")
+        else:
+            if mus.get("in_master") is not False:
+                out.append(f"D156: music.in_master is {mus.get('in_master')!r} — "
+                           f"music is added at upload from the platform's "
+                           f"commercial library, never baked into the master")
+            lic = mus.get("licensing")
+            miss = [p for p in CV.PLATFORMS
+                    if not (isinstance(lic, dict) and isinstance(lic.get(p), dict)
+                            and _txt(lic[p].get("library")).strip())]
+            if miss:
+                out.append(f"D156: music.licensing lacks a library for {miss} — "
+                           f"one commercial lane per platform")
+            tt = lic.get("tiktok") if isinstance(lic, dict) else None
+            if isinstance(tt, dict):
+                m = _affirmed(AI_MUSIC, _txt(tt.get("library")) + "\n"
+                              + _txt(tt.get("note")))
+                if m:
+                    out.append(f"D156: music.licensing.tiktok names AI music "
+                               f"({_q(m.group(0), 20)}) — no AI music on TikTok "
+                               f"commercial content")
+            if "bpm" in mus and _pair(mus.get("bpm"), 30, 250) is None:
+                out.append(f"D156: music.bpm {mus.get('bpm')!r} is not a "
+                           f"[lo, hi] pair in 30–250")
+            if "vo_ducking_db" in mus and not (_num(mus.get("vo_ducking_db"))
+                                               and mus["vo_ducking_db"] <= 0):
+                out.append(f"D156: music.vo_ducking_db {mus.get('vo_ducking_db')!r}"
+                           f" must be <= 0 dB")
+    look = d.get("look")
+    if isinstance(look, dict) and look.get("palette_hex") is not None:
+        ph = look.get("palette_hex")
+        bad = [x for x in ph if not HEX.match(_txt(x))] if isinstance(ph, list) else [ph]
+        if bad:
+            out.append(f"D156: look.palette_hex {bad[:3]} are not #RRGGBB")
+    cam = d.get("camera")
+    if isinstance(cam, dict) and cam.get("movement") is not None:
+        mv = cam.get("movement")
+        bad = [x for x in mv if x not in CV.CAMERA_MOVES] if isinstance(mv, list) else [mv]
+        if bad:
+            out.append(f"D156: camera.movement {bad[:3]} are not CAMERA_MOVES ids")
+    ts = d.get("text_style")
+    if isinstance(ts, dict) and "max_words_per_card" in ts and not (
+            _num(ts.get("max_words_per_card")) and 1 <= ts["max_words_per_card"] <= 3):
+        out.append(f"D156: text_style.max_words_per_card "
+                   f"{ts.get('max_words_per_card')!r} — cards carry <= 3 words (D17)")
+    ev = d.get("evidence")
+    if isinstance(ev, list):
+        bad = [e.get("grade") for e in ev if isinstance(e, dict)
+               and e.get("grade") not in GRADES]
+        if bad:
+            out.append(f"D156: evidence grades {bad[:3]} (P|S|M|A)")
+    voice = d.get("voice")
+    if voice is not None:
+        if not isinstance(voice, dict):
+            out.append("D156: voice is not an object")
+        else:
+            vp = voice.get("presenter")
+            if vp is not None and vp != ctx["presenter"]:
+                out.append(f"D156: voice.presenter {vp!r} != the script's "
+                           f"presenter {ctx['presenter']!r}")
+            spec = _txt(voice.get("spec"))
+            if ctx["presenter"] == "ai":
+                probs = []
+                if not SYNTH_VOICE.search(spec):
+                    probs.append("names no synthetic voice")
+                if not DISCLOSED.search(spec):
+                    probs.append("never says it is disclosed")
+                m = _affirmed(HUMAN_CLAIM, spec)
+                if m:
+                    probs.append(f"claims a human voice ({_q(m.group(0), 20)})")
+                if probs:
+                    out.append(f"D156: presenter=ai but voice.spec "
+                               f"{', '.join(probs)} — an AI voice is a disclosed "
+                               f"synthetic voice that never claims to be human")
+    return _cap(out, "D156")
+
+
+def check_d158(script, bundle_text, ctx):
+    """D158: no fake urgency, scarcity or offers in viewer text (+ caption)
+    unless the prompt supplies it (lexicon.offer_in allow-path)."""
+    hits = []
+    for pid, cls, m in L.offer_urgency_hits(ctx["viewer_text"], ctx["prompt"]):
+        h = f"{cls} {_q(m, 30)}"
+        if h not in hits:
+            hits.append(h)
+    if hits:
+        return [f"D158: fake urgency/scarcity/offer in viewer text "
+                f"({', '.join(hits[:3])}) — the prompt supplies no such offer "
+                f"(FTC dark patterns: false limited-time, low-stock and discount "
+                f"claims)"]
+    return []
+
+
 # ------------------------------------------------------- v2 gate-2 rules
 AI_LABEL_INSTRUCTION = re.compile(
     r"[\"\u201c]AI persona[\"\u201d]\s+label\b[^\n]{0,60}?\bframe[\s-]*0\b",
@@ -475,6 +1018,27 @@ V2_SCRIPT_RULES = (
          "RULES.md §66 D142 (PROPOSED); Netflix timed-text 20 cps", check_d142),
 )
 
+V21_SCRIPT_RULES = (
+    # ---- gate 1, pipeline v2.1 creative layer (RULES.md §68) — silent when
+    # the key / phrase is absent (docs/CREATIVE-PLAN.md §0.2)
+    Rule("D154", "hook_variants integrity (3-5, A = the script hook, distinct "
+         "visual types / first 3 words, every variant passes the hook screens)",
+         _S, _E, "RULES.md §68 D154; docs/CREATIVE-PLAN.md §1.2; Meta "
+         "same-opening = same creative; TikTok 3-5 creatives", check_d154),
+    Rule("D155", "discovery packaging integrity (hashtag caps, YouTube limits, "
+         "caption screens, one CTA destination, AI disclosure, keyword in line 1)",
+         _S, _E, "RULES.md §68 D155; docs/CREATIVE-PLAN.md §1.3; "
+         "discovery-seo PLATFORM_PACKAGING / DISC-03,04,06,08,09", check_d155),
+    Rule("D156", "direction integrity (ids, 140-200 wpm never slower than the "
+         "beat sizing, max_static_s <= 3.5, music not in master + 3 licensing "
+         "lanes, AI voice disclosed, one energy_curve entry per item)", _S, _E,
+         "RULES.md §68 D156; docs/CREATIVE-PLAN.md §1.1; vibe-tone-music §3, §4",
+         check_d156),
+    Rule("D158", "no fake urgency, scarcity or offers unless the prompt "
+         "supplies them", _S, _E, "RULES.md §68 D158; FTC dark-patterns report "
+         "(2022); hooks-deep-dive RISKY_PHRASES UR-01..04", check_d158),
+)
+
 LEGACY_BUNDLE_RULES = (
     # ---- gate 2, legacy (d8f8759 order) ----
     Rule("DELIVERABLE", "DELIVERABLE block present verbatim (strengthened: "
@@ -516,7 +1080,7 @@ V2_BUNDLE_RULES = (
          "RULES.md §66 D151; vsp/fixtures.py", check_d151),
 )
 
-REGISTRY = (LEGACY_SCRIPT_RULES + V2_SCRIPT_RULES
+REGISTRY = (LEGACY_SCRIPT_RULES + V2_SCRIPT_RULES + V21_SCRIPT_RULES
             + LEGACY_BUNDLE_RULES + V2_BUNDLE_RULES)
 
 LEGACY_IDS = {"script": tuple(r.id for r in LEGACY_SCRIPT_RULES),

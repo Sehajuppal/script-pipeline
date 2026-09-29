@@ -490,7 +490,380 @@ def unit_cases():
 
 def all_cases():
     good, cases = legacy_cases()
-    return good, cases + new_cases(good)
+    return good, cases + new_cases(good) + creative_cases(good)
+
+
+# ------------------------------------------- WS-EVAL: v2.1 creative layer
+# Synthetic, contract-valid creative keys (docs/CREATIVE-PLAN.md §1.1-1.3)
+# for the legacy good fixture — written from the contract only, never from
+# a builder's output. creative_fixture(good) passes gates 1 and 2; each
+# creative_cases() failure breaks exactly one contract clause.
+
+def creative_direction(s):
+    """A valid script['direction'] for script s (energy_curve = one entry
+    per hook_stack + beats item, in script order)."""
+    ai = s.get("presenter") == "ai"
+    items = list(s.get("hook_stack") or []) + list(s.get("beats") or [])
+    lib = {"tiktok": {"library": "TikTok Commercial Music Library (CML)",
+                      "note": "business account, organic + ads; TikTok only"},
+           "instagram": {"library": "Meta Sound Collection",
+                         "note": "royalty-free on Facebook and Instagram only"},
+           "youtube_shorts": {"library": "YouTube Audio Library",
+                              "note": "no Content ID claims; not the Shorts label library"}}
+    return {
+        "schema_version": 1, "vibe": "raw-ugc",
+        "vibe_reason": "a one-take phone demo reads native", "secondary_vibe": None,
+        "tone": {"voice": "warm", "allowed": ["warm", "confident", "calm"],
+                 "humor": "light", "notes": "talk to one friend"},
+        "energy": 3,
+        "pacing": {"target_wpm": [155, 180], "avg_shot_s": [2.0, 3.5],
+                   "cuts_per_10s": [3, 5], "max_static_s": 3.5,
+                   "pattern_interrupt_s": 4.0},
+        "energy_curve": [{"t": it.get("t", ""), "type": it.get("type"),
+                          "energy": 5 if i < 2 else 3}
+                         for i, it in enumerate(items)],
+        "music": {"moods": ["upbeat", "bright"], "bpm": [95, 115],
+                  "genres": ["acoustic pop"], "vo_ducking_db": -12,
+                  "sfx": ["product click"], "in_master": False,
+                  "search_queries": ["upbeat acoustic", "bright pop 100 bpm",
+                                     "happy ukulele"], "licensing": lib},
+        "look": {"lighting": "window key at 45 degrees", "palette_names": ["warm white"],
+                 "palette_hex": ["#F5EFE6", "#2B2B2B"], "grade": "natural",
+                 "set": "a bathroom counter", "wardrobe": "a plain tee"},
+        "camera": {"style": "handheld phone, stabilised", "lens": "main 1x",
+                   "movement": ["handheld", "push-in"]},
+        "text_style": {"case": "upper", "weight": "bold",
+                       "max_words_per_card": 3, "placement": "top safe zone"},
+        "transitions": ["hard-cut"],
+        "showmanship": "a reaction face at the payoff",
+        "voice": ({"presenter": "ai", "spec": "Natural-prosody synthetic voice, "
+                   "disclosed; no robotic cadence; never claims to be human."}
+                  if ai else
+                  {"presenter": "human", "spec": "The creator's own voice, "
+                   "recorded on the day; no TTS, no voice changer."}),
+        "do": ["show the product in use at frame 0"],
+        "dont": ["no music in the master"],
+        "evidence": [{"claim": "lo-fi native footage holds attention",
+                      "grade": "M", "source": "vibe-tone-music §2.1"}]}
+
+
+def creative_variants(s):
+    """Valid script['hook_variants'] for the legacy good fixture: variant A
+    is the script's own hook + frame-0 overlay; B-D differ in archetype,
+    visual_type and first three words."""
+    return [
+        {"id": "A", "is_primary": True, "archetype": "transformation",
+         "family": "transformation", "verbal": "Look at this.",
+         "overlay": "BEFORE | AFTER", "visual_type": "before-after-split",
+         "visual": "Frame 0: split screen, before left, after right.",
+         "audio": "the real product sound", "caption_line": "Test caption.",
+         "score": 0.7, "features": {"length_band": 0.6}, "reasons": ["label pair"]},
+        {"id": "B", "is_primary": False, "archetype": "negative-command",
+         "family": "negative-command", "verbal": "Stop skipping the test product step.",
+         "overlay": "TEST PRODUCT STEP", "visual_type": "problem-state",
+         "visual": "Frame 0: the messy counter before the pass.",
+         "audio": "a hard cut on the first word",
+         "caption_line": "Stop skipping the test product step.",
+         "score": 0.6, "features": {}, "reasons": []},
+        {"id": "C", "is_primary": False, "archetype": "question",
+         "family": "curiosity-gap", "verbal": "Does the test product really work?",
+         "overlay": "TEST PRODUCT", "visual_type": "product-in-action",
+         "visual": "Frame 0: hands mid-pass with the test product.",
+         "audio": "the real product sound",
+         "caption_line": "Does the test product really work?",
+         "score": 0.55, "features": {}, "reasons": []},
+        {"id": "D", "is_primary": False, "archetype": "showcase",
+         "family": "bold-claim", "verbal": "Watch the test product in action.",
+         "overlay": "IN ACTION", "visual_type": "satisfying-macro",
+         "visual": "Frame 0: extreme close-up of the texture.",
+         "audio": "the real product sound, no music",
+         "caption_line": "Watch the test product in action.",
+         "score": 0.5, "features": {}, "reasons": []},
+    ]
+
+
+AI_LINE = "made with an AI persona"
+
+
+def creative_discovery(s):
+    """Valid script['discovery'] for the legacy good fixture (AI lane adds
+    the disclosure line to every caption and sets every AI toggle)."""
+    ai = s.get("presenter") == "ai"
+    tail = f"\n{AI_LINE}" if ai else ""
+    tags = ["#testproduct", "#beautytok"]
+    return {
+        "schema_version": 1, "primary_keyword": "test product",
+        "secondary_keywords": ["test product review"],
+        "search_intents": ["is the test product worth it"],
+        "placement": {"spoken_by_s": 3.0, "on_screen_by_s": 0.5,
+                      "caption_first_60": True, "hashtag": "#testproduct",
+                      "cover_text": True},
+        "comment_word": "TEST",
+        "cover": {"frame_s": 7.5, "text": "TEST PRODUCT RESULT",
+                  "safe_box": "x120-888 y420-1248", "why": "the after-state"},
+        "platforms": {
+            "tiktok": {"caption": "Test product: one pass and it is done." + tail
+                       + "\n#testproduct #beautytok", "hashtags": tags,
+                       "keywords_to_suggest": ["test product", "test product review"],
+                       "toggles": {"is_aigc": ai}, "notes": ["suggest 2 keywords"]},
+            "instagram": {"caption": "Test product, one pass and done." + tail
+                          + "\n#testproduct #beautytok", "hashtags": tags,
+                          "description_line": "Hands apply the test product in one pass.",
+                          "toggles": {"is_ai_generated": ai},
+                          "trial_reels": {"recommended": True,
+                                          "protocol": "variants as manual trials, 24/48/72 h"},
+                          "notes": []},
+            "youtube_shorts": {"title": "Test product: one pass, done",
+                               "description": "Test product demo in one pass." + tail
+                               + "\n#testproduct #beautytok",
+                               "hashtags": tags, "related_video": None,
+                               "toggles": {"containsSyntheticMedia": ai}, "notes": []}},
+        "posting": [{"item": "post the variants the same day", "grade": "A",
+                     "source": "discovery-seo §3"}],
+        "checklist": ["keyword spoken by 3.0 s"]}
+
+
+def creative_fixture(good):
+    """good + valid direction, hook_variants and discovery."""
+    s = dict(good)
+    s["direction"] = creative_direction(s)
+    s["hook_variants"] = creative_variants(s)
+    s["discovery"] = creative_discovery(s)
+    return s
+
+
+def _hv(s, i, **kw):
+    hv = [dict(v) for v in s["hook_variants"]]
+    hv[i] = {**hv[i], **kw}
+    return hv
+
+
+def _dsc(s, plat=None, **kw):
+    d = json_copy(s["discovery"])
+    if plat:
+        d["platforms"][plat].update(kw)
+    else:
+        d.update(kw)
+    return d
+
+
+def _dir(s, **kw):
+    d = json_copy(s["direction"])
+    for k, v in kw.items():
+        if "." in k:
+            a, b = k.split(".", 1)
+            d[a] = {**d[a], b: v}
+        else:
+            d[k] = v
+    return d
+
+
+def json_copy(obj):
+    import json
+    return json.loads(json.dumps(obj))
+
+
+def creative_cases(good):
+    """v2.1 gate-1 cases (RULES.md §68): one failing case per key violation
+    of D154 / D155 / D156 / D158 (the message carries the id; "only" = no
+    other rule fires) plus passing controls with fully valid synthetic
+    creative keys on both presenter lanes."""
+    c = creative_fixture(good)
+    cai = creative_fixture(good_ai(good))
+    hv = c["hook_variants"]
+
+    def only(rid):
+        return {"only": rid}
+
+    cases = [
+        # ---- passing controls
+        ("v21-creative-good", c, True, []),
+        ("v21-creative-good-ai", cai, True, []),
+        ("v21-creative-3-variants-good", {**c, "hook_variants": hv[:3]}, True, []),
+        ("v21-d158-prompt-supplied-offer", {**good,
+            "prompt": "test product, 20% off this week",
+            "beats": _with_beat(good, 2, dialogue="20% off this week. One pass.")},
+         True, []),
+        # ---- D154 hook_variants
+        ("d154-too-few-variants", {**c, "hook_variants": hv[:2]},
+         False, ["D154:"], only("D154")),
+        ("d154-not-a-list", {**c, "hook_variants": {"A": hv[0]}},
+         False, ["D154:"], only("D154")),
+        ("d154-ids-not-lettered", {**c, "hook_variants": _hv(c, 1, id="X")},
+         False, ["D154:"], only("D154")),
+        ("d154-primary-not-a", {**c, "hook_variants": [
+            {**hv[0], "is_primary": False}, {**hv[1], "is_primary": True}] + hv[2:]},
+         False, ["D154:"], only("D154")),
+        ("d154-primary-verbal-drift", {**c, "hook_variants": _hv(
+            c, 0, verbal="Look at this now.")}, False, ["D154:"], only("D154")),
+        ("d154-primary-overlay-drift", {**c, "hook_variants": _hv(
+            c, 0, overlay="DAY 1 | DAY 7")}, False, ["D154:"], only("D154")),
+        ("d154-duplicate-visual-type", {**c, "hook_variants": _hv(
+            c, 2, visual_type="problem-state")}, False, ["D154:"], only("D154")),
+        ("d154-unknown-visual-type", {**c, "hook_variants": _hv(
+            c, 2, visual_type="talking-head")}, False, ["D154:"], only("D154")),
+        ("d154-unknown-archetype", {**c, "hook_variants": _hv(
+            c, 2, archetype="shock-value")}, False, ["D154:"], only("D154")),
+        ("d154-two-archetypes-in-four", {**c, "hook_variants": [
+            hv[0], {**hv[1], "archetype": "question"}, hv[2],
+            {**hv[3], "archetype": "question"}]}, False, ["D154:"], only("D154")),
+        ("d154-shared-first-three-words", {**c, "hook_variants": _hv(
+            c, 2, verbal="Stop skipping the test product.", overlay="TEST PRODUCT")},
+         False, ["D154:"], only("D154")),
+        ("d154-variant-over-8-words", {**c, "hook_variants": _hv(
+            c, 1, verbal="Stop skipping the test product step, it matters a lot.")},
+         False, ["D154:"], only("D154")),
+        ("d154-variant-raw-slot", {**c, "hook_variants": _hv(
+            c, 1, verbal="Stop skipping the {category} step.", overlay="")},
+         False, ["D154:"], only("D154")),
+        ("d154-overlay-not-hook-phrase", {**c, "hook_variants": _hv(
+            c, 1, overlay="SKIPPING STEP")}, False, ["D154:"], only("D154")),
+        ("d154-overlay-over-3-words", {**c, "hook_variants": _hv(
+            c, 1, overlay="SKIPPING THE TEST PRODUCT")}, False, ["D154:"], only("D154")),
+        ("d154-variant-invented-price", {**c, "hook_variants": _hv(
+            c, 2, caption_line="The $25 test product, tested.")},
+         False, ["D154:", "D37"], only("D154")),
+        ("d154-variant-social-proof", {**c, "hook_variants": _hv(
+            c, 2, verbal="12,000+ orders cannot be wrong.", overlay="")},
+         False, ["D154:", "D136"], only("D154")),
+        ("d154-variant-engagement-bait", {**c, "hook_variants": _hv(
+            c, 3, caption_line="Tag a friend who needs this.")},
+         False, ["D154:", "D139"], only("D154")),
+        ("d154-variant-absolute-claim", {**c, "hook_variants": _hv(
+            c, 3, verbal="The best product ever, tested.", overlay="")},
+         False, ["D154:", "D141"], only("D154")),
+        ("d154-variant-fake-urgency", {**c, "hook_variants": _hv(
+            c, 3, verbal="Only 3 left of the test product.", overlay="")},
+         False, ["D154:", "D158"], only("D154")),
+        ("d154-ai-variant-lived-experience", {**cai, "hook_variants": _hv(
+            cai, 1, verbal="I tried the test product for a week.", overlay="")},
+         False, ["D154:", "D137"], only("D154")),
+        ("d154-ai-human-only-archetype", {**cai, "hook_variants": _hv(
+            cai, 2, archetype="story-time")}, False, ["D154:"], only("D154")),
+        ("d154-price-anchor-without-price", {**c, "hook_variants": _hv(
+            c, 2, archetype="price-anchor")}, False, ["D154:"], only("D154")),
+        ("d154-proof-first-without-proof", {**c, "hook_variants": _hv(
+            c, 2, archetype="proof-first")}, False, ["D154:"], only("D154")),
+        # ---- D155 discovery
+        ("d155-not-an-object", {**c, "discovery": ["test product"]},
+         False, ["D155:"], only("D155")),
+        ("d155-tiktok-too-many-hashtags", {**c, "discovery": _dsc(
+            c, "tiktok", hashtags=["#testproduct", "#beautytok", "#skincare",
+                                   "#glowup", "#makeuptok", "#grwm"])},
+         False, ["D155:"], only("D155")),
+        ("d155-instagram-generic-only-hashtags", {**c, "discovery": _dsc(
+            c, "instagram", caption="Test product, one pass and done.\n#fyp #viral",
+            hashtags=["#fyp", "#viral"])}, False, ["D155:", "D140"], only("D155")),
+        ("d155-youtube-16-hashtags", {**c, "discovery": _dsc(
+            c, "youtube_shorts", hashtags=["#t%d" % i for i in range(16)])},
+         False, ["D155:"], only("D155")),
+        ("d155-youtube-title-too-long", {**c, "discovery": _dsc(
+            c, "youtube_shorts", title="Test product " + "x" * 100)},
+         False, ["D155:"], only("D155")),
+        ("d155-youtube-title-angle-brackets", {**c, "discovery": _dsc(
+            c, "youtube_shorts", title="Test product <one pass>")},
+         False, ["D155:"], only("D155")),
+        ("d155-youtube-description-over-5000-bytes", {**c, "discovery": _dsc(
+            c, "youtube_shorts", description="Test product. " + "é" * 2600)},
+         False, ["D155:"], only("D155")),
+        ("d155-caption-invented-price", {**c, "discovery": _dsc(
+            c, "tiktok", caption="Test product for $19.\n#testproduct #beautytok")},
+         False, ["D155:", "D37"], only("D155")),
+        ("d155-caption-social-proof", {**c, "discovery": _dsc(
+            c, "instagram", caption="Test product, 4.9 stars.\n#testproduct")},
+         False, ["D155:", "D136"], only("D155")),
+        ("d155-caption-engagement-bait", {**c, "discovery": _dsc(
+            c, "tiktok", caption="Test product. Tag a friend.\n#testproduct")},
+         False, ["D155:", "D139"], only("D155")),
+        ("d155-title-absolute-claim", {**c, "discovery": _dsc(
+            c, "youtube_shorts", title="Test product, guaranteed results")},
+         False, ["D155:", "D141"], only("D155")),
+        ("d155-caption-fake-urgency", {**c, "discovery": _dsc(
+            c, "tiktok", caption="Test product, today only.\n#testproduct")},
+         False, ["D155:", "D158"], only("D155")),
+        ("d155-second-cta-destination", {**c, "discovery": _dsc(
+            c, "instagram", caption="Test product, one pass. Link in bio.\n#testproduct")},
+         False, ["D155:", "D46"], only("D155")),
+        ("d155-ai-caption-no-disclosure", {**cai, "discovery": _dsc(
+            cai, "tiktok", caption="Test product: one pass and it is done.\n#testproduct")},
+         False, ["D155:", "D138"], only("D155")),
+        ("d155-ai-toggle-false", {**cai, "discovery": _dsc(
+            cai, "youtube_shorts", toggles={"containsSyntheticMedia": False})},
+         False, ["D155:"], only("D155")),
+        ("d155-keyword-not-in-caption-line-1", {**c, "discovery": _dsc(
+            c, "instagram", caption="One pass and done.\nTest product.\n#testproduct")},
+         False, ["D155:"], only("D155")),
+        ("d155-keyword-not-in-youtube-title", {**c, "discovery": _dsc(
+            c, "youtube_shorts", title="One pass, done")}, False, ["D155:"], only("D155")),
+        ("d155-cover-text-over-5-words", {**c, "discovery": _dsc(
+            c, cover={"frame_s": 7.5, "text": "THE TEST PRODUCT RESULT IN ONE PASS"})},
+         False, ["D155:"], only("D155")),
+        ("d155-cover-frame-outside-video", {**c, "discovery": _dsc(
+            c, cover={"frame_s": 42.0, "text": "TEST PRODUCT"})},
+         False, ["D155:"], only("D155")),
+        # ---- D156 direction
+        ("d156-not-an-object", {**c, "direction": "raw-ugc"},
+         False, ["D156:"], only("D156")),
+        ("d156-unknown-vibe", {**c, "direction": _dir(c, vibe="grunge")},
+         False, ["D156:"], only("D156")),
+        ("d156-unknown-tone", {**c, "direction": _dir(c, **{"tone.voice": "sarcastic"})},
+         False, ["D156:"], only("D156")),
+        ("d156-unknown-camera-move", {**c, "direction": _dir(
+            c, **{"camera.movement": ["crash-zoom"]})}, False, ["D156:"], only("D156")),
+        ("d156-wpm-outside-140-200", {**c, "direction": _dir(
+            c, **{"pacing.target_wpm": [150, 215]})}, False, ["D156:"], only("D156")),
+        ("d156-wpm-slower-than-beat-sizing", {**c, "direction": _dir(
+            c, **{"pacing.target_wpm": [140, 160]})}, False, ["D156:"], only("D156")),
+        ("d156-max-static-over-3-5", {**c, "direction": _dir(
+            c, **{"pacing.max_static_s": 5.0})}, False, ["D156:"], only("D156")),
+        ("d156-music-in-master", {**c, "direction": _dir(
+            c, **{"music.in_master": True})}, False, ["D156:"], only("D156")),
+        ("d156-licensing-missing-platform", {**c, "direction": _dir(
+            c, **{"music.licensing": {k: v for k, v in c["direction"]["music"][
+                "licensing"].items() if k != "youtube_shorts"}})},
+         False, ["D156:"], only("D156")),
+        ("d156-ai-music-on-tiktok", {**c, "direction": _dir(
+            c, **{"music.licensing": {**c["direction"]["music"]["licensing"],
+                                      "tiktok": {"library": "AI-generated music (Suno)",
+                                                 "note": "paid plan"}}})},
+         False, ["D156:"], only("D156")),
+        ("d156-ai-voice-claims-human", {**cai, "direction": _dir(
+            cai, voice={"presenter": "ai", "spec": "Conversational human read, "
+                        "warm and confident."})}, False, ["D156:"], only("D156")),
+        ("d156-ai-voice-not-disclosed", {**cai, "direction": _dir(
+            cai, voice={"presenter": "ai", "spec": "Natural-prosody synthetic "
+                        "voice, warm."})}, False, ["D156:"], only("D156")),
+        ("d156-voice-presenter-mismatch", {**c, "direction": _dir(
+            c, voice={"presenter": "ai", "spec": "Natural-prosody synthetic voice, "
+                      "disclosed."})}, False, ["D156:"], only("D156")),
+        ("d156-energy-curve-count", {**c, "direction": _dir(
+            c, energy_curve=c["direction"]["energy_curve"][:-1])},
+         False, ["D156:"], only("D156")),
+        ("d156-energy-curve-order", {**c, "direction": _dir(
+            c, energy_curve=list(reversed(c["direction"]["energy_curve"])))},
+         False, ["D156:"], only("D156")),
+        ("d156-energy-out-of-range", {**c, "direction": _dir(c, energy=7)},
+         False, ["D156:"], only("D156")),
+        ("d156-bad-palette-hex", {**c, "direction": _dir(
+            c, **{"look.palette_hex": ["warm white"]})}, False, ["D156:"], only("D156")),
+        ("d156-card-over-3-words", {**c, "direction": _dir(
+            c, **{"text_style.max_words_per_card": 6})}, False, ["D156:"], only("D156")),
+        # ---- D158 offer / urgency (script viewer text + caption)
+        ("d158-fake-limited-time", {**good, "beats": _with_beat(
+            good, 2, dialogue="Limited time. One pass, done.")},
+         False, ["D158:"], only("D158")),
+        ("d158-fake-scarcity", {**good, "beats": _with_beat(
+            good, 2, dialogue="Only 3 left. One pass, done.")},
+         False, ["D158:"], only("D158")),
+        ("d158-fake-discount-caption", {**good,
+            "caption": "Test caption. 30% off this week. #beautytok"},
+         False, ["D158:"], only("D158")),
+        ("d158-offer-does-not-allow-scarcity", {**good,
+            "prompt": "test product, 20% off this week",
+            "beats": _with_beat(good, 2, dialogue="Only 3 left. One pass, done.")},
+         False, ["D158:"], only("D158")),
+    ]
+    return cases
 
 
 # ------------------------------------------------ WS-INT: learned-state units

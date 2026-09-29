@@ -247,6 +247,49 @@ def first_match(patterns, text):
     return None
 
 
+KEYWORD_STOP = {"a", "an", "the", "for", "with", "of", "and", "in", "on", "to",
+                "my", "your", "this", "that", "is", "it", "at", "by", "vs"}
+
+
+def _kstem(w):
+    w = w.lower().strip(".'’")
+    for pos in ("'s", "’s"):
+        if w.endswith(pos):
+            w = w[:-2]
+    if len(w) > 4 and w.endswith("es") and w[:-2].endswith(("sh", "ch", "x", "ss", "z")):
+        return w[:-2]
+    if len(w) > 3 and w.endswith("s") and not w.endswith("ss"):
+        return w[:-1]
+    return w
+
+
+def keyword_tokens(text):
+    """Plural/possessive-tolerant tokens; hyphens split words."""
+    return [_kstem(w) for w in norm((text or "").replace("-", " ")).split()]
+
+
+def keyword_in(text, keyword, loose=False):
+    """D155/D161: the keyword occurs in `text` as a contiguous token run
+    (case-, plural- and hyphen-insensitive). loose=True also accepts every
+    content token of the keyword present anywhere in `text` (DISC-01 "exact
+    or all content lemmas")."""
+    k = keyword_tokens(keyword)
+    t = keyword_tokens(text)
+    if not k or not t:
+        return False
+    if any(t[i:i + len(k)] == k for i in range(len(t) - len(k) + 1)):
+        return True
+    if loose:
+        content = [w for w in k if w not in KEYWORD_STOP]
+        return bool(content) and all(w in t for w in content)
+    return False
+
+
+def compact_tag(text):
+    """'#Milk-Frothers' / 'milk frother' -> 'milkfrother' (plural-tolerant)."""
+    return "".join(keyword_tokens(re.sub(r"[#_]", " ", text or "")))
+
+
 def overlay_is_clean(overlay, hook):
     """D144: frame-0 overlay is a contiguous <=3-word phrase of the hook, or a
     label form ("BEFORE | AFTER", "DAY 1 | DAY 7", "TEST", ...)."""
