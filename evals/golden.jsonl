@@ -1,0 +1,33 @@
+{"id": "sunrise-lamp", "prompt": "a $12 LED sunrise alarm lamp", "concept": "product", "note": "README flagship; integer price supplied"}
+{"id": "projector-decimal", "prompt": "a $12.99 mini projector", "concept": "product", "note": "decimal price (crashed pre-2.0)"}
+{"id": "door-lock", "prompt": "portable door lock", "concept": "product"}
+{"id": "silk-pillowcase", "prompt": "silk pillowcase", "concept": "product"}
+{"id": "milk-frother", "prompt": "electric milk frother", "concept": "product", "note": "routed to default niche pre-2.0"}
+{"id": "hair-wax", "prompt": "hair wax stick", "concept": "product"}
+{"id": "eyelashes", "prompt": "magnetic eyelashes", "concept": "product"}
+{"id": "lunch-bag", "prompt": "insulated lunch bag", "concept": "product"}
+{"id": "car-trash", "prompt": "car trash can with lid", "concept": "product"}
+{"id": "bird-feeder", "prompt": "smart bird feeder with camera", "concept": "product"}
+{"id": "bands", "prompt": "resistance bands set", "concept": "product"}
+{"id": "yoga-mat", "prompt": "yoga mat", "concept": "product"}
+{"id": "power-bank", "prompt": "solar power bank", "concept": "product"}
+{"id": "earbuds", "prompt": "noise cancelling earbuds", "concept": "product"}
+{"id": "white-noise", "prompt": "white noise machine", "concept": "product"}
+{"id": "office-chair", "prompt": "ergonomic office chair", "concept": "product", "note": "substring hijack: chair -> hair"}
+{"id": "lantern", "prompt": "rechargeable camping lantern", "concept": "product"}
+{"id": "trunk", "prompt": "trunk organizer", "concept": "product"}
+{"id": "lick-mat", "prompt": "dog lick mat", "concept": "product"}
+{"id": "posture", "prompt": "a $9 posture corrector", "concept": "product"}
+{"id": "serum", "prompt": "vitamin c serum", "concept": "product"}
+{"id": "inflator", "prompt": "cordless tire inflator", "concept": "product"}
+{"id": "laptop-stand", "prompt": "ergonomic laptop stand", "concept": "product"}
+{"id": "phone-clamp", "prompt": "phone clamp for desk", "concept": "product", "note": "substring hijack: clamp -> lamp"}
+{"id": "braces-prompt", "prompt": "a {limited} edition water bottle", "concept": "product", "note": "literal braces (crashed pre-2.0)"}
+{"id": "kitchen-finds", "prompt": "things in my kitchen that just make sense", "concept": "showcase"}
+{"id": "car-finds", "prompt": "things in my car that just make sense", "concept": "showcase"}
+{"id": "coffee-30", "prompt": "I stopped buying coffee for 30 days", "concept": "challenge"}
+{"id": "insta-14", "prompt": "I deleted Instagram for 14 days", "concept": "challenge"}
+{"id": "read-30", "prompt": "I read 10 pages every day for 30 days", "concept": "challenge"}
+{"id": "sugar-21", "prompt": "I quit sugar for 21 days", "concept": "challenge"}
+{"id": "morning-routine", "prompt": "my 5am morning routine", "concept": "routine"}
+{"id": "hooks-advice", "prompt": "why your hooks fail", "concept": "advice"}
