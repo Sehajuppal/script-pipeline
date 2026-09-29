@@ -64,10 +64,14 @@ BUDGETS = {
 }
 HARD = ("D73", "D31", "D37", "D136", "D137", "D139", "D141", "D144", "R01", "R07")
 SOFT = ("R02", "R15", "P2", "CARD")
-# a frame-0 card that ends on a verb reads as a fragment ("RESISTANCE BANDS WEAR")
+# a frame-0 card that ends on a verb, quantifier or function word reads as a
+# fragment ("RESISTANCE BANDS WEAR", "LOCK ALL")
 CARD_VERB_END = frozenset("""wear wears break breaks quit quits fail fails last lasts
 work works hold holds held lasted broke use uses using used tested tried went made
-needed do does did make makes keep keeps kept got get gets""".split())
+needed do does did make makes keep keeps kept got get gets all every each any most
+no one some the a an of to for with on in at by from and or but wrong too just
+very""".split())
+MIN_MARGINAL = 0.002          # a pick must add >= this much normalised gain
 SLOT_RE = P.SLOT_RE
 TOKEN_RE = re.compile(r"\{\w+\}|[A-Za-z0-9][A-Za-z0-9'\u2019-]*")
 # an object noun phrase: what opener / tail swaps pivot on
@@ -1041,12 +1045,16 @@ def thin_spots(contexts):
             f"fitting template, e.g. {ex!r}" for (fam, fmt, pres), (n, _k, ex) in rows]
 
 
-def select_pack(elites, contexts, pack_max, per_family):
+def select_pack(elites, contexts, pack_max, per_family, existing=()):
     """Greedy marginal-gain selection: after each pick the joined pools grow,
-    so a second template for the same thin spot earns less."""
+    so a second template for the same thin spot earns less. A template whose
+    slot-normalised form ({product} ~ the {category}) matches an existing
+    template or a pick (trigram Jaccard > 0.5) is skipped: it would only
+    re-word the product noun, not the hook."""
     k = {c["key"]: c["k"] for c in contexts}
     n = len(contexts) or 1
-    chosen, fam_n, norms = [], collections.Counter(), []
+    chosen, fam_n = [], collections.Counter()
+    norms = [np_normal(t) for t in existing]
     pool = [e for e in elites if not e["dominates"] and not e["gate_risk"]
             and e["quality"] >= 0.9 and e["gain"] > 0]
     while len(chosen) < pack_max:
@@ -1061,7 +1069,7 @@ def select_pack(elites, contexts, pack_max, per_family):
             s = m / (n * GAIN_UNIT) * e["quality"] * (0.6 + 0.4 * e["novelty"])
             if s > best_s + 1e-12:
                 best, best_s = e, s
-        if best is None:
+        if best is None or best_s < MIN_MARGINAL:
             break
         best["marginal"] = round(best_s, 5)
         chosen.append(best)
@@ -1140,8 +1148,14 @@ def evolve(budget="full", use_llm="auto", seed=0, write=True, log=None, provider
     say = log or (lambda m: None)
     t0 = time.time()
     record = []
-    with holdout_guard(record):
-        res = _evolve(budget, use_llm, seed, write, say, provider, rows, pack_dir, limits)
+    bank = {k: {g: list(v) for g, v in d.items()} for k, d in PHRASE_GROUPS.items()}
+    try:
+        with holdout_guard(record):
+            res = _evolve(budget, use_llm, seed, write, say, provider, rows, pack_dir, limits)
+    finally:            # mined openers extend the bank for this run only
+        for k, d in bank.items():
+            PHRASE_GROUPS[k].clear()
+            PHRASE_GROUPS[k].update(d)
     res["holdout_opened"] = list(record)
     res["secs"] = round(time.time() - t0, 2)
     return res
@@ -1283,7 +1297,7 @@ def _evolve(budget, use_llm, seed, write, say, provider, rows, pack_dir, limits=
         if not parents:
             break
     elites = sorted(archive.values(), key=lambda e: (-e["fitness"], e["template"]))
-    chosen = select_pack(elites, contexts, B["pack_max"], B["per_family"])
+    chosen = select_pack(elites, contexts, B["pack_max"], B["per_family"], existing)
     additions = [(e["family"], e["template"]) for e in chosen]
     pv = preview(vsm, sample, hooks, additions) if additions else None
     verdict, why = "no-pack", "no elite adds diversity"
