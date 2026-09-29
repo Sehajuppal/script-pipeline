@@ -1,0 +1,417 @@
+{
+ "created": "2026-09-29T04:46:22+00:00",
+ "base_ref": "333f695",
+ "tasks": [
+  {
+   "id": "T-DRIFT-FAMILIES",
+   "title": "Follow the live hook-family ranking (D148)",
+   "kind": "drift",
+   "rationale": "pick_hook should prefer vsp.research.live_hook_family(pack, niche, presenter) (whole ranked list, mapped research niches) over the static NICHE_HOOK map.",
+   "files": [
+    "viral_script_maker.py (pick_hook, NICHE_HOOK)",
+    "vsp/research.py"
+   ],
+   "done_when": "golden family mismatch vs live ranking < 50% per cell with verify ACCEPT",
+   "self_serve": null,
+   "score": 22.4,
+   "evidence": [
+    "gadgets/ai: live negative-command (ugc-ads:problem-solution) vs used {'curiosity-gap': 24, 'transformation': 4, 'bold-claim': 2} (mismatch 100%, n=30)",
+    "gadgets/human: live negative-command (ugc-ads:problem-solution) vs used {'curiosity-gap': 30} (mismatch 100%, n=30)",
+    "fitness/ai: live curiosity-gap (fitness:day-counter) vs used {'bold-claim': 15} (mismatch 100%, n=15)",
+    "fitness/human: live story-time (fitness:gym-relatable) vs used {'bold-claim': 15} (mismatch 100%, n=15)",
+    "home/human: live negative-command (ugc-ads:problem-solution) vs used {'story-time': 6, 'transformation': 4} (mismatch 100%, n=10)",
+    "pets/ai: live negative-command (ugc-ads:problem-solution) vs used {'transformation': 10} (mismatch 100%, n=10)"
+   ],
+   "examples": [],
+   "status": "open",
+   "first_seen": "2026-09-29",
+   "acceptance": "python3 -m vsp.improve verify --base 333f695 --cand HEAD",
+   "constraints": [
+    "work on a new branch or worktree — never commit to main/master",
+    "never edit vsp/gates.py, vsp/rules.py, vsp/lexicon.py to make a check pass: fix the maker / shot list",
+    "never edit evals/golden.jsonl, evals/holdout.jsonl, evals/scorecard.py or vsp/rubric.py (the yardstick)",
+    "open a PR with the verify evidence; never merge your own PR"
+   ]
+  },
+  {
+   "id": "T-HOOK-DIVERSITY",
+   "title": "Grow the hook template pool where it is thinnest",
+   "kind": "diversity",
+   "rationale": "pick_hook draws among the top-scored templates of the niche's family; families with 1-2 fitting templates ship the same hook for every seed.",
+   "files": [
+    "learned/hook_packs/ (via evolve + promote)",
+    "viral_script_maker.py (HOOKS)"
+   ],
+   "done_when": "golden hook distinct ratio up with verify ACCEPT",
+   "self_serve": "python3 -m vsp.improve evolve --budget full && python3 -m vsp.improve promote <new pack>",
+   "score": 16.6,
+   "evidence": [
+    "golden: hooks distinct 0.4455 · distinct-2 0.1648 · seed diversity None · fallback 0.0 · product families {'bold-claim': '18 distinct / 48 runs', 'curiosity-gap': '70 distinct / 118 runs', 'negative-command': '2 distinct / 3 runs', 'story-time': '3 distinct / 6 runs', 'transformation': '34 distinct / 75 runs'}"
+   ],
+   "examples": [],
+   "status": "open",
+   "first_seen": "2026-09-29",
+   "acceptance": "python3 -m vsp.improve verify --base 333f695 --cand HEAD",
+   "constraints": [
+    "work on a new branch or worktree — never commit to main/master",
+    "never edit vsp/gates.py, vsp/rules.py, vsp/lexicon.py to make a check pass: fix the maker / shot list",
+    "never edit evals/golden.jsonl, evals/holdout.jsonl, evals/scorecard.py or vsp/rubric.py (the yardstick)",
+    "open a PR with the verify evidence; never merge your own PR"
+   ]
+  },
+  {
+   "id": "T-RUBRIC-R14",
+   "title": "Raise R14: caption echoes the comment keyword",
+   "kind": "rubric",
+   "rationale": "R14 fails on 5.7% of holdout runs ({'routine': 20}). ",
+   "files": [
+    "viral_script_maker.py (build_caption, _cta_word)"
+   ],
+   "done_when": "R14 failures on holdout drop (target 0) with verify ACCEPT",
+   "self_serve": null,
+   "score": 3.7,
+   "evidence": [
+    "golden: by concept {'routine': 10}; by format {'demo': 2, 'pov-vlog': 2, 'review': 2, 'talking-head': 2, 'transformation': 2}; by presenter {'ai': 5, 'human': 5}",
+    "holdout: by concept {'routine': 20}; by format {'demo': 4, 'pov-vlog': 4, 'review': 4, 'talking-head': 4, 'transformation': 4}; by presenter {'ai': 10, 'human': 10}"
+   ],
+   "examples": [
+    "`h-gym-routine|demo|ai|1` hook 'Day 14 of the 6AM routine.' · overlay '6AM ROUTINE'\n    repro: `python3 pipeline.py 'my 6am gym routine' --format demo --presenter ai --seed 1 --duration 30 --out-dir /tmp/vsp-repro-h-gym-routine-demo-ai-1 ; python3 vsp/rubric.py /tmp/vsp-repro-h-gym-routine-demo-ai-1/script.json`",
+    "`h-gym-routine|demo|human|1` hook 'Day 14 of my 6AM routine.' · overlay '6AM ROUTINE'\n    repro: `python3 pipeline.py 'my 6am gym routine' --format demo --presenter human --seed 1 --duration 30 --out-dir /tmp/vsp-repro-h-gym-routine-demo-human-1 ; python3 vsp/rubric.py /tmp/vsp-repro-h-gym-routine-demo-human-1/script.json`",
+    "`h-gym-routine|pov-vlog|ai|1` hook 'Day 14 of the 6AM routine.' · overlay '6AM ROUTINE'\n    repro: `python3 pipeline.py 'my 6am gym routine' --format pov-vlog --presenter ai --seed 1 --duration 30 --out-dir /tmp/vsp-repro-h-gym-routine-pov-vlog-ai-1 ; python3 vsp/rubric.py /tmp/vsp-repro-h-gym-routine-pov-vlog-ai-1/script.json`"
+   ],
+   "status": "open",
+   "first_seen": "2026-09-29",
+   "acceptance": "python3 -m vsp.improve verify --base 333f695 --cand HEAD",
+   "constraints": [
+    "work on a new branch or worktree — never commit to main/master",
+    "never edit vsp/gates.py, vsp/rules.py, vsp/lexicon.py to make a check pass: fix the maker / shot list",
+    "never edit evals/golden.jsonl, evals/holdout.jsonl, evals/scorecard.py or vsp/rubric.py (the yardstick)",
+    "open a PR with the verify evidence; never merge your own PR"
+   ]
+  },
+  {
+   "id": "T-D60-D124",
+   "title": "Make D124 (Frame-0 Visual Collision Outranks Motion) code-traceable or mark it superseded",
+   "kind": "doc-only",
+   "rationale": "D124 has no code reference (docs/RULE-COVERAGE.md). Implement it in the maker/shot list with a self-test case, or record in RULES.md why it is superseded (humans own RULES.md).",
+   "files": [
+    "viral_script_maker.py or make_shotlist.py",
+    "vsp/selftest_cases.py (new case)",
+    "RULES.md (human review)"
+   ],
+   "done_when": "tools/rule_coverage.py no longer lists D124 as DOC-ONLY, verify ACCEPT",
+   "self_serve": null,
+   "score": 2.0,
+   "evidence": [
+    "section §54b — 2026-09-28 — judge loop cycle 32 (heated…"
+   ],
+   "examples": [],
+   "status": "open",
+   "first_seen": "2026-09-29",
+   "acceptance": "python3 -m vsp.improve verify --base 333f695 --cand HEAD",
+   "constraints": [
+    "work on a new branch or worktree — never commit to main/master",
+    "never edit vsp/gates.py, vsp/rules.py, vsp/lexicon.py to make a check pass: fix the maker / shot list",
+    "never edit evals/golden.jsonl, evals/holdout.jsonl, evals/scorecard.py or vsp/rubric.py (the yardstick)",
+    "open a PR with the verify evidence; never merge your own PR"
+   ]
+  },
+  {
+   "id": "T-D60-D127",
+   "title": "Make D127 (Borrowed-Interest Hook Frames) code-traceable or mark it superseded",
+   "kind": "doc-only",
+   "rationale": "D127 has no code reference (docs/RULE-COVERAGE.md). Implement it in the maker/shot list with a self-test case, or record in RULES.md why it is superseded (humans own RULES.md).",
+   "files": [
+    "viral_script_maker.py or make_shotlist.py",
+    "vsp/selftest_cases.py (new case)",
+    "RULES.md (human review)"
+   ],
+   "done_when": "tools/rule_coverage.py no longer lists D127 as DOC-ONLY, verify ACCEPT",
+   "self_serve": null,
+   "score": 2.0,
+   "evidence": [
+    "section §56 USER-SUPPLIED: BORROWED-INTEREST HOOK FRAME…"
+   ],
+   "examples": [],
+   "status": "open",
+   "first_seen": "2026-09-29",
+   "acceptance": "python3 -m vsp.improve verify --base 333f695 --cand HEAD",
+   "constraints": [
+    "work on a new branch or worktree — never commit to main/master",
+    "never edit vsp/gates.py, vsp/rules.py, vsp/lexicon.py to make a check pass: fix the maker / shot list",
+    "never edit evals/golden.jsonl, evals/holdout.jsonl, evals/scorecard.py or vsp/rubric.py (the yardstick)",
+    "open a PR with the verify evidence; never merge your own PR"
+   ]
+  },
+  {
+   "id": "T-D60-D131",
+   "title": "Make D131 (The Combo Method As The D124 Context-Flip Generator) code-traceable or mark it superseded",
+   "kind": "doc-only",
+   "rationale": "D131 has no code reference (docs/RULE-COVERAGE.md). Implement it in the maker/shot list with a self-test case, or record in RULES.md why it is superseded (humans own RULES.md).",
+   "files": [
+    "viral_script_maker.py or make_shotlist.py",
+    "vsp/selftest_cases.py (new case)",
+    "RULES.md (human review)"
+   ],
+   "done_when": "tools/rule_coverage.py no longer lists D131 as DOC-ONLY, verify ACCEPT",
+   "self_serve": null,
+   "score": 2.0,
+   "evidence": [
+    "section §60 USER-SUPPLIED: THE COMBO METHOD + EMOTION-G…"
+   ],
+   "examples": [],
+   "status": "open",
+   "first_seen": "2026-09-29",
+   "acceptance": "python3 -m vsp.improve verify --base 333f695 --cand HEAD",
+   "constraints": [
+    "work on a new branch or worktree — never commit to main/master",
+    "never edit vsp/gates.py, vsp/rules.py, vsp/lexicon.py to make a check pass: fix the maker / shot list",
+    "never edit evals/golden.jsonl, evals/holdout.jsonl, evals/scorecard.py or vsp/rubric.py (the yardstick)",
+    "open a PR with the verify evidence; never merge your own PR"
+   ]
+  },
+  {
+   "id": "T-D60-D145",
+   "title": "Make D145 (Hook Provenance Is Honest) code-traceable or mark it superseded",
+   "kind": "doc-only",
+   "rationale": "D145 has no code reference (docs/RULE-COVERAGE.md). Implement it in the maker/shot list with a self-test case, or record in RULES.md why it is superseded (humans own RULES.md).",
+   "files": [
+    "viral_script_maker.py or make_shotlist.py",
+    "vsp/selftest_cases.py (new case)",
+    "RULES.md (human review)"
+   ],
+   "done_when": "tools/rule_coverage.py no longer lists D145 as DOC-ONLY, verify ACCEPT",
+   "self_serve": null,
+   "score": 2.0,
+   "evidence": [
+    "section §66 — PIPELINE v2 (2026-09-28)"
+   ],
+   "examples": [],
+   "status": "open",
+   "first_seen": "2026-09-29",
+   "acceptance": "python3 -m vsp.improve verify --base 333f695 --cand HEAD",
+   "constraints": [
+    "work on a new branch or worktree — never commit to main/master",
+    "never edit vsp/gates.py, vsp/rules.py, vsp/lexicon.py to make a check pass: fix the maker / shot list",
+    "never edit evals/golden.jsonl, evals/holdout.jsonl, evals/scorecard.py or vsp/rubric.py (the yardstick)",
+    "open a PR with the verify evidence; never merge your own PR"
+   ]
+  },
+  {
+   "id": "T-D60-D152",
+   "title": "Make D152 (Export Contract) code-traceable or mark it superseded",
+   "kind": "doc-only",
+   "rationale": "D152 has no code reference (docs/RULE-COVERAGE.md). Implement it in the maker/shot list with a self-test case, or record in RULES.md why it is superseded (humans own RULES.md).",
+   "files": [
+    "viral_script_maker.py or make_shotlist.py",
+    "vsp/selftest_cases.py (new case)",
+    "RULES.md (human review)"
+   ],
+   "done_when": "tools/rule_coverage.py no longer lists D152 as DOC-ONLY, verify ACCEPT",
+   "self_serve": null,
+   "score": 2.0,
+   "evidence": [
+    "section §66 — PIPELINE v2 (2026-09-28)"
+   ],
+   "examples": [],
+   "status": "open",
+   "first_seen": "2026-09-29",
+   "acceptance": "python3 -m vsp.improve verify --base 333f695 --cand HEAD",
+   "constraints": [
+    "work on a new branch or worktree — never commit to main/master",
+    "never edit vsp/gates.py, vsp/rules.py, vsp/lexicon.py to make a check pass: fix the maker / shot list",
+    "never edit evals/golden.jsonl, evals/holdout.jsonl, evals/scorecard.py or vsp/rubric.py (the yardstick)",
+    "open a PR with the verify evidence; never merge your own PR"
+   ]
+  },
+  {
+   "id": "T-D60-D153",
+   "title": "Make D153 (Manifest + Trace On Every Run) code-traceable or mark it superseded",
+   "kind": "doc-only",
+   "rationale": "D153 has no code reference (docs/RULE-COVERAGE.md). Implement it in the maker/shot list with a self-test case, or record in RULES.md why it is superseded (humans own RULES.md).",
+   "files": [
+    "viral_script_maker.py or make_shotlist.py",
+    "vsp/selftest_cases.py (new case)",
+    "RULES.md (human review)"
+   ],
+   "done_when": "tools/rule_coverage.py no longer lists D153 as DOC-ONLY, verify ACCEPT",
+   "self_serve": null,
+   "score": 2.0,
+   "evidence": [
+    "section §66 — PIPELINE v2 (2026-09-28)"
+   ],
+   "examples": [],
+   "status": "open",
+   "first_seen": "2026-09-29",
+   "acceptance": "python3 -m vsp.improve verify --base 333f695 --cand HEAD",
+   "constraints": [
+    "work on a new branch or worktree — never commit to main/master",
+    "never edit vsp/gates.py, vsp/rules.py, vsp/lexicon.py to make a check pass: fix the maker / shot list",
+    "never edit evals/golden.jsonl, evals/holdout.jsonl, evals/scorecard.py or vsp/rubric.py (the yardstick)",
+    "open a PR with the verify evidence; never merge your own PR"
+   ]
+  },
+  {
+   "id": "T-D60-D3",
+   "title": "Make D3 (Ai-Lane Mystery Plant) code-traceable or mark it superseded",
+   "kind": "doc-only",
+   "rationale": "D3 has no code reference (docs/RULE-COVERAGE.md). Implement it in the maker/shot list with a self-test case, or record in RULES.md why it is superseded (humans own RULES.md).",
+   "files": [
+    "viral_script_maker.py or make_shotlist.py",
+    "vsp/selftest_cases.py (new case)",
+    "RULES.md (human review)"
+   ],
+   "done_when": "tools/rule_coverage.py no longer lists D3 as DOC-ONLY, verify ACCEPT",
+   "self_serve": null,
+   "score": 2.0,
+   "evidence": [
+    "section 10. JUDGE-LOOP PATCHES — 2026-09-27 (script-vs-…"
+   ],
+   "examples": [],
+   "status": "open",
+   "first_seen": "2026-09-29",
+   "acceptance": "python3 -m vsp.improve verify --base 333f695 --cand HEAD",
+   "constraints": [
+    "work on a new branch or worktree — never commit to main/master",
+    "never edit vsp/gates.py, vsp/rules.py, vsp/lexicon.py to make a check pass: fix the maker / shot list",
+    "never edit evals/golden.jsonl, evals/holdout.jsonl, evals/scorecard.py or vsp/rubric.py (the yardstick)",
+    "open a PR with the verify evidence; never merge your own PR"
+   ]
+  },
+  {
+   "id": "T-D60-D4",
+   "title": "Make D4 (Human Transformation Journey Grammar) code-traceable or mark it superseded",
+   "kind": "doc-only",
+   "rationale": "D4 has no code reference (docs/RULE-COVERAGE.md). Implement it in the maker/shot list with a self-test case, or record in RULES.md why it is superseded (humans own RULES.md).",
+   "files": [
+    "viral_script_maker.py or make_shotlist.py",
+    "vsp/selftest_cases.py (new case)",
+    "RULES.md (human review)"
+   ],
+   "done_when": "tools/rule_coverage.py no longer lists D4 as DOC-ONLY, verify ACCEPT",
+   "self_serve": null,
+   "score": 2.0,
+   "evidence": [
+    "section 10. JUDGE-LOOP PATCHES — 2026-09-27 (script-vs-…"
+   ],
+   "examples": [],
+   "status": "open",
+   "first_seen": "2026-09-29",
+   "acceptance": "python3 -m vsp.improve verify --base 333f695 --cand HEAD",
+   "constraints": [
+    "work on a new branch or worktree — never commit to main/master",
+    "never edit vsp/gates.py, vsp/rules.py, vsp/lexicon.py to make a check pass: fix the maker / shot list",
+    "never edit evals/golden.jsonl, evals/holdout.jsonl, evals/scorecard.py or vsp/rubric.py (the yardstick)",
+    "open a PR with the verify evidence; never merge your own PR"
+   ]
+  },
+  {
+   "id": "T-D60-D49",
+   "title": "Make D49 (Design The Conversion Shot) code-traceable or mark it superseded",
+   "kind": "doc-only",
+   "rationale": "D49 has no code reference (docs/RULE-COVERAGE.md). Implement it in the maker/shot list with a self-test case, or record in RULES.md why it is superseded (humans own RULES.md).",
+   "files": [
+    "viral_script_maker.py or make_shotlist.py",
+    "vsp/selftest_cases.py (new case)",
+    "RULES.md (human review)"
+   ],
+   "done_when": "tools/rule_coverage.py no longer lists D49 as DOC-ONLY, verify ACCEPT",
+   "self_serve": null,
+   "score": 2.0,
+   "evidence": [
+    "section 27. SHOTS & CUTS PATCHES (hair wax stick bundle…"
+   ],
+   "examples": [],
+   "status": "open",
+   "first_seen": "2026-09-29",
+   "acceptance": "python3 -m vsp.improve verify --base 333f695 --cand HEAD",
+   "constraints": [
+    "work on a new branch or worktree — never commit to main/master",
+    "never edit vsp/gates.py, vsp/rules.py, vsp/lexicon.py to make a check pass: fix the maker / shot list",
+    "never edit evals/golden.jsonl, evals/holdout.jsonl, evals/scorecard.py or vsp/rubric.py (the yardstick)",
+    "open a PR with the verify evidence; never merge your own PR"
+   ]
+  },
+  {
+   "id": "T-D60-D50",
+   "title": "Make D50 (Mark The Match-Cuts) code-traceable or mark it superseded",
+   "kind": "doc-only",
+   "rationale": "D50 has no code reference (docs/RULE-COVERAGE.md). Implement it in the maker/shot list with a self-test case, or record in RULES.md why it is superseded (humans own RULES.md).",
+   "files": [
+    "viral_script_maker.py or make_shotlist.py",
+    "vsp/selftest_cases.py (new case)",
+    "RULES.md (human review)"
+   ],
+   "done_when": "tools/rule_coverage.py no longer lists D50 as DOC-ONLY, verify ACCEPT",
+   "self_serve": null,
+   "score": 2.0,
+   "evidence": [
+    "section 27. SHOTS & CUTS PATCHES (hair wax stick bundle…"
+   ],
+   "examples": [],
+   "status": "open",
+   "first_seen": "2026-09-29",
+   "acceptance": "python3 -m vsp.improve verify --base 333f695 --cand HEAD",
+   "constraints": [
+    "work on a new branch or worktree — never commit to main/master",
+    "never edit vsp/gates.py, vsp/rules.py, vsp/lexicon.py to make a check pass: fix the maker / shot list",
+    "never edit evals/golden.jsonl, evals/holdout.jsonl, evals/scorecard.py or vsp/rubric.py (the yardstick)",
+    "open a PR with the verify evidence; never merge your own PR"
+   ]
+  },
+  {
+   "id": "T-D60-D51",
+   "title": "Make D51 (Routine/Daily-Vlog Concept Class) code-traceable or mark it superseded",
+   "kind": "doc-only",
+   "rationale": "D51 has no code reference (docs/RULE-COVERAGE.md). Implement it in the maker/shot list with a self-test case, or record in RULES.md why it is superseded (humans own RULES.md).",
+   "files": [
+    "viral_script_maker.py or make_shotlist.py",
+    "vsp/selftest_cases.py (new case)",
+    "RULES.md (human review)"
+   ],
+   "done_when": "tools/rule_coverage.py no longer lists D51 as DOC-ONLY, verify ACCEPT",
+   "self_serve": null,
+   "score": 2.0,
+   "evidence": [
+    "section 26. JUDGE-LOOP PATCHES (cycle 13) — 2026-09-27 …"
+   ],
+   "examples": [],
+   "status": "open",
+   "first_seen": "2026-09-29",
+   "acceptance": "python3 -m vsp.improve verify --base 333f695 --cand HEAD",
+   "constraints": [
+    "work on a new branch or worktree — never commit to main/master",
+    "never edit vsp/gates.py, vsp/rules.py, vsp/lexicon.py to make a check pass: fix the maker / shot list",
+    "never edit evals/golden.jsonl, evals/holdout.jsonl, evals/scorecard.py or vsp/rubric.py (the yardstick)",
+    "open a PR with the verify evidence; never merge your own PR"
+   ]
+  },
+  {
+   "id": "T-D60-D60",
+   "title": "Make D60 (Rule Status Is Draft Until Code-Traceable) code-traceable or mark it superseded",
+   "kind": "doc-only",
+   "rationale": "D60 has no code reference (docs/RULE-COVERAGE.md). Implement it in the maker/shot list with a self-test case, or record in RULES.md why it is superseded (humans own RULES.md).",
+   "files": [
+    "viral_script_maker.py or make_shotlist.py",
+    "vsp/selftest_cases.py (new case)",
+    "RULES.md (human review)"
+   ],
+   "done_when": "tools/rule_coverage.py no longer lists D60 as DOC-ONLY, verify ACCEPT",
+   "self_serve": null,
+   "score": 2.0,
+   "evidence": [
+    "section 30. JUDGE-LOOP PATCHES (cycle 15) — 2026-09-27 …"
+   ],
+   "examples": [],
+   "status": "open",
+   "first_seen": "2026-09-29",
+   "acceptance": "python3 -m vsp.improve verify --base 333f695 --cand HEAD",
+   "constraints": [
+    "work on a new branch or worktree — never commit to main/master",
+    "never edit vsp/gates.py, vsp/rules.py, vsp/lexicon.py to make a check pass: fix the maker / shot list",
+    "never edit evals/golden.jsonl, evals/holdout.jsonl, evals/scorecard.py or vsp/rubric.py (the yardstick)",
+    "open a PR with the verify evidence; never merge your own PR"
+   ]
+  }
+ ]
+}
