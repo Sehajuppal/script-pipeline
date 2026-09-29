@@ -425,19 +425,25 @@ def _check_importers(C, ctx, con, cfg):
 def _check_classify(C, con, cfg):
     import viral_script_maker as vsm
     from vsp.ingest import classify as K
+    from vsp.research import map_family
     rep = K.classify(con, cfg=cfg, llm="off")
     fams = set(vsm.HOOKS)
     got = {r["media_id"]: (r["hook_category"], r["hook_family"]) for r in con.execute(
         "SELECT media_id, hook_category, hook_family FROM reels WHERE classified_by "
         "IS NOT NULL")}
-    want = {"17900000000000101": ("pov", "story-time"),
-            "17900000000000103": ("problem-solution", "negative-command"),
-            "17900000000000201": ("controversy", "contrarian-reframe"),
-            "17900000000000401": ("payoff-tease", "curiosity-gap"),
-            "17900000000000403": ("problem-solution", "negative-command"),
-            "3470000000000000501_900": ("curiosity-gap", "curiosity-gap")}
+    # categories are this classifier's; families follow vsp.research.map_family
+    # over the maker's live HOOKS keys (so a mapping change upstream is honoured)
+    want = {"17900000000000101": "pov", "17900000000000103": "problem-solution",
+            "17900000000000201": "controversy", "17900000000000401": "payoff-tease",
+            "17900000000000403": "problem-solution",
+            "3470000000000000501_900": "curiosity-gap"}
+    want = {k: (c, map_family(c, tuple(vsm.HOOKS))) for k, c in want.items()}
     wrong = {k: (got.get(k), v) for k, v in want.items() if got.get(k) != v}
-    C.check("classify: hook_category -> maker HOOKS family", not wrong, str(wrong)[:160])
+    C.check("classify: hook_category -> maker HOOKS family", not wrong and all(
+        f in fams for _, f in want.values() if f), str(wrong)[:160])
+    C.check("classify: bait / superlative categories map to no family (D139/D141)",
+            K.classify_text("Comment GLOW for the link")["hook_family"] is None and
+            K.classify_text("The best serum ever made")["hook_family"] is None)
     C.check("classify: families read from viral_script_maker.HOOKS at runtime",
             rep["families_source"] == "viral_script_maker.HOOKS" and
             set(rep["families"]) == fams and
@@ -907,6 +913,14 @@ def _feedback_checks(C, ctx):
                 P.load_priors(config.priors_path()) is not None)
     C.check("learn: unlinked posts only shape the median", lr["labelled"] == 10 and
             lr["linked"] == 8)
+    before = _sha(config.priors_path())
+    empty = idb.connect(os.path.join(ctx.tmp, "empty.db"), create=True)
+    try:
+        kept = F.learn(empty, now=clock["now"])
+    finally:
+        empty.close()
+    C.check("learn: a DB without labelled posts keeps the last good priors",
+            kept.get("kept") and _sha(config.priors_path()) == before)
     # ------------------------------------------------------------- report
     path, text = F.report(con, now=clock["now"])
     C.check("report: learned/PERFORMANCE.md (table, ~90% interval, best/worst, "

@@ -522,6 +522,12 @@ def learn(con, now=None, path=None, window=WINDOW):
     if errs:                      # never write a file the maker would reject
         raise ValueError("priors failed validation: " + "; ".join(errs))
     p = path or config.priors_path()
+    if not lab["posts"] and os.path.isfile(p):
+        # no labelled posts (wrong DB? insights not pulled yet?): keep the last
+        # good priors instead of resetting the maker to neutral
+        return {"job": "learn", "priors": p, "kept": True, "labelled": 0, "linked": 0,
+                "median_composite": None, "skip_scale": lab["skip_scale"],
+                "families": {}, "global": {}, "pending": lab["pending"]}
     _write_atomic(p, json.dumps(pri, indent=1, sort_keys=False) + "\n")
     con.execute("INSERT OR REPLACE INTO meta(key, value) VALUES ('last_run:learn', ?)",
                 (u.sql_ts(now_dt),))
@@ -921,6 +927,10 @@ def main(argv=None):
             return 3 if st.startswith("rate_limited") else (2 if st else 0)
         if a.cmd == "learn":
             rep = learn(con)
+            if rep.get("kept"):
+                _out(rep, a.json, f"kept {rep['priors']}: no labelled posts in this DB "
+                     f"({rep['pending']}) — run `python3 -m vsp.feedback pull` first")
+                return 0
             _out(rep, a.json, f"wrote {rep['priors']}: {rep['labelled']} labelled posts "
                  f"({rep['linked']} linked), median composite {rep['median_composite']}, "
                  f"families {rep['families']}")
