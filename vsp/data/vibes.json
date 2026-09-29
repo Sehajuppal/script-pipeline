@@ -2749,7 +2749,7 @@
   "section": "§2.2, §5.6 VTM10",
   "devices": {
    "story-turn": {
-    "text": "a story turn: the {subject} flips the expectation the hook set up, then the payoff lands",
+    "text": "a story turn: the payoff flips the expectation the hook set up, caused by {subj}",
     "presenters": [
      "ai",
      "human"
@@ -2769,7 +2769,7 @@
     ]
    },
    "hummable-hook": {
-    "text": "a hummable sonic hook: one real sound of the {subject} on the hook, repeated on the payoff",
+    "text": "a hummable sonic hook: one real sound (a click, pour or snap) on the hook, repeated on the payoff",
     "presenters": [
      "ai",
      "human"
@@ -2783,7 +2783,7 @@
     ]
    },
    "out-of-ordinary": {
-    "text": "one out-of-the-ordinary moment the {subject} causes (an unexpected angle or prop gag)",
+    "text": "one out-of-the-ordinary moment caused by {subj} (an unexpected angle or prop gag)",
     "presenters": [
      "ai",
      "human"
@@ -2968,8 +2968,8 @@
  },
  "SET_TEMPLATES": {
   "raw-ugc": "{place}, real and lived-in (tidied but real)",
-  "clean-aesthetic": "{place}, styled minimal: 1-3 props and negative space in the {subject}'s colour family (B19)",
-  "hype-energy": "a clean backdrop or bold colour wall in {place}, the {subject} in hand",
+  "clean-aesthetic": "{place}, styled minimal: 1-3 props and negative space in the colour family of {subj} (B19)",
+  "hype-energy": "a clean backdrop or bold colour wall in {place}, {subj} in hand",
   "cozy-calm": "{place} at dusk: blanket, mug, warm lamps",
   "expert-trust": "{place} as a clean work surface with real tools; labels and readouts legible",
   "playful-comedic": "{place}, with only the props the gag needs",
@@ -2995,7 +2995,7 @@
   "default": "proof before pitch: the first frame shows the result or the thing working"
  },
  "IN_FRAME": {
-  "product": "the {subject} in frame from frame 0, shown more than once (Meta x Toluna)",
+  "product": "{subj} in frame from frame 0, shown more than once (Meta x Toluna)",
   "showcase": "each find in frame in its real spot, one find per cut",
   "challenge": "the day marker on screen on every day beat, with the same anchor spot each day",
   "routine": "the routine's real props in frame, in the order they are used",
