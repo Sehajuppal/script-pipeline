@@ -1575,3 +1575,552 @@ def shoot_plan_md(script, shots, A):
     if any(t in BA_IDS for t in types):
         L.append("Before/after protocol: " + "; ".join(SPR["before_after_protocol"]) + ".")
     return "\n".join(L)
+
+
+# ============================================================ self-check
+_SHOT_TYPE_RE = re.compile(r"^- Shot type: ([a-z0-9-]+) \u00b7 (ECU|CU|MCU|MS|MWS|WS) \u00b7 ([a-z-]+) \u00b7 "
+                           r"([a-z-]+) \u00b7 energy ([1-5]) \u00b7 AI risk (low|med|high)$")
+_BLOCK_RE = re.compile(r"### Shot (\d+[a-z]?) \([^)]+\) \u2014 [^\n]+\n((?:- [^\n]+\n?)+)")
+_KW_MOVES = ("push-in", "pan", "tilt", "handheld", "tracking", "whip-pan", "dolly")
+NEW_SECTIONS = ("## CREATIVE DIRECTION \u2014 vibe & tone", "## ALTERNATE OPENINGS \u2014 variant cuts",
+                "## SHOOT PLAN \u2014 setups, props, B-roll", "## POSTING & DISCOVERY")
+
+
+def _sections(bundle):
+    """[(heading, body)] for every '## ' section, in order."""
+    out, cur, buf = [], None, []
+    for line in bundle.split("\n"):
+        if line.startswith("## "):
+            if cur is not None:
+                out.append((cur, "\n".join(buf)))
+            cur, buf = line.strip(), []
+        elif cur is not None:
+            buf.append(line)
+    if cur is not None:
+        out.append((cur, "\n".join(buf)))
+    return out
+
+
+def check_bundle(script, shots, bundle):
+    """This workstream's §1.4 / D157 / D160 criteria -> list of problems."""
+    from vsp import creative_vocab as V
+    P = []
+    lane = "ai" if script.get("presenter") == "ai" else "human"
+    ms = sys.modules.get("make_shotlist")
+    concept = ms._concept(script.get("prompt") or "") if ms else "product"
+    product = concept in ("product", "showcase")
+    by_n = {str(sh["n"]): sh for sh in shots}
+    # ---- every shot typed, valid ids
+    for sh in shots:
+        n = sh.get("n")
+        if sh.get("shot_type") not in data()["BY_ID"]:
+            P.append(f"shot {n}: untyped ({sh.get('shot_type')})")
+            continue
+        for key, vocab in (("scale", V.SHOT_SCALES), ("angle", V.SHOT_ANGLES),
+                           ("move", V.CAMERA_MOVES), ("purpose", V.SHOT_PURPOSES)):
+            if sh.get(key) not in vocab:
+                P.append(f"shot {n}: {key} {sh.get(key)!r} not a creative_vocab id")
+        if not (isinstance(sh.get("energy"), int) and 1 <= sh["energy"] <= 5):
+            P.append(f"shot {n}: energy {sh.get('energy')!r}")
+        if sh.get("ai_risk") not in ("low", "med", "high"):
+            P.append(f"shot {n}: ai_risk")
+        if sh.get("ai_fallback") is not None and sh["ai_fallback"] not in data()["BY_ID"]:
+            P.append(f"shot {n}: ai_fallback")
+        if not isinstance(sh.get("real_footage"), bool) or not isinstance(sh.get("needs"), list):
+            P.append(f"shot {n}: real_footage/needs types")
+        if not (isinstance(sh.get("setup"), int) and sh["setup"] >= 1):
+            P.append(f"shot {n}: setup")
+        if not isinstance(sh.get("broll"), list) or any(b not in data()["BY_ID"] for b in sh["broll"]):
+            P.append(f"shot {n}: broll")
+        if not (isinstance(sh.get("sfx"), str) and sh["sfx"]):
+            P.append(f"shot {n}: sfx")
+        if sh.get("purpose") == "proof" and not sh.get("real_footage"):
+            P.append(f"shot {n}: a proof shot not marked real footage")
+        if sh.get("real_footage") and sh.get("purpose") not in ("proof", "hook", "cta"):
+            P.append(f"shot {n}: real footage with purpose {sh.get('purpose')}")
+    # ---- the bundle blocks carry exactly one Shot type line, right after Camera
+    blocks = _BLOCK_RE.findall(bundle)
+    if len(blocks) != len(shots):
+        P.append(f"{len(blocks)} shot blocks for {len(shots)} shots")
+    for num, body in blocks:
+        lines = body.rstrip("\n").split("\n")
+        sh = by_n.get(num)
+        st = [x for x in lines if x.startswith("- Shot type:")]
+        if len(st) != 1 or len(lines) < 2 or not lines[0].startswith("- Camera:") or lines[1] != st[0]:
+            P.append(f"shot {num}: '- Shot type:' must be the one line right after '- Camera:'")
+            continue
+        m = _SHOT_TYPE_RE.match(st[0])
+        if not m or sh is None or m.group(1) != sh["shot_type"] or m.group(3) != sh["move"]:
+            P.append(f"shot {num}: malformed or stale Shot type line: {st[0]}")
+            continue
+        new = [x for x in lines if x.startswith(("- Shot type:", "- REAL FOOTAGE"))]
+        for x in new:
+            low = x.lower()
+            if "to camera" in low or "on-screen" in low:
+                P.append(f"shot {num}: new line leaks a D47 token: {x}")
+        kw = any(k in st[0].lower() for k in MOVE_KW)
+        if kw != (sh["move"] in _KW_MOVES):
+            P.append(f"shot {num}: Shot type line D48 signal != move {sh['move']}")
+        for x in new[1:]:
+            if any(k in x.lower() for k in MOVE_KW):
+                P.append(f"shot {num}: REAL FOOTAGE line carries a D48 keyword")
+        rf_line = [x for x in lines if x.startswith("- REAL FOOTAGE REQUIRED:")]
+        want_rf = lane == "ai" and sh["real_footage"]
+        if bool(rf_line) != want_rf or (rf_line and not rf_line[0].endswith("\u2014 do not generate")):
+            P.append(f"shot {num}: REAL FOOTAGE line {'missing' if want_rf else 'unexpected'}")
+        cam = lines[0].lower()
+        if not sh.get("explicit"):
+            th_type = is_talking_head(sh["shot_type"])
+            if ("to camera" in cam) != th_type:
+                P.append(f"shot {num}: camera line D47 signal != talking-head type")
+            if sh["move"] == "static" and any(k in cam for k in MOVE_KW) and \
+                    not re.search(r"[a-z]$", num) and _dur(sh["s"], sh["e"]) > STATIC_MAX:
+                P.append(f"shot {num}: static long shot claims a move")
+    # ---- D157 rules
+    if shots:
+        f0 = shots[0]
+        if f0.get("shot_type") in data()["BY_ID"]:
+            if not _frame0_ok(f0["shot_type"], {"product": product}):
+                P.append(f"frame 0: {f0['shot_type']} is not a product/result (or subject/problem) opener")
+            prim = None
+            hv = script.get("hook_variants")
+            if isinstance(hv, list) and hv:
+                prim = next((v for v in hv if isinstance(v, dict) and v.get("is_primary")), hv[0])
+            vt = (prim or {}).get("visual_type")
+            if vt in V.VISUAL_TYPES and vt not in lib(f0["shot_type"])["visual_types"] and not (
+                    f0.get("ai_swapped_from") and vt in lib(f0["ai_swapped_from"])["visual_types"]):
+                P.append(f"frame 0: {f0['shot_type']} does not show hook variant A's {vt}")
+
+        def cover(pred):
+            return sum(max(0.0, min(3.0, x["e"]) - x["s"]) for x in shots
+                       if x["s"] < 3.0 and pred(x))
+        if cover(lambda x: bool(set(x.get("needs") or []) & {"face", "hands"})) < 1.0 - 1e-6:
+            P.append("no face or hands for 1.0 s by 3.0 s")
+        if (lane == "human" or _TIKTOK_SHOP.search(script.get("prompt") or "")) and \
+                cover(lambda x: "face" in (x.get("needs") or [])) < 1.0 - 1e-6:
+            P.append("human presenter / Shop lane: no face by 3.0 s")
+        sc = [x.get("scale") for x in shots]
+        for a in range(len(sc) - 2):
+            if sc[a] == sc[a + 1] == sc[a + 2]:
+                P.append(f"3 consecutive {sc[a]} shots from {shots[a]['n']}")
+                break
+        for x in shots:
+            if not is_sub(x) and _dur(x["s"], x["e"]) > STATIC_MAX:
+                if x.get("move") == "static" or not gate_has_move(x):
+                    P.append(f"shot {x['n']}: {_dur(x['s'], x['e']):.1f}s unsplit without a typed move")
+        for x in shots:
+            if lane == "ai" and not x.get("real_footage") and x.get("ai_risk") == "high":
+                P.append(f"shot {x['n']}: AI lane renders a high-risk {x['shot_type']}")
+            if lane == "ai" and x.get("real_footage") and "face" in (x.get("needs") or []):
+                P.append(f"shot {x['n']}: real footage cannot show the AI persona")
+            if x.get("shot_type") == "matched-after" and not any(
+                    y.get("shot_type") in ("matched-before", "split-before-after")
+                    for y in shots[:shots.index(x)]):
+                P.append(f"shot {x['n']}: matched AFTER without a BEFORE")
+        try:
+            dur = float(script.get("duration_s") or 30)
+        except (TypeError, ValueError):
+            dur = 30.0
+        if dur <= 15 and len(shots) > 1:
+            last = shots[-1]
+            if last.get("shot_type") not in ("loop-return-frame", f0.get("shot_type")) or \
+                    last.get("scale") != f0.get("scale"):
+                P.append("duration <= 15 s: the last shot does not return to frame 0")
+    # ---- D160 prompt hygiene
+    secs = _sections(bundle)
+    heads = [h for h, _ in secs]
+    body = dict(secs)
+    prompts = body.get("## SHOT PROMPTS (self-contained \u2014 generate each shot from its own prompt only)", "")
+    alt = body.get(NEW_SECTIONS[1], "")
+    ident = None
+    if ms is not None:
+        ident = ms.presenter_identity(script)
+    for chunk, is_alt in ((prompts, False), (alt, True)):
+        cur = None
+        for line in chunk.split("\n"):
+            mm = re.match(r"#### Prompt \u2014 Shot (\S+) ", line)
+            if mm:
+                cur = by_n.get(mm.group(1))
+            if line.startswith(("VISUAL PROMPT:", "AUDIO", "SPOKEN TRANSITION")):
+                if re.search(r"[\"\u201c\u201d]", line):
+                    P.append(f"quote marks in a prompt line: {line[:70]}")
+            if line.startswith("ON-SCREEN TEXT") and "add in the edit; never generate text in-frame" not in line:
+                P.append(f"on-screen text not an edit overlay: {line[:70]}")
+            if line.startswith(("AUDIO (", "SPOKEN TRANSITION")) and " says: " not in line:
+                P.append(f"dialogue without 'says:': {line[:70]}")
+            if line.startswith("VISUAL PROMPT:") and cur is not None and not is_alt:
+                gen = not line.startswith("VISUAL PROMPT: Not generated")
+                face = "face" in (cur.get("needs") or [])
+                if ident and gen and (ident in line) != face:
+                    P.append(f"shot {cur['n']}: identity lock {'missing' if face else 'in a non-face shot'}")
+                if gen and not face and "hands" in (cur.get("needs") or []) and \
+                        "Hands only, face out of frame" not in line:
+                    P.append(f"shot {cur['n']}: hands-only prompt lacks the hands reference")
+                if gen and ("Vertical 9:16 phone footage" not in line or "No on-screen text" not in line
+                            or "Single continuous shot" not in line):
+                    P.append(f"shot {cur['n']}: prompt lacks the vertical/continuous/no-text structure")
+    if "render exactly" in bundle.lower():
+        P.append("'render exactly' in the brief")
+    # ---- sections: order, content hygiene, claims
+    def pos(h):
+        return heads.index(h) if h in heads else -1
+    sp = pos(NEW_SECTIONS[2])
+    if sp < 0:
+        P.append("SHOOT PLAN section missing")
+    iv = pos("## VOICEOVER \u2014 separate audio track")
+    ip = pos("## SHOT PROMPTS (self-contained \u2014 generate each shot from its own prompt only)")
+    ia = pos(NEW_SECTIONS[1])
+    if not (ip < sp < iv) or (ia >= 0 and not ip < ia < sp):
+        P.append("section order: SHOT PROMPTS < ALTERNATE OPENINGS < SHOOT PLAN < VOICEOVER")
+    hv = script.get("hook_variants")
+    alts = [v for v in hv if isinstance(v, dict) and not v.get("is_primary")] if isinstance(hv, list) else []
+    if alts:
+        n_alt = len(re.findall(r"(?m)^#### Alt opening [A-Za-z0-9]+ \(0\.0\u20133\.0s\) \u2014 \S+ / \S+$", alt))
+        if n_alt != len(alts):
+            P.append(f"ALTERNATE OPENINGS: {n_alt} blocks for {len(alts)} variants")
+    elif ia >= 0:
+        P.append("ALTERNATE OPENINGS without variants")
+    ic = pos(NEW_SECTIONS[0])
+    if ic >= 0 and not (pos("## STYLE") < ic < pos("## NEGATIVE PROMPT \u2014 never render")):
+        P.append("CREATIVE DIRECTION not right after STYLE")
+    idd = pos(NEW_SECTIONS[3])
+    if idd >= 0 and heads[idd + 1:idd + 2] != ["## Caption + hashtags (post as-is)"]:
+        P.append("POSTING & DISCOVERY not just before the caption")
+    allowed = V.link_groups_in(script.get("caption", ""))
+    for h in NEW_SECTIONS:
+        if h in body:
+            txt = h + "\n" + body[h]
+            if "same body" in txt.lower() or any(f in txt for f in V.BUNDLE_FORBIDDEN):
+                P.append(f"{h}: BUNDLE_FORBIDDEN phrase")
+            if V.link_groups_in(txt) - allowed:
+                P.append(f"{h}: foreign D46 link group")
+    if re.search(r"(?i)\b\d+\s?%\s*(?:of viewers\s*)?watch|\bwatch(?:es|ing)? (?:it )?muted\b|"
+                 r"\bmuted viewers?\b|sound[- ]off|with (?:the )?sound off", bundle):
+        P.append("a muted-viewing claim reached the brief")
+    donot = body.get("## Do NOT", "")
+    if (lane == "ai") != ("synthetic voice" in donot):
+        P.append("Do NOT voice sentence does not match the presenter")
+    if lane == "ai" and not script.get("direction") and "synthetic" not in body.get(
+            "## VOICEOVER \u2014 separate audio track", ""):
+        P.append("AI voice spec does not name a disclosed synthetic voice")
+    return P
+
+
+def _synthetic(script, variant_types=("result-reveal", "problem-state", "text-first")):
+    """Contract-shaped direction / hook_variants / discovery for a script
+    (CREATIVE-PLAN §1.1-1.3) — the sibling modules may not exist yet."""
+    items = [x for x in (script.get("hook_stack") or []) + (script.get("beats") or []) if isinstance(x, dict)]
+    ai = script.get("presenter") == "ai"
+    direction = {
+        "schema_version": 1, "vibe": "hype-energy", "vibe_reason": "synthetic", "secondary_vibe": None,
+        "tone": {"voice": "excited", "allowed": ["excited", "confident"], "humor": "light", "notes": "synthetic"},
+        "energy": 4,
+        "pacing": {"target_wpm": [160, 185], "avg_shot_s": [1.25, 2.0], "cuts_per_10s": [5, 8],
+                   "max_static_s": 2.0, "pattern_interrupt_s": 3.0},
+        "energy_curve": [{"t": it.get("t", ""), "type": it.get("type", ""), "energy": 5 - (i % 3)}
+                         for i, it in enumerate(items)],
+        "music": {"moods": ["upbeat"], "bpm": [118, 128], "genres": ["pop"], "vo_ducking_db": -12,
+                  "sfx": ["whoosh", "pop"], "in_master": False, "search_queries": ["upbeat pop", "energetic", "bright"],
+                  "licensing": {"tiktok": {"library": "Commercial Music Library", "note": "add at upload"},
+                                "instagram": {"library": "Meta Sound Collection", "note": "add at upload"},
+                                "youtube_shorts": {"library": "YouTube Audio Library", "note": "add at upload"}}},
+        "look": {"lighting": "bright window key", "palette_names": ["white", "sage", "black"],
+                 "palette_hex": ["#FFFFFF", "#9CAF88", "#111111"], "grade": "clean", "set": "tidy", "wardrobe": "plain"},
+        "camera": {"style": "handheld energy", "lens": "1x", "movement": ["push-in", "whip-pan"]},
+        "text_style": {"case": "upper", "weight": "bold", "max_words_per_card": 3, "placement": "upper third"},
+        "transitions": ["whip-pan", "hard-cut"], "showmanship": "one speed ramp",
+        "voice": {"presenter": "ai" if ai else "human",
+                  "spec": ("natural-prosody synthetic voice, disclosed as AI" if ai else "energetic human read")},
+        "do": ["cut on the beat"], "dont": ["no slow intro"],
+        "evidence": [{"claim": "faster cuts early", "grade": "S", "source": "TT-CreativeCodes"}],
+    }
+    vt0 = None
+    for it in script.get("hook_stack") or []:
+        if isinstance(it, dict) and it.get("type") == "VISUAL TRIGGER":
+            vt0 = visual_type_of(it.get("direction") or "")
+    verbal = next((it.get("dialogue") for it in script.get("hook_stack") or []
+                   if isinstance(it, dict) and it.get("type") == "VERBAL HOOK + LOCK"), "") or "Watch this."
+    overlay = next((it.get("on_screen") for it in script.get("hook_stack") or []
+                    if isinstance(it, dict) and it.get("type") == "VISUAL TRIGGER"), "") or "WATCH"
+    vts = [vt0 or "product-in-action"] + [v for v in variant_types if v != vt0][:3]
+    arch = ["curiosity-gap", "bold-claim", "question", "comparison"]
+    variants = []
+    for i, vt in enumerate(vts):
+        variants.append({
+            "id": "ABCD"[i], "is_primary": i == 0, "archetype": arch[i], "family": arch[i],
+            "verbal": verbal if i == 0 else ["Nobody tells you this part.", "Is it actually worth it?",
+                                             "Old way versus this one."][i - 1],
+            "overlay": overlay if i == 0 else ["THIS PART", "WORTH IT?", "OLD VS NEW"][i - 1],
+            "visual_type": vt, "visual": f"Frame 0: {VISUAL_TYPES_TEXT.get(vt, vt)}",
+            "audio": "real product sound", "caption_line": "Comment for the list" if i else verbal,
+            "score": 0.8 - 0.1 * i, "features": {"f": 0.5}, "reasons": ["synthetic"]})
+    discovery = {"schema_version": 1, "primary_keyword": script.get("prompt") or "product",
+                 "secondary_keywords": ["at home"], "search_intents": ["is it worth it"],
+                 "placement": {"spoken_by_s": 3.0, "on_screen_by_s": 0.5, "caption_first_60": True,
+                               "hashtag": "#product", "cover_text": True},
+                 "comment_word": "LIST", "cover": {"frame_s": 21.9, "text": "WORTH IT", "safe_box": "x120-888 y420-1248", "why": "payoff"},
+                 "platforms": {}, "posting": [], "checklist": ["post"]}
+    return direction, variants, discovery
+
+
+VISUAL_TYPES_TEXT = {
+    "result-reveal": "the finished result first, product at the frame edge, on-screen text already up",
+    "problem-state": "the problem at its worst, untidied, \"WAIT\" text overlay",
+    "text-first": "a bold card over a slow push-in on the subject",
+    "product-in-action": "hands already using it mid-motion",
+    "pov-hands": "first-person hands using it",
+    "day-counter": "the streak in progress with a day marker",
+    "before-after-split": "BEFORE left, AFTER right, matched framing",
+}
+
+
+def _stub_modules():
+    """Stand-in vsp.direction / vsp.discovery (contract signatures) for the
+    renderer checks while the real modules live in other worktrees. Their
+    output deliberately carries a forbidden heading and a foreign link group
+    so the bundle's section filter is exercised."""
+    import types
+    d = types.ModuleType("vsp.direction")
+    d.render_md = lambda direction: ("## CREATIVE DIRECTION \u2014 vibe & tone\n"
+                                     f"- vibe: {direction.get('vibe')}\n### Shot 99 (0.0\u20131.0s) \u2014 LEAK\n"
+                                     "- tap the link for the playlist\n- pacing: fast")
+    d.style_paragraph = lambda direction: f"STYLE-FROM-DIRECTION: {direction.get('vibe')} look, 9:16."
+    d.voice_spec = lambda direction: "Voice spec: VOICE-FROM-DIRECTION."
+    q = types.ModuleType("vsp.discovery")
+    q.render_md = lambda disc, script: ("## POSTING & DISCOVERY\n"
+                                        f"- primary keyword: {disc.get('primary_keyword')}\n"
+                                        "- same body copy as FIXTURE\n- post at a steady cadence")
+    return {"vsp.direction": d, "vsp.discovery": q}
+
+
+def selfcheck():
+    """Hermetic: golden x 5 formats x 2 presenters (seed 1) -> maker ->
+    build_bundle -> gate 2 (fixture DB) + this module's criteria; 15/60 s
+    subset; determinism (in-process and across PYTHONHASHSEED); runtime;
+    synthetic direction / hook_variants / discovery contracts."""
+    import copy
+    import hashlib
+    import subprocess
+    import tempfile
+    import time
+    repo = os.path.dirname(_HERE)
+    if repo not in sys.path:
+        sys.path.insert(0, repo)
+    lines, ok = [], True
+    keep_env = {k: os.environ.get(k) for k in ("VSP_VIRAL_DB", "VSP_FIXTURE_OK")}
+    td = tempfile.mkdtemp(prefix="vsp-shotplan-")
+    try:
+        from vsp.fixtures import build_fixture_db
+        os.environ["VSP_VIRAL_DB"] = build_fixture_db(os.path.join(td, "viral.db"))
+        os.environ["VSP_FIXTURE_OK"] = "1"
+        import viral_script_maker as vsm
+        import make_shotlist as ms
+        from vsp import gates
+        golden = []
+        with open(os.path.join(repo, "evals", "golden.jsonl"), encoding="utf-8") as f:
+            golden = [json.loads(x) for x in f if x.strip()]
+
+        def fail(msg):
+            nonlocal ok
+            ok = False
+            lines.append("FAIL " + msg)
+
+        stats = {"types": {}, "risk": {}, "rf_ai": [], "bundles": 0, "shots": 0}
+        plan_t, plan_n = 0.0, 0
+        scripts = []
+        for g in golden:
+            for fmt in FORMATS:
+                for pr in ("human", "ai"):
+                    s = vsm.generate(g["prompt"], presenter=pr, fmt=fmt, duration=30, seed=1)
+                    scripts.append((f"{g['id']}|{fmt}|{pr}|30", s))
+        for g in golden[:8]:
+            for fmt in FORMATS:
+                for pr in ("human", "ai"):
+                    for du in (15, 60):
+                        s = vsm.generate(g["prompt"], presenter=pr, fmt=fmt, duration=du, seed=1)
+                        scripts.append((f"{g['id']}|{fmt}|{pr}|{du}", s))
+        n_fail = 0
+        for key, s in scripts:
+            b, shots, _ = ms.build_bundle(s)
+            errs = gates.gate2(b, s)
+            probs = check_bundle(s, shots, b)
+            if errs or probs:
+                n_fail += 1
+                if n_fail <= 12:
+                    fail(f"{key}: gate2={errs[:3]} own={probs[:4]}")
+            base, _ = ms._base_shots(s)
+            t0 = time.perf_counter()
+            plan(s, base, ctx={
+                "concept": ms._concept(s["prompt"]), "product_short": ms.product_phrase(s["prompt"])})
+            plan_t += time.perf_counter() - t0
+            plan_n += 1
+            if key.endswith("|30"):
+                stats["bundles"] += 1
+                for sh in shots:
+                    stats["shots"] += 1
+                    stats["types"][sh["shot_type"]] = stats["types"].get(sh["shot_type"], 0) + 1
+                    stats["risk"][sh["ai_risk"]] = stats["risk"].get(sh["ai_risk"], 0) + 1
+                    if s.get("presenter") == "ai" and not sh["real_footage"]:
+                        stats.setdefault("ai_risk", {})
+                        stats["ai_risk"][sh["ai_risk"]] = stats["ai_risk"].get(sh["ai_risk"], 0) + 1
+                if s.get("presenter") == "ai":
+                    stats["rf_ai"].append(sum(1 for sh in shots if sh["real_footage"]))
+        lines.append(f"golden x formats x presenters: {len(scripts)} bundles (30 s + 15/60 s subset), "
+                     f"{len(scripts) - n_fail} pass gate 2 + shot-plan criteria")
+        # determinism, in process
+        diff = 0
+        for key, s in scripts[::7]:
+            a = ms.build_bundle(copy.deepcopy(s))
+            b2 = ms.build_bundle(copy.deepcopy(s))
+            if a[0] != b2[0] or json.dumps(a[1], sort_keys=True) != json.dumps(b2[1], sort_keys=True):
+                diff += 1
+        if diff:
+            fail(f"determinism: {diff} bundles differ between two builds")
+        else:
+            lines.append(f"determinism: {len(scripts[::7])} bundles byte-identical across two builds")
+        # determinism across processes / PYTHONHASHSEED
+        probe = [scripts[0][1], scripts[1][1], scripts[len(scripts) // 2][1]]
+        want = [hashlib.sha256(ms.build_bundle(copy.deepcopy(s))[0].encode("utf-8")).hexdigest() for s in probe]
+        code = ("import json,sys,hashlib;sys.path.insert(0,sys.argv[1]);import make_shotlist as ms;"
+                "S=json.loads(sys.stdin.read());"
+                "print(' '.join(hashlib.sha256(ms.build_bundle(s)[0].encode('utf-8')).hexdigest() for s in S))")
+        xok = True
+        for seed in ("0", "4242"):
+            env = dict(os.environ, PYTHONHASHSEED=seed)
+            try:
+                r = subprocess.run([sys.executable, "-c", code, repo], input=json.dumps(probe),
+                                   capture_output=True, text=True, timeout=180, env=env)
+                got = r.stdout.split()
+            except Exception as e:  # noqa: BLE001
+                got = [repr(e)]
+            if got != want:
+                xok = False
+                fail(f"determinism across PYTHONHASHSEED={seed}: {got[:1]} != {want[:1]}")
+        if xok:
+            lines.append("determinism across processes: PYTHONHASHSEED 0 / 4242 byte-identical")
+        avg_ms = 1000.0 * plan_t / max(1, plan_n)
+        if avg_ms >= 15.0:
+            fail(f"runtime: plan() averages {avg_ms:.2f} ms (limit 15)")
+        lines.append(f"runtime: plan() {avg_ms:.2f} ms average over {plan_n} scripts")
+        # synthetic contracts: direction / hook_variants / discovery
+        stubs = {k: v for k, v in _stub_modules().items() if k not in sys.modules}
+        real = [k for k in ("vsp.direction", "vsp.discovery") if k not in stubs]
+        import importlib.util
+        for k in list(stubs):
+            try:
+                if importlib.util.find_spec(k) is not None:
+                    real.append(k)
+                    del stubs[k]
+            except (ImportError, ValueError):
+                pass
+        syn_fail = 0
+        picks = [scripts[i][1] for i in (0, 1, 3, 12, 21, 40, 57, 101, 150, 201, 250, 300)]
+        for mode in ("modules", "keys-only"):
+            for s in picks:
+                s2 = copy.deepcopy(s)
+                s2["direction"], s2["hook_variants"], s2["discovery"] = _synthetic(s2)
+                saved = {}
+                if mode == "modules":
+                    for k, m in stubs.items():
+                        saved[k] = sys.modules.get(k)
+                        sys.modules[k] = m
+                try:
+                    b, shots, _ = ms.build_bundle(s2)
+                finally:
+                    for k in saved:
+                        if saved[k] is None:
+                            sys.modules.pop(k, None)
+                        else:
+                            sys.modules[k] = saved[k]
+                errs = gates.gate2(b, s2)
+                probs = check_bundle(s2, shots, b)
+                heads = [h for h, _ in _sections(b)]
+                has_mods = mode == "modules" or bool(real)
+                if has_mods:
+                    for h in (NEW_SECTIONS[0], NEW_SECTIONS[3]):
+                        if h not in heads:
+                            probs.append(f"{h} missing with key + module")
+                    if "STYLE-FROM-DIRECTION" not in b and not real:
+                        probs.append("style_paragraph not used")
+                    if "VOICE-FROM-DIRECTION" not in b and not real:
+                        probs.append("voice_spec not used")
+                else:
+                    for h in (NEW_SECTIONS[0], NEW_SECTIONS[3]):
+                        if h in heads:
+                            probs.append(f"{h} rendered without its module")
+                if NEW_SECTIONS[1] not in heads:
+                    probs.append("ALTERNATE OPENINGS missing")
+                if "tap the link" in b.lower() and "tap the link" not in (s2.get("caption") or "").lower():
+                    probs.append("foreign link group leaked")
+                if "### Shot 99" in b or "same body copy" in b:
+                    probs.append("forbidden stub line leaked")
+                tgt = subshot_target(s2)
+                for sh in shots:
+                    if is_sub(sh) and sh["shot_type"] != "loop-return-frame":
+                        d = sh["e"] - sh["s"]
+                        if not (SUB_MIN_S - 0.05 <= d <= SUB_MAX_S + 0.05):
+                            probs.append(f"pacing: sub-shot {sh['n']} is {d:.2f}s (target {tgt:.2f})")
+                            break
+                curve = s2["direction"]["energy_curve"]
+                if any(isinstance(sh.get("item"), int) and sh["energy"] != curve[sh["item"]]["energy"]
+                       for sh in shots):
+                    probs.append("energy does not follow direction.energy_curve")
+                if shots[0]["shot_type"] not in data()["BY_ID"] or \
+                        s2["hook_variants"][0]["visual_type"] not in lib(shots[0]["shot_type"])["visual_types"] + \
+                        (lib(shots[0]["ai_swapped_from"])["visual_types"] if shots[0].get("ai_swapped_from") else []):
+                    probs.append("frame 0 ignores hook variant A's visual_type")
+                if errs or probs:
+                    syn_fail += 1
+                    if syn_fail <= 6:
+                        fail(f"synthetic[{mode}] {s2.get('prompt')}|{s2.get('format')}|"
+                             f"{s2.get('presenter')}: gate2={errs[:2]} own={probs[:4]}")
+        lines.append(f"synthetic contracts: {2 * len(picks) - syn_fail}/{2 * len(picks)} bundles render "
+                     f"CREATIVE DIRECTION / ALTERNATE OPENINGS / SHOOT PLAN / POSTING & DISCOVERY per contract"
+                     + (f" (real modules: {', '.join(sorted(real))})" if real else " (stub modules)"))
+        # table integrity + wording contract
+        from vsp import creative_vocab as V
+        for s_ in data()["SHOT_LIBRARY"]:
+            fr = _fill(FRAMING[s_["id"]], {"subject": "the widget", "problem": "the mess", "result": "the result",
+                                           "product": True})
+            low = fr.lower()
+            if ("to camera" in low) != is_talking_head(s_["id"]):
+                fail(f"framing {s_['id']}: 'to camera' must mark exactly the talking heads")
+            if any(k in low for k in MOVE_KW) != (s_["move"] != "static") and s_["id"] != "jump-cut-punch-in":
+                fail(f"framing {s_['id']}: D48 keyword presence must match move {s_['move']}")
+            if s_["scale"] not in V.SHOT_SCALES or s_["move"] not in V.CAMERA_MOVES:
+                fail(f"library {s_['id']}: ids outside creative_vocab")
+        lines.append(f"tables: {len(data()['SHOT_LIBRARY'])} shot types, framings keep D47/D48 honest")
+        top = sorted(stats["types"].items(), key=lambda x: (-x[1], x[0]))[:10]
+        lines.append("top shot types (30 s): " + ", ".join(f"{k} {v}" for k, v in top))
+        tot = max(1, stats["shots"])
+        lines.append("AI-risk mix, all 30 s shots: " + ", ".join(
+            f"{k} {100.0 * stats['risk'].get(k, 0) / tot:.0f}%" for k in ("low", "med", "high")))
+        ar = stats.get("ai_risk") or {}
+        art = max(1, sum(ar.values()))
+        lines.append("AI-risk mix, AI-rendered shots (AI bundles, real footage excluded): " + ", ".join(
+            f"{k} {100.0 * ar.get(k, 0) / art:.0f}%" for k in ("low", "med", "high")))
+        rf = stats["rf_ai"]
+        if rf:
+            lines.append(f"real-footage shots per AI bundle (30 s): mean {sum(rf) / len(rf):.2f}, "
+                         f"min {min(rf)}, max {max(rf)}")
+    except Exception as e:  # noqa: BLE001 — a crash is a failed check
+        import traceback
+        ok = False
+        lines.append("FAIL crash: " + "".join(traceback.format_exception_only(type(e), e)).strip())
+        lines.extend(traceback.format_exc().splitlines()[-6:])
+    finally:
+        for k, v in keep_env.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+        import shutil
+        shutil.rmtree(td, ignore_errors=True)
+    return ok, lines
+
+
+if __name__ == "__main__":
+    _ok, _lines = selfcheck()
+    print("\n".join(_lines))
+    print("shotplan selfcheck: " + ("ok" if _ok else "NOT OK"))
+    sys.exit(0 if _ok else 1)
