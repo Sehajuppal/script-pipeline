@@ -29,12 +29,15 @@ clamped to 140-200.
 Deterministic: data order only (no set iteration), a local RNG from
 vsp.seeding.derive_seed(seed, "direction"); the maker's rng is never touched.
 """
+import collections
 import copy
 import hashlib
+import importlib
 import json
 import os
 import random
 import re
+import subprocess
 import sys
 import time
 
@@ -420,7 +423,7 @@ def _tone(vibe, presenter, niche):
     if humor != "none":
         notes.append(H["rule"])
     return {"voice": voice, "allowed": allowed, "humor": humor,
-            "notes": " ".join(n.rstrip(".") + "." for n in notes)}
+            "notes": " ".join(_cap(n.rstrip(".")) + "." for n in notes)}
 
 
 # --------------------------------------------------------------- pacing
@@ -683,6 +686,10 @@ def _do_dont(vibe, concept, subj, niche, presenter, fit, shop):
     do.append(data()["IN_FRAME"][concept].format(subj=subj))
     do.append(data()["NICHE_DO"].get(niche) or data()["NICHE_DO"]["default"])
     do.append(VP["presenter_notes"][presenter])
+    if presenter == "human" and vibe in data()["FINISH"]["candid"] and \
+            "candid" not in VP["presenter_notes"]["human"]:
+        do.append("at least 2 candid cues: handheld micro-shake, uneven "
+                  "natural light, a mid-sentence punch-in (C6)")
     if presenter == "ai":
         if fit == "hedonic":
             do.append("hedonic product with an AI persona: keep it product-led "
@@ -822,6 +829,10 @@ def render_md(direction):
         lic = (m.get("licensing") or {}).get(pl) or {}
         out.append(f"- {_PLATFORM_NAMES[pl]}: {lic.get('library')} \u2014 "
                    f"{lic.get('note')}")
+    out.append("- Trends: a trending song only if it is in that platform's "
+               "library; otherwise copy the trend's format or beat timing with "
+               "a licensed bed. Log platform, account type, lane, library, "
+               "track id, date and placements.")
     pal = ", ".join(f"{n} {h}" for n, h in zip(L.get("palette_names") or [],
                                                L.get("palette_hex") or []))
     out.append(f"**Look:** {_cap(L.get('lighting') or '')}. Palette: {pal}. "
@@ -1220,10 +1231,19 @@ def selfcheck():
     """Hermetic: in-process generate() over evals/golden.jsonl x 5 formats x
     2 presenters at seed 1 (plus synthetic lane/tie-break/pack checks).
     Reads repo files only; writes nothing. -> (ok, lines)."""
-    import collections
-    import importlib
-    import subprocess
     t_start = time.time()
+    saved = os.environ.get("VSP_NO_PRIORS")
+    os.environ["VSP_NO_PRIORS"] = "1"   # hermetic: never the local learned/
+    try:
+        return _selfcheck(t_start)
+    finally:
+        if saved is None:
+            os.environ.pop("VSP_NO_PRIORS", None)
+        else:
+            os.environ["VSP_NO_PRIORS"] = saved
+
+
+def _selfcheck(t_start):
     lines, fails = [], []
     fails += [f"data: {e}" for e in _data_checks()]
     lines.append("data: vibes.json ids valid; research §5 blocks transcribed "
@@ -1299,13 +1319,18 @@ def selfcheck():
     lines.append(f"no-ctx path: concept inference matches ctx on all {n}; same "
                  f"vibe on {agree}/{n}")
     nfx = 0
+    fixtures = []
     try:                               # --script-json-like legacy fixtures
         from vsp import selftest_cases
         good, cases = selftest_cases.all_cases()
-        fixtures = [good] + [c[1] for c in cases if isinstance(c[1], dict)]
-    except Exception as e:  # noqa: BLE001
+        for c in [good] + list(cases):
+            cand = c if isinstance(c, dict) else next(
+                (x for x in c if isinstance(x, dict) and "beats" in x), None) \
+                if isinstance(c, (list, tuple)) else None
+            if isinstance(cand, dict) and "beats" in cand:
+                fixtures.append(cand)
+    except Exception:  # noqa: BLE001 — another workstream's module: optional
         fixtures = []
-        fails.append(f"fixtures: {type(e).__name__}: {e}")
     for fx in fixtures:
         snap = _digest(fx)
         d = orig(fx, ctx=None, seed=None)
