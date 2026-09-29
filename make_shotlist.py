@@ -611,14 +611,16 @@ def build_shots(d):
     delivery (display, meta-stripped), rehook, match_cut."""
     items = []
     for h in d.get("hook_stack", []) or []:
-        items.append(("HOOK", h))
+        if isinstance(h, dict):
+            items.append(("HOOK", h))
     for b in d.get("beats", []) or []:
-        items.append(("BEAT", b))
+        if isinstance(b, dict):
+            items.append(("BEAT", b))
     rows = [(i, kind, it) + _window(it.get("t", "")) for i, (kind, it) in enumerate(items)]
     product = _is_product_concept(d)
     shots, vo_lines, cursor, shift = [], [], 0.0, 0.0
     for idx, kind, it, s, e in _order(rows):
-        btype = it.get("type", "")
+        btype = str(it.get("type") or "")
         dialogue = _flat(it.get("dialogue", ""))
         delivery_raw = _flat(it.get("delivery", ""))
         rehook = _flat(it.get("rehook", ""))
