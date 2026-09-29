@@ -1,0 +1,44 @@
+{
+ "_comment": "Graph API error bodies used by the selfchecks (and headers for usage backoff).",
+ "rate_limit": {
+  "error": {
+   "message": "(#4) Application request limit reached",
+   "type": "OAuthException",
+   "code": 4,
+   "fbtrace_id": "FIXTUREtrace",
+   "is_transient": true
+  }
+ },
+ "transient": {
+  "error": {
+   "message": "An unexpected error has occurred. Please retry your request later.",
+   "type": "OAuthException",
+   "code": 2,
+   "fbtrace_id": "FIXTUREtrace",
+   "is_transient": true
+  }
+ },
+ "permission": {
+  "error": {
+   "message": "(#10) Application does not have permission for this action",
+   "type": "OAuthException",
+   "code": 10,
+   "fbtrace_id": "FIXTUREtrace"
+  }
+ },
+ "token_expired": {
+  "error": {
+   "message": "Error validating access token: Session has expired on Sunday, 27-Sep-26 10:00:00 PDT.",
+   "type": "OAuthException",
+   "code": 190,
+   "fbtrace_id": "FIXTUREtrace",
+   "error_subcode": 463
+  }
+ },
+ "usage_high_headers": {
+  "x-app-usage": "{\"call_count\":85,\"total_cputime\":12,\"total_time\":14}"
+ },
+ "usage_stop_headers": {
+  "x-business-use-case-usage": "{\"17841400000000001\":[{\"type\":\"instagram\",\"call_count\":97,\"total_cputime\":20,\"total_time\":25,\"estimated_time_to_regain_access\":0}]}"
+ }
+}
