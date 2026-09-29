@@ -168,7 +168,7 @@ Tracked ids: every D-number plus lettered sub-ids (D17b, D89b, D90b, B4a). The s
 | D135 | MAKER | The transformation maker drew `ndays` once into ctx | §64 D135: PROOF OVERLAYS MUST SPEAK THE HOOK'S … | viral_script_maker.py×2 |
 | D136 | GATE | NO UNSOURCED SOCIAL PROOF | §66 — PIPELINE v2 (2026-09-28) | vsp/gates.py×1, vsp/lexicon.py×1, vsp/research.py×2, vsp/rules.py×5, vsp/selftest.py×2, vsp/selftest_cases.py×5 |
 | D137 | GATE | AN AI PERSONA NEVER CLAIMS LIVED EXPERIENCE | §66 — PIPELINE v2 (2026-09-28) | vsp/lexicon.py×1, vsp/research.py×2, vsp/router.py×3, vsp/rules.py×4, vsp/selftest_cases.py×3 |
-| D138 | GATE | AI DISCLOSURE IS CARRIED END TO END | §66 — PIPELINE v2 (2026-09-28) | vsp/rules.py×10, vsp/selftest_cases.py×9 |
+| D138 | GATE | AI DISCLOSURE IS CARRIED END TO END | §66 — PIPELINE v2 (2026-09-28) | vsp/lexicon.py×2, vsp/rules.py×10, vsp/selftest_cases.py×12 |
 | D139 | GATE | NO GENERIC ENGAGEMENT BAIT | §66 — PIPELINE v2 (2026-09-28) | vsp/lexicon.py×1, vsp/research.py×1, vsp/rules.py×4, vsp/selftest_cases.py×3 |
 | D140 | GATE | HASHTAGS | §66 — PIPELINE v2 (2026-09-28) | vsp/lexicon.py×1, vsp/rules.py×5, vsp/selftest_cases.py×6 |
 | D141 | GATE | NO ABSOLUTE OR GUARANTEE CLAIMS | §66 — PIPELINE v2 (2026-09-28) | vsp/lexicon.py×1, vsp/research.py×1, vsp/router.py×1, vsp/rules.py×4, vsp/selftest_cases.py×4 |

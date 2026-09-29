@@ -196,6 +196,10 @@ def new_cases(good):
         # D138: presenter=ai without a caption AI line
         ("d138-ai-no-caption-line", {**ai, "caption": "Test caption. #beautytok"},
          False, ["D138:"], {"only": "D138"}),
+        # D138: a product name containing "AI" is not a disclosure line
+        ("d138-ai-product-name-is-not-disclosure", {**ai, "caption":
+            "The AI note taker, tested.\n#beautytok"},
+         False, ["D138:"], {"only": "D138"}),
         # D139: generic engagement bait (the keyword CTA in the fixture is fine)
         ("d139-engagement-bait", {**good, "beats": _with_beat(
             good, 2, dialogue="Tag a friend who needs this.")},

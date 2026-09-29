@@ -167,12 +167,8 @@ def check_d137(script, bundle_text, ctx):
     return []
 
 
-AI_WORD = re.compile(r"\bAI\b")
-DISCLOSURE_CUE = re.compile(
-    r"\b(?:persona|generated|avatar|virtual|synthetic|character|creator|"
-    r"presenter|host|influencer|digital human|made with|created with|"
-    r"made by|created by|not a real|disclos\w*|label(?:led|ed)?)\b|"
-    r"\b(?:by|with|using)\s+(?:an?\s+)?AI\b", re.I)
+AI_WORD = L.AI_WORD                    # shared with the rubric
+DISCLOSURE_CUE = L.AI_DISCLOSURE_CUE
 
 
 def check_d138(script, bundle_text, ctx):
@@ -186,8 +182,7 @@ def check_d138(script, bundle_text, ctx):
         out.append("D138: presenter=ai but the script's 'disclosure' field is "
                    "missing or never names the AI persona — the frame-0 label "
                    "has no source")
-    lines = _txt(script.get("caption")).splitlines()
-    if not any(AI_WORD.search(ln) and DISCLOSURE_CUE.search(ln) for ln in lines):
+    if not L.has_ai_disclosure_line(_txt(script.get("caption"))):
         out.append("D138: presenter=ai but the caption has no AI disclosure line "
                    "(e.g. 'made with an AI persona') — EU AI Act Art. 50 / NY "
                    "synthetic-performer law")

@@ -37,6 +37,23 @@ AI_FIRST_PERSON = [
                re.I),
 ]
 
+# D138 — an AI disclosure LINE: "AI" plus a disclosure cue ("made with an AI
+# persona", "AI-generated presenter", "created with AI"). A product name that
+# merely contains "AI" ("AI voice recorder") is not a disclosure.
+AI_WORD = re.compile(r"\bAI\b")
+AI_DISCLOSURE_CUE = re.compile(
+    r"\b(?:persona|generated|avatar|virtual|synthetic|character|creator|"
+    r"presenter|host|influencer|digital human|made with|created with|"
+    r"made by|created by|not a real|disclos\w*|label(?:led|ed)?)\b|"
+    r"\b(?:by|with|using)\s+(?:an?\s+)?AI\b", re.I)
+
+
+def has_ai_disclosure_line(text):
+    """D138: some line of `text` names the AI with a disclosure cue."""
+    return any(AI_WORD.search(ln) and AI_DISCLOSURE_CUE.search(ln)
+               for ln in (text or "").splitlines())
+
+
 # D139 — generic engagement bait (Meta engagement-bait guidelines; Instagram
 # recommendation eligibility). The keyword->DM CTA (D1/B4a) is NOT bait.
 GENERIC_BAIT = re.compile(
