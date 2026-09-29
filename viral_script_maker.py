@@ -91,9 +91,14 @@ HOOKS = {
    '{before} → {after}. Same {timespan}.',
    # GEN-B short forms (D61/D73): the before/after names the product and the
    # day-count the D40 transformation payoff delivers ("DAY 1 vs DAY N").
+   # The "day 1 vs day N" forms render only in the transformation format,
+   # whose frame-0 IS the DAY 1 | DAY N split-screen (D25/D135); the other
+   # formats get the after-framed forms (paid by the TEST result).
    '{product}, day 1 vs day {ndays}.',
    'Day 1 vs day {ndays} with {product}.',
    '{product} after {ndays} days: buy or skip?',     # review (D27)
+   'Here\'s the after with {product}.',
+   '{product}. This is the after.',
  ],
  "story-time": [
    'Story time: the {moment} {product} saved my {thing}.',
@@ -2103,6 +2108,8 @@ def _hook_candidates(ctx, pool, ai, lex, fam_pref):
         verdict = "worth it" in low or "verdict" in low or "or skip" in low
         if concept == "product" and verdict and fmt != "review":
             continue          # D27/D35: only the review payoff pays a verdict
+        if "day 1 vs day" in low and fmt != "transformation":
+            continue          # D25/D135: the label pair needs the split-screen frame-0
         if concept == "challenge":
             if ("screen time" in low or "quiet won" in low) and not screen_cls:
                 continue      # D120: screen-class payoffs only
@@ -3092,7 +3099,16 @@ def _cta_word(ctx):
         sub = _beauty_subcat(ctx)
         if sub:
             return _BEAUTY_SUBCAT_TAGS[sub][1]
-    return NICHE_COMMENT_WORD.get(ctx.get("niche"), ctx["category"].upper())
+    # D34 (GEN-B): the fallback comment word is ONE word — the D30 multi-word
+    # categories rendered "comment CORDLESS DRILL SET"; the last non-generic
+    # word ("DRILL") is the noun the viewer types. Single-word categories are
+    # unchanged ("LAMP", "BOTTLE").
+    words = [w for w in re.findall(r"[A-Za-z0-9]+", str(ctx["category"]))
+             if w.lower() not in ("machine", "device", "gadget", "tool", "item",
+                                  "thing", "kit", "set", "system", "unit",
+                                  "product")]
+    fallback = (words[-1] if words else str(ctx["category"])).upper()
+    return NICHE_COMMENT_WORD.get(ctx.get("niche"), fallback)
 
 def build_caption(ctx, hookline, fmt, presenter):
     tags = _scoped_tags(ctx)
