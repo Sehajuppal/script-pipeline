@@ -19,6 +19,12 @@ ACCEPT only if every rule holds (each on golden AND holdout):
   R9 guard (verify)                  no gate/rule/lexicon weakening
   R10 non-vacuous (promote)          the pack changed >= 1 hook, else the A/B
                                      proves nothing and nothing is approved
+  R11 diversity (promote)            hook distinct ratio not lower on golden
+                                     and holdout: a pack exists to ADD variety
+
+Diversity (hook distinct ratio, distinct-2, per-cell seed diversity from the
+scorecard summary) is always reported in the evidence; for promote it is also
+the expected win — a pack that raises it with no quality loss.
 """
 import math
 import random
@@ -103,7 +109,9 @@ def paired(base, cand):
         "compliance_flags": {"base": comp_b, "cand": comp_c},
         "hooks": {"changed_runs": hook_changes,
                   "distinct_base": _summ(base, "hooks", "distinct_ratio"),
-                  "distinct_cand": _summ(cand, "hooks", "distinct_ratio")},
+                  "distinct_cand": _summ(cand, "hooks", "distinct_ratio"),
+                  "distinct2_base": _summ(base, "hooks", "distinct2"),
+                  "distinct2_cand": _summ(cand, "hooks", "distinct2")},
         "runtime_s": {"base": _summ(base, "runtime_mean_s"), "cand": _summ(cand, "runtime_mean_s")},
     }
 
@@ -113,7 +121,11 @@ def _ge(a, b):
     return a is not None and b is not None and a >= b - 1e-12
 
 
-def decide(stats, selftest_ok, guard_findings=None, require_change=False):
+DIVERSITY_TOL = 0.0
+
+
+def decide(stats, selftest_ok, guard_findings=None, require_change=False,
+           require_diversity=False):
     """stats = {"golden": paired(...), "holdout": paired(...)} (a missing
     suite fails). -> {"verdict": "ACCEPT"|"REJECT", "checks": [...],
     "reasons": [...]}"""
@@ -161,6 +173,13 @@ def decide(stats, selftest_ok, guard_findings=None, require_change=False):
             f"{n} paired run(s) rendered a different hook" if n else
             "vacuous: no paired run changed its hook (loader absent or no template "
             "selected) — the A/B proves nothing")
+    if require_diversity:
+        for suite in ("golden", "holdout"):
+            h = ((stats or {}).get(suite) or {}).get("hooks") or {}
+            a, b = h.get("distinct_base"), h.get("distinct_cand")
+            chk(f"{suite}:R11-diversity", _ge(b, (a or 0) - DIVERSITY_TOL) and a is not None,
+                f"hook distinct ratio {a} → {b}, distinct-2 {h.get('distinct2_base')} → "
+                f"{h.get('distinct2_cand')}")
     reasons = [f"{c['id']}: {c['detail']}" for c in checks if not c["ok"]]
     return {"verdict": "REJECT" if reasons else "ACCEPT", "checks": checks,
             "reasons": reasons}
@@ -179,5 +198,7 @@ def headline(stats):
                    f"{rb['base']}→{rb['cand']} Δ {rb['delta']:+.2f} [{rb['ci95'][0]:+.2f}, "
                    f"{rb['ci95'][1]:+.2f}] · audit {au['base']}→{au['cand']} · compliance "
                    f"{s['compliance_flags']['cand']} · hooks changed "
-                   f"{s['hooks']['changed_runs']}/{s['n_paired']}")
+                   f"{s['hooks']['changed_runs']}/{s['n_paired']} · distinct "
+                   f"{s['hooks']['distinct_base']}→{s['hooks']['distinct_cand']} · distinct-2 "
+                   f"{s['hooks'].get('distinct2_base')}→{s['hooks'].get('distinct2_cand')}")
     return out
