@@ -116,6 +116,157 @@ HOOKS = {
    'I was wrong about {product}.',                   # GEN-B short form
  ],
 }
+
+# ------------------------------------------- approved hook packs (WS-INT)
+# learned/hook_packs/*.json (vsp.config.hook_packs_dir(), written by
+# `python3 -m vsp.improve evolve`) extend HOOKS once, at import. A pack loads
+# only with "status": "approved" and "schema_version": 1. A template joins
+# HOOKS[family] only if the family already exists, it is a one-line string
+# of <= 120 chars, and every {slot} in it is a plain slot that some built-in
+# HOOKS template already uses (HOOK_SLOTS, computed from the table above —
+# never hard-coded — so no new slot, attribute lookup or positional field
+# can reach _render_hook_line's str.format). Duplicates are skipped. A bad
+# pack or template is skipped with a stderr warning, never a crash. Pack
+# templates then face exactly the built-in screens in _hook_candidates (the
+# 8-word budget, the gate lexicon, the D144 overlay check).
+# VSP_NO_HOOK_PACKS=1 disables loading (the improvement engine's A/B switch).
+HOOK_PACK_SCHEMA = 1
+HOOK_PACK_MAX_CHARS = 120
+_PACK_SLOT_RE = re.compile(r"\{([A-Za-z_][A-Za-z0-9_]*)\}")
+HOOK_SLOTS = frozenset(s for _lines in HOOKS.values() for _t in _lines
+                       for s in _PACK_SLOT_RE.findall(_t))
+HOOK_PACKS_LOADED = []      # ids of approved packs that added >= 1 template
+HOOK_PACK_WARNINGS = []     # what was skipped, and why (also on stderr)
+_LEARNED_LAST = {}          # the last pick_hook's learned provenance
+LEARNED_NEUTRAL = 0.5       # pick_hook's prior score for a family without evidence
+
+
+def hook_template_problem(t, known=HOOK_SLOTS):
+    """Why a hook-pack template is unusable, or None when it is usable."""
+    if not isinstance(t, str) or not t.strip():
+        return "not a non-empty string"
+    if "\n" in t or "\r" in t:
+        return "contains a newline"
+    if len(t) > HOOK_PACK_MAX_CHARS:
+        return f"{len(t)} chars > {HOOK_PACK_MAX_CHARS}"
+    unknown = sorted(set(_PACK_SLOT_RE.findall(t)) - set(known))
+    if unknown:
+        return "unknown slot(s) " + ", ".join("{%s}" % s for s in unknown)
+    if "{" in _PACK_SLOT_RE.sub("", t) or "}" in _PACK_SLOT_RE.sub("", t):
+        return "stray brace or non-plain {field}"
+    return None
+
+
+def load_hook_packs(dirpath=None, hooks=None, known=None, warn=True):
+    """Append the approved packs' valid templates to `hooks` (default HOOKS)
+    in place. -> (loaded pack ids, {family: [added templates]}, warnings).
+    Files load in sorted name order; never raises."""
+    hooks = HOOKS if hooks is None else hooks
+    known = HOOK_SLOTS if known is None else known
+    loaded, added, warns = [], {}, []
+
+    def _warn(msg):
+        warns.append(msg)
+        if warn:
+            try:
+                sys.stderr.write(f"viral_script_maker: hook pack {msg}\n")
+            except Exception:
+                pass
+
+    try:
+        if dirpath is None:
+            try:
+                from vsp import config as _cfg
+                dirpath = _cfg.hook_packs_dir()
+            except Exception:
+                dirpath = os.path.join(os.environ.get("VSP_LEARNED_DIR") or os.path.join(
+                    os.path.dirname(os.path.abspath(__file__)), "learned"), "hook_packs")
+        if not os.path.isdir(dirpath):
+            return loaded, added, warns
+        names = sorted(n for n in os.listdir(dirpath) if n.endswith(".json"))
+    except Exception as e:
+        _warn(f"directory {dirpath}: {type(e).__name__}: {e} — none loaded")
+        return loaded, added, warns
+    seen = {" ".join(t.split()) for lines in hooks.values() for t in lines
+            if isinstance(t, str)}
+    for name in names:
+        try:
+            with open(os.path.join(dirpath, name), encoding="utf-8") as f:
+                pack = json.load(f)
+            if not isinstance(pack, dict):
+                _warn(f"{name}: not a JSON object — skipped")
+                continue
+            status = pack.get("status")
+            if status != "approved":
+                if status not in ("proposed", "rejected"):
+                    _warn(f"{name}: status {status!r} is not approved — skipped")
+                continue
+            if pack.get("schema_version") != HOOK_PACK_SCHEMA:
+                _warn(f"{name}: schema_version {pack.get('schema_version')!r} "
+                      f"!= {HOOK_PACK_SCHEMA} — skipped")
+                continue
+            pid = pack.get("id")
+            if not isinstance(pid, str) or not pid.strip():
+                _warn(f"{name}: no id — skipped")
+                continue
+            if pid in loaded:
+                _warn(f"{name}: duplicate id {pid!r} — skipped")
+                continue
+            fams = pack.get("families")
+            if not isinstance(fams, dict):
+                _warn(f"{name}: 'families' is not an object — skipped")
+                continue
+            n_add = 0
+            for fam in sorted(k for k in fams if isinstance(k, str)):
+                tmpls = fams[fam]
+                if fam not in hooks:
+                    _warn(f"{name}: unknown family {fam!r} — skipped")
+                    continue
+                if not isinstance(tmpls, list):
+                    _warn(f"{name}: {fam}: templates are not a list — skipped")
+                    continue
+                for t in tmpls:
+                    why = hook_template_problem(t, known)
+                    if why:
+                        _warn(f"{name}: {fam}: {str(t)[:60]!r}: {why} — skipped")
+                        continue
+                    norm = " ".join(t.split())
+                    if norm in seen:
+                        continue          # duplicate: already in the pool
+                    seen.add(norm)
+                    hooks[fam].append(norm)
+                    added.setdefault(fam, []).append(norm)
+                    n_add += 1
+            if n_add:
+                loaded.append(pid)
+            else:
+                _warn(f"{name}: approved pack {pid!r} added no templates")
+        except Exception as e:  # a bad pack never breaks the maker
+            _warn(f"{name}: {type(e).__name__}: {e} — skipped")
+    return loaded, added, warns
+
+
+if os.environ.get("VSP_NO_HOOK_PACKS") != "1":
+    _hp_ids, _hp_added, _hp_warns = load_hook_packs()
+    HOOK_PACKS_LOADED.extend(_hp_ids)
+    HOOK_PACK_WARNINGS.extend(_hp_warns)
+
+
+def learned_provenance():
+    """Learned state behind the LAST generate() call — {"priors_used":
+    {family: {alpha, beta, n}}} when priors steered its hook pick, and
+    {"hook_packs": [ids]} when approved packs are loaded; {} otherwise, so
+    a run without learned state is byte-identical. pipeline.py records it
+    in script.json."""
+    out = {}
+    if _LEARNED_LAST.get("priors_used"):
+        out["priors_used"] = {f: dict(v) for f, v in
+                              sorted(_LEARNED_LAST["priors_used"].items())}
+    if HOOK_PACKS_LOADED:
+        out["hook_packs"] = list(HOOK_PACKS_LOADED)
+    return out
+
+
 NICHE_KEYWORDS = {
  # D11 (judge loop, cycle 5): pet-family products get their own niche FIRST —
  # "pet hair remover roller" was misclassified as beauty by the "hair" keyword
@@ -2345,8 +2496,11 @@ def _hook_candidates(ctx, pool, ai, lex, fam_pref):
                 contract = "ndays" in slots or "day 1" in low
             else:
                 contract = True
+            # WS-INT: score[3] = learned performance (NEUTRAL here; pick_hook
+            # swaps in a Thompson sample for families with enough evidence)
             out.append({"family": fam, "line": r, "overlay": ov,
-                        "score": (anchored, ov_focus, contract, fam == fam_pref)})
+                        "score": (anchored, ov_focus, contract, LEARNED_NEUTRAL,
+                                  fam == fam_pref)})
             break
     return out
 
@@ -2363,10 +2517,22 @@ def pick_hook(ctx, rng):
     # rendered: "template" | "pinned" | "fallback" (D145), and the returned
     # family is the family of the line that rendered.
     fam = NICHE_HOOK.get(ctx["niche"], "curiosity-gap")
-    if _PACK and not _NO_RESEARCH:  # research bridge: live niche rankings override static map
-        live = (_PACK.get("niche_hooks") or {}).get(ctx["niche"])
-        if live and live[0]["category"] in HOOKS:
-            fam = live[0]["category"]
+    _LEARNED_LAST.clear()   # WS-INT: learned provenance of THIS pick only
+    if _PACK and not _NO_RESEARCH:
+        # WS-INT (D148): live research — the first mappable family in the
+        # niche's WHOLE ranked list, across the research niches the maker
+        # niche maps to (vsp.research; never proof-first/bait, never a
+        # first-person-anecdote family for an AI presenter, D136/D137). The
+        # old override looked the MAKER niche up in the pack's research-niche
+        # keys and read only rank 0, so it almost never fired.
+        try:
+            from vsp import research as _vres
+            live = _vres.live_hook_family(_PACK, ctx["niche"], ctx.get("presenter"),
+                                          families=tuple(HOOKS))
+        except Exception:
+            live = None
+        if live in HOOKS:
+            fam = live
     auth = NICHE_AUTHORITY.get(ctx["niche"])
     # determinism (GEN-B): exactly one draw from the script rng, mixed with a
     # stable digest of the concept (crc32, not hash(): PYTHONHASHSEED-proof)
@@ -2424,6 +2590,34 @@ def pick_hook(ctx, rng):
         pref = fam
     cands = _hook_candidates(ctx, pool, ai, lex, pref)
     if cands:
+        # WS-INT (learned priors): score[3] is the learned-performance
+        # component — a Thompson sample from the (niche, family) Beta
+        # posterior in learned/priors.json (vsp.priors), drawn with hrng, for
+        # families with n >= 3; NEUTRAL (0.5) otherwise. It sits after the
+        # quality components (anchored, overlay focus, format contract) and
+        # before the static niche-family preference, so quality always wins
+        # and, among quality-equivalent candidates, learned performance
+        # picks (with exploration). Draws happen only when the quality-tied
+        # top spans >= 2 families (otherwise priors cannot change the
+        # family): without a priors file, or without evidence, hrng is
+        # untouched and the pick is byte-identical.
+        qtop = max(c["score"][:3] for c in cands)
+        tied = {c["family"] for c in cands if c["score"][:3] == qtop}
+        if len(tied) > 1:
+            try:
+                from vsp import priors as _vpri
+                _pri = _vpri.load_priors()
+                ts = _vpri.thompson(_pri, ctx.get("niche"), tied, hrng) if _pri else {}
+            except Exception:
+                ts = {}
+            if ts:
+                for c in cands:
+                    if c["family"] in ts:
+                        c["score"] = (c["score"][:3] + (ts[c["family"]]["sample"],)
+                                      + c["score"][4:])
+                _LEARNED_LAST["priors_used"] = {
+                    f: {"alpha": v["alpha"], "beta": v["beta"], "n": v["n"]}
+                    for f, v in ts.items()}
         top = max(c["score"] for c in cands)
         best = [c for c in cands if c["score"] == top]
         pick = best[hrng.randrange(len(best))]
@@ -4071,7 +4265,14 @@ def research_notes(ctx, presenter, fmt, fam):
         notes.append(f"LIVE RESEARCH (pack {str(_PACK.get('generated_at', ''))[:10]}, "
                      f"{_PACK.get('reels_total', 0)} reels): "
                      f"top hook families now: {top3}; top patterns: {pat3}.")
-        fresh = _PACK.get("fresh_hook_lines", [])[:3]
+        # WS-INT: in-niche spoken hook lines only (vsp.research) — the pack's
+        # global first three were all comedy annotator notes ("(visual open,
+        # playground backdrop)") cited on every script. None -> no line.
+        try:
+            from vsp import research as _vres
+            fresh = _vres.niche_fresh_lines(_PACK, ctx["niche"], 3)
+        except Exception:
+            fresh = []
         for fr in fresh:
             notes.append(f"Fresh from the DB ({fr.get('account')}, {fr.get('niche')}): "
                          f"\"{fr.get('hook')}\"")

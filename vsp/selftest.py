@@ -15,8 +15,13 @@ options for pipeline-v2 cases:
   {"only": "D136"}              every failure message must start with D136
   {"env": {"VSP_FIXTURE_OK": None}}  per-case env override (None = unset)
 unit_cases() are in-process contract checks (registry order, DELIVERABLE
-sync, a brief make_shotlist can never emit, ...), run after the pipeline
-cases.
+sync, a brief make_shotlist can never emit, the learned-state readers, ...),
+run after the pipeline cases. e2e_checks() are full 10-stage CLI runs
+(fn(harness) -> [problems]); every child also reads an empty temp learned/
+dir. Last, OPTIONAL_SELFCHECKS (vsp.ingest, vsp.feedback, vsp.improve —
+built on other branches) run in a child each when importlib.util.find_spec
+finds them: selfcheck() -> (ok, lines) must return ok; an absent module (or
+one without selfcheck()) is only noted.
 """
 import hashlib
 import json
@@ -29,7 +34,8 @@ import tempfile
 
 from vsp import config
 from vsp.fixtures import build_fixture_db
-from vsp.selftest_cases import all_cases, unit_cases
+from vsp.selftest_cases import (OPTIONAL_SELFCHECKS, all_cases, e2e_checks,
+                                unit_cases)
 
 
 def _tree_digest(root):
@@ -61,6 +67,112 @@ def _gate_messages(stdout):
             for m in line.split("; ") if m.strip()]
 
 
+class _Harness:
+    """What the end-to-end checks (selftest_cases.e2e_checks) get: full
+    pipeline runs in the hermetic env, fresh temp dirs, shared state."""
+
+    def __init__(self, pipeline_path, tmp, env):
+        self.pipeline, self.tmp, self.env = pipeline_path, tmp, env
+        self.repo = config.REPO
+        self.state = {}
+
+    def _env(self, learned=None, env=None):
+        e = dict(self.env)
+        if learned:
+            e["VSP_LEARNED_DIR"] = learned
+        for k, v in (env or {}).items():      # per-run overrides; None = unset
+            if v is None:
+                e.pop(k, None)
+            else:
+                e[k] = str(v)
+        return e
+
+    def run(self, args, learned=None, timeout=300, env=None):
+        return subprocess.run([sys.executable, self.pipeline] + list(args),
+                              capture_output=True, text=True, timeout=timeout,
+                              env=self._env(learned, env))
+
+    def py(self, code, learned=None, timeout=300, args=(), env=None):
+        return subprocess.run([sys.executable, "-c", code] + list(args),
+                              capture_output=True, text=True, timeout=timeout,
+                              env=self._env(learned, env))
+
+    def out(self, name):
+        p = os.path.join(self.tmp, "e2e", name)
+        shutil.rmtree(p, ignore_errors=True)
+        return p
+
+    def learned(self, name):
+        p = os.path.join(self.tmp, "learned-" + name)
+        shutil.rmtree(p, ignore_errors=True)
+        os.makedirs(os.path.join(p, "hook_packs"))
+        return p
+
+
+# Runs one optional module's selfcheck() -> (ok, lines) in a child process
+# (isolated globals/env; the module may be a package with a selfcheck
+# submodule). The result follows a marker line (the check may print).
+_SELFCHECK_CODE = r"""
+import importlib, json, sys, types
+sys.path.insert(0, sys.argv[1])
+name = sys.argv[2]
+mod = importlib.import_module(name)
+fn = getattr(mod, "selfcheck", None)
+if isinstance(fn, types.ModuleType):
+    fn = getattr(fn, "selfcheck", None)
+if fn is None:
+    try:
+        fn = getattr(importlib.import_module(name + ".selfcheck"), "selfcheck", None)
+    except ModuleNotFoundError as e:
+        if e.name != name + ".selfcheck":
+            raise
+        fn = None
+if not callable(fn):
+    print("\n@@SELFCHECK@@" + json.dumps({"skip": "no selfcheck()"}))
+    sys.exit(0)
+res = fn()
+ok, lines = res
+print("\n@@SELFCHECK@@" + json.dumps({"ok": bool(ok),
+                                      "lines": [str(x) for x in (lines or [])]}))
+"""
+
+
+def _optional_selfchecks(h):
+    """-> (problems, notes). A module that is absent is fine; one that
+    exists must import and its selfcheck() must return ok."""
+    import importlib.util
+    probs, notes = [], []
+    for name in OPTIONAL_SELFCHECKS:
+        try:
+            spec = importlib.util.find_spec(name)
+        except (ImportError, ValueError):
+            spec = None
+        if spec is None:
+            notes.append(f"{name} absent")
+            continue
+        try:
+            r = h.py(_SELFCHECK_CODE, timeout=900, args=(h.repo, name))
+        except subprocess.TimeoutExpired:
+            probs.append(f"selfcheck {name}: timed out")
+            continue
+        blob = r.stdout.rsplit("@@SELFCHECK@@", 1)
+        try:
+            res = json.loads(blob[1]) if len(blob) == 2 else None
+        except ValueError:
+            res = None
+        if r.returncode != 0 or not isinstance(res, dict):
+            probs.append(f"selfcheck {name}: exit {r.returncode}\n"
+                         f"{r.stdout[-400:]}{r.stderr[-600:]}")
+        elif res.get("skip"):
+            notes.append(f"{name} {res['skip']}")
+        elif not res.get("ok"):
+            probs.append(f"selfcheck {name}: not ok\n  " +
+                         "\n  ".join(res.get("lines", [])[-15:]))
+        else:
+            notes.append(f"{name} ok ({len(res.get('lines', []))} lines)")
+    return probs, notes
+
+
 def _case_env(env, opts):
     out = dict(env)
     for k, v in (opts.get("env") or {}).items():
@@ -74,12 +186,20 @@ def _case_env(env, opts):
 def run(pipeline_path, keep=False):
     tmp = tempfile.mkdtemp(prefix="pipe_selftest_")
     repo_outputs = os.path.join(config.REPO, "outputs")
+    repo_learned = os.path.join(config.REPO, "learned")
     before_tree = _tree_digest(repo_outputs)
+    before_learned = _tree_digest(repo_learned)
+    # WS-INT: children read an empty temp learned/ (no priors, no packs), so
+    # the self-test never depends on — or writes — the repo's learned state
+    learned = os.path.join(tmp, "learned")
+    os.makedirs(os.path.join(learned, "hook_packs"))
     env = dict(os.environ,
                VSP_OUTPUTS=os.path.join(tmp, "outputs"),
                VSP_VIRAL_DB=build_fixture_db(os.path.join(tmp, "viral.db")),
                VSP_FIXTURE_OK="1", PYTHONDONTWRITEBYTECODE="1",
-               PYTHONIOENCODING="utf-8")
+               PYTHONIOENCODING="utf-8", VSP_LEARNED_DIR=learned)
+    for k in ("VSP_NO_HOOK_PACKS", "VSP_NO_PRIORS"):
+        env.pop(k, None)
     good, cases = all_cases()
     fails = []
     for case in cases:
@@ -139,14 +259,31 @@ def run(pipeline_path, keep=False):
     with open(noclob, "rb") as f:
         if f.read() != before:
             fails.append("no-clobber: --out-dir onto the input rewrote it")
-    # hermeticity: the repo's outputs/ tree must be untouched
+    # WS-INT: full 10-stage runs (normal run, seed parity, replay, --json,
+    # hook packs, priors, repair, loud failure), then the other workstreams'
+    # optional selfcheck()s
+    h = _Harness(pipeline_path, tmp, env)
+    e2e = e2e_checks()
+    for name, fn in e2e:
+        try:
+            probs = fn(h)
+        except Exception as e:  # noqa: BLE001 — a crashing check is a failure
+            probs = [f"crashed: {type(e).__name__}: {e}"]
+        fails += [f"e2e {name}: {pr}" for pr in probs]
+    sc_fails, sc_notes = _optional_selfchecks(h)
+    fails += sc_fails
+    # hermeticity: the repo's outputs/ and learned/ trees must be untouched
     if _tree_digest(repo_outputs) != before_tree:
         fails.append("hermeticity: self-test modified the repo's outputs/")
+    if _tree_digest(repo_learned) != before_learned:
+        fails.append("hermeticity: self-test modified the repo's learned/")
     if not keep:
         shutil.rmtree(tmp, ignore_errors=True)
     if fails:
         print("SELF-TEST FAILED:\n" + "\n".join(fails))
         return 1
     print(f"self-test: all {len(cases)} gate cases + {len(units)} unit checks "
-          f"+ no-clobber behave correctly (hermetic: repo outputs/ untouched)")
+          f"+ {len(e2e)} end-to-end checks + no-clobber behave correctly "
+          f"(hermetic: repo outputs/ and learned/ untouched)"
+          + (f"; optional selfchecks: {', '.join(sc_notes)}" if sc_notes else ""))
     return 0

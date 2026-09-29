@@ -302,19 +302,22 @@ def map_family(category, families=None):
     return fam
 
 
-def live_hook_source(pack, maker_niche, presenter=None, min_seen=0):
+def live_hook_source(pack, maker_niche, presenter=None, min_seen=0,
+                     families=None):
     """Provenance of the live hook family: walks every mapped research niche
     and the WHOLE ranked list of each (not just [0]) and returns the first
     category that maps to a usable maker family:
         {family, pack_niche, category, rank, times_seen} | None
     presenter="ai" skips first-person-anecdote families (D137); min_seen
-    skips categories seen fewer times (thin evidence)."""
+    skips categories seen fewer times (thin evidence). families: the maker's
+    HOOKS keys when the caller has them (the maker passes its own, so it
+    never re-imports itself when run as __main__)."""
     if not isinstance(pack, dict):
         return None
     nh = pack.get("niche_hooks")
     if not isinstance(nh, dict):
         return None
-    fams = maker_hook_families()
+    fams = tuple(families) if families else maker_hook_families()
     for pn in pack_niches_for(maker_niche, pack):
         ranked = nh.get(pn)
         if not isinstance(ranked, list):
@@ -338,10 +341,11 @@ def live_hook_source(pack, maker_niche, presenter=None, min_seen=0):
     return None
 
 
-def live_hook_family(pack, maker_niche, presenter=None, min_seen=0):
+def live_hook_family(pack, maker_niche, presenter=None, min_seen=0,
+                     families=None):
     """The live hook family for a maker niche (see live_hook_source)."""
     src = live_hook_source(pack, maker_niche, presenter=presenter,
-                           min_seen=min_seen)
+                           min_seen=min_seen, families=families)
     return src["family"] if src else None
 
 
