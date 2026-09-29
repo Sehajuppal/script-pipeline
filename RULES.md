@@ -2607,7 +2607,7 @@ code-traceable; `tools/rule_coverage.py --check` nags once it is).
   families; a fallback reported as "curiosity-gap" poisons every
   family-level metric (58.4% of baseline scripts shipped the fallback).
   Source: docs/UPGRADE-PLAN.md §1, §5. [VERIFIED — baseline]
-  Enforced in: maker (SO-1) — PENDING INTEGRATION.
+  Enforced in: maker (`pick_hook`, `hook_source`) — integrated 2026-09-29.
   Verification: see integration scorecard.
 
 - D146. A PART-2 CTA NEEDS A SERIES PLAN: a CTA beat that promises a part 2
@@ -2703,7 +2703,7 @@ code-traceable; `tools/rule_coverage.py --check` nags once it is).
   [@remotion/captions](https://www.remotion.dev/docs/captions/caption);
   Netflix/BBC timing limits (OSS §3). [INFERENCE — interchange practice]
   Enforced in: pipeline (`vsp/captions.py`, `vsp/exporters.py`,
-  `vsp/schema.py`, SO-3) — PENDING INTEGRATION.
+  `vsp/schema.py`, SO-3) — integrated 2026-09-29 (stage 9).
   Verification: see integration scorecard.
 
 - D153. MANIFEST + TRACE ON EVERY RUN: every run writes manifest.json (code
@@ -2713,8 +2713,8 @@ code-traceable; `tools/rule_coverage.py --check` nags once it is).
   script hash.
   Source: LT §7.1–7.2; [OTel GenAI events](https://github.com/open-telemetry/semantic-conventions-genai/blob/main/docs/gen-ai/gen-ai-events.md).
   [INFERENCE — engineering practice]
-  Enforced in: pipeline (`vsp/manifest.py`, `vsp/trace.py`, SO-3) — PENDING
-  INTEGRATION.
+  Enforced in: pipeline (`vsp/manifest.py`, `vsp/trace.py`, SO-3) — integrated
+  2026-09-29 (stage 10).
   Verification: see integration scorecard.
 
 ### Existing rules made gate-enforced (2026-09-28 — no new numbers, cycle-4 precedent)
@@ -2770,3 +2770,31 @@ code-traceable; `tools/rule_coverage.py --check` nags once it is).
   old number of D78 (dead-air gap); RULES D75 is the bird/animal-object pets
   routing rule. Code tags are left as they are (history);
   tools/rule_coverage.py reports both aliases.
+
+## §67 — PIPELINE v2 INTEGRATION EVIDENCE (2026-09-29)
+
+All of §66 is now code-traceable (`python3 tools/rule_coverage.py --check`
+passes; D145, D152, D153 no longer pending). Verification on the merged
+tree, same rubric (`vsp/rubric.py`) and harness (`evals/scorecard.py`) as
+the baseline:
+
+- Self-test: 38 gate cases + 12 unit checks + 10 end-to-end checks +
+  no-clobber, hermetic (repo `outputs/` and `learned/` untouched), plus the
+  `vsp.ingest` / `vsp.feedback` / `vsp.improve` selfchecks — green on Python
+  3.9.25 and 3.12.14.
+- Golden, 990 runs through the real CLI: crash 0.0% (baseline 9.7%),
+  end-to-end pass 100.0% (0.0%), rubric mean 99.9 (70.9), audit-only mean
+  99.9 (72.7), fallback hooks 0.0% (58.4%), compliance flags 0 (162), every
+  passing run ships captions/shotlist/manifest/trace. Paired McNemar
+  p = 1.9e-298; rubric Δ +35.9 [95% CI +31.1, +42.6]. `docs/SCORECARD.md`.
+- Holdout, 35 prompts never used for tuning × 5 formats × 2 presenters ×
+  3 seeds = 1,050 runs: end-to-end 100.0%, rubric 99.9, compliance 0.
+- Durations 15/30/60 s on golden + holdout (4,080 in-process runs): gate 1
+  and gate 2 100%.
+- D149/D150 self-improvement: first offline cycle evolved hook pack
+  `2026-09-29-evolve-01` (8 templates); promote A/B on golden + holdout
+  ACCEPT (hook distinct 0.4455 → 0.4758 golden, 0.4857 → 0.5086 holdout; no
+  e2e/rubric/audit loss; 0 compliance flags). `learned/LEDGER.md`.
+- New rule-owner boundary: `AGENTS.md` rule 2 — automation may not remove or
+  loosen any gate rule; `vsp.improve verify` enforces it.
+

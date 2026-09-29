@@ -1,0 +1,53 @@
+# Hermes Agent profile for the viral script pipeline.
+# Install: see agent/README.md  (hermes profile create vsp; copy this file to
+# ~/.hermes/profiles/vsp/config.yaml or merge it into your profile config).
+#
+# Model: Meta Model API, Standard tier. Never use a "-contributor" model id —
+# Meta may train on that data, and unattended cron refuses those tiers anyway.
+model:
+  provider: meta-ai
+  default: muse-spark-1.3
+
+# The background review / curator slots default to a contributor model in the
+# meta-ai plugin — pin them explicitly.
+auxiliary:
+  background_review: {provider: meta-ai, model: muse-spark-1.3}
+
+# Learning loop writes (skills, memory) are staged for review.
+skills:
+  write_approval: true
+memory:
+  write_approval: true
+
+approvals:
+  cron_mode: deny
+  deny:
+    - "git push --force*"
+    - "git push * main*"
+    - "git push * master*"
+    - "gh pr merge*"
+    - "python3 research_bridge.py --refresh --force*"
+
+checkpoints:
+  enabled: true
+
+# Sub-agents (delegate_task) each get their own git worktree + branch.
+delegation:
+  worktree_isolation: true
+
+# Hermes strips provider keys (MODEL_API_KEY, OPENAI_API_KEY, GH_TOKEN) from
+# every command it runs. The pipeline reads neutral names instead; pass them.
+terminal:
+  env_passthrough:
+    - VSP_LLM_PROVIDER
+    - VSP_LLM_MODEL
+    - VSP_LLM_API_KEY
+    - VSP_LLM_BASE_URL
+    - VSP_ASR_API_KEY
+    - VSP_IG_ACCESS_TOKEN
+    - VSP_IG_USER_ID
+    - VSP_IG_APP_ID
+    - VSP_IG_APP_SECRET
+    - VSP_IG_GRAPH_VERSION
+    - VSP_VIRAL_DB
+    - VSP_EXCLUDE_VENDOR
