@@ -1,0 +1,50 @@
+{
+ "_comment": "Template for config/ingest.json (python3 -m vsp.ingest). Niches use the maker's names. Hashtag Search allows 30 unique hashtags per account per rolling 7 days: keep <= 3 per niche and <= 25 in total (5 spare). handles = benchmark Business/Creator accounts for Business Discovery (10-30 per niche is the research-doc target; they are public business accounts you choose, so none are pre-filled). See docs/ws-data-notes.md.",
+ "schema_version": 1,
+ "graph_version": "v26.0",
+ "niches": {
+  "gadgets":    {"hashtags": ["techgadgets", "gadgetreview"], "handles": []},
+  "tools":      {"hashtags": ["kitchengadgets", "cleaninghacks"], "handles": []},
+  "beauty":     {"hashtags": ["skincareroutine", "makeuphacks"], "handles": []},
+  "wellness":   {"hashtags": ["selfcaretips", "sleephacks"], "handles": []},
+  "automotive": {"hashtags": ["cardetailing", "carhacks"], "handles": []},
+  "pets":       {"hashtags": ["dogtips", "cattips"], "handles": []},
+  "home":       {"hashtags": ["homehacks", "homeorganization"], "handles": []},
+  "outdoors":   {"hashtags": ["campinghacks", "hikinggear"], "handles": []},
+  "fitness":    {"hashtags": ["homeworkout", "gymtips"], "handles": []},
+  "food":       {"hashtags": ["easyrecipes", "mealprep"], "handles": []},
+  "finance":    {"hashtags": ["moneytips", "personalfinance"], "handles": []},
+  "education":  {"hashtags": ["studytips", "contentcreatortips"], "handles": []},
+  "commentary": {"hashtags": ["hottake"], "handles": []}
+ },
+ "hashtag_niche_map": {
+  "_comment": "extra caption hashtags -> niche (used for imports without a niche); the query hashtags above always map to their niche",
+  "skincare": "beauty", "makeup": "beauty", "haircare": "beauty",
+  "gadgets": "gadgets", "techtok": "gadgets",
+  "cleaning": "tools", "kitchenhacks": "tools",
+  "fitness": "fitness", "workout": "fitness", "gym": "fitness",
+  "recipe": "food", "foodie": "food",
+  "dog": "pets", "cat": "pets", "petsofinstagram": "pets",
+  "cars": "automotive", "carcare": "automotive",
+  "homedecor": "home", "organization": "home",
+  "camping": "outdoors", "hiking": "outdoors",
+  "wellness": "wellness", "selfcare": "wellness",
+  "money": "finance", "investing": "finance",
+  "studygram": "education"
+ },
+ "budget": {"max_active_hashtags": 25},
+ "fetch": {
+  "page_limit": 50,
+  "top_pages": 2,
+  "recent_pages": 1,
+  "watchlist_media_limit": 25,
+  "watchlist_pages": 1,
+  "watchlist_min_hours": 20,
+  "own_pages": 10,
+  "max_age_days": {"hashtag": 7, "watchlist": 30},
+  "retention_days": 30
+ },
+ "classify": {"llm": "auto", "llm_max_calls": 50},
+ "transcribe": {"enabled": false, "seconds": 3.5, "max_per_run": 20, "keywords": []},
+ "vendor_rows": "include"
+}
