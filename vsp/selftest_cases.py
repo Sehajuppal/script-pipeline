@@ -555,11 +555,15 @@ def v21_bundle(s):
           f"VISUAL PROMPT: Close-up, high angle, slow pull-out: hands on the test "
           f"product, the same framing as shot 1. {sfx}",
           "AUDIO: the real product sound.", "",
-          "## ALTERNATE OPENINGS — variant cuts",
-          "#### Alt opening B (0.0–3.0s) — negative-command / problem-state",
-          f"VISUAL PROMPT: Medium shot, high angle, handheld: the messy counter "
-          f"before the pass. {sfx}",
-          "VO: Stop skipping the test product step.", "",
+          "## ALTERNATE OPENINGS — variant cuts"]
+    for v in s.get("hook_variants") or []:
+        if v.get("is_primary"):
+            continue
+        L += [f"#### Alt opening {v['id']} (0.0–3.0s) — {v['archetype']} / "
+              f"{v['visual_type']}",
+              f"VISUAL PROMPT: {v['visual'].replace('Frame 0: ', '')} {sfx}",
+              f"VO: {v['verbal']}", ""]
+    L += [
           "## SHOOT PLAN — setups, props, B-roll",
           "- Setup 1 (bathroom counter, window key light): shots 1, 3, 5.",
           "- Setup 2 (presenter, eye-level): shots 2, 4.",
