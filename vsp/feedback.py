@@ -1228,6 +1228,334 @@ def _account_lines(con, posts, now_dt):
     return out
 
 
+# -------------------------------------------------------------- variants
+VARIANT_POLICY = {   # docs/research/hooks-deep-dive.md §3.6 VARIANT_POLICY, transcribed
+    "metric": "instagram: hold = 1 - reels_skip_rate",
+    "p_best": 0.95,               # stats.decision: P(v is best) >= 0.95 ...
+    "max_expected_loss": 0.01,    # ... AND expected loss of choosing v <= 0.01
+    "min_views": 300,             # stats.min_n_per_variant
+    "futility_p_best": 0.80,      # stats.futility, at the last look
+    "looks_h": (24, 48, 72),      # testing_protocol.instagram_trial_reels
+    "kill_hold_below": 0.50,      # thresholds.instagram_skip_rate.failing_above
+    "kill_p": 0.90,               # stats.early_kill
+    "guardrail_rel": 0.10,        # metrics.guardrail_rule vs the primary
+    "guardrail_min_shares": 10,   # ours: fewer primary shares -> a ±10% check is noise
+    "draws": 20000,               # stats.decision: 20,000 Monte Carlo draws
+    "seed": 20260929,             # fixed seed: the same data -> the same numbers
+}
+VARIANT_DECISIONS = ("winner found", "keep testing", "inconclusive")
+
+
+def mc_best(params, draws=None, seed=None):
+    """Seeded Monte Carlo over independent Beta(alpha, beta) posteriors ->
+    (P(best), expected loss) lists in `params` order. A fresh
+    random.Random(seed) per call, draws in list order: the same posteriors
+    give the same numbers in every process (random.betavariate is pure
+    Python, identical on 3.9 and 3.12)."""
+    n = int(draws or VARIANT_POLICY["draws"])
+    rng = random.Random(VARIANT_POLICY["seed"] if seed is None else seed)
+    k = len(params)
+    wins, loss = [0] * k, [0.0] * k
+    for _ in range(n):
+        xs = [rng.betavariate(a, b) for a, b in params]
+        m = max(xs)
+        wins[xs.index(m)] += 1
+        for j in range(k):
+            loss[j] += m - xs[j]
+    return [w / n for w in wins], [x / n for x in loss]
+
+
+def _variant_stat(vid, rows, snaps, scale):
+    """One variant's pooled snapshot numbers (every post of it) -> dict or
+    None without a usable snapshot (views and skip rate)."""
+    u = _util()
+    views = holds = shares = reach = watch_n = 0
+    watch = 0.0
+    ages, media, links, trial, arch, vis = [], [], [], False, None, None
+    for r in sorted(rows, key=lambda x: x["media_id"]):
+        s = snaps.get(r["media_id"])
+        if s is None or not s["views"] or s["skip_rate"] is None:
+            continue
+        v = int(s["views"])
+        hold = min(1.0, max(0.0, 1.0 - float(s["skip_rate"]) / scale))
+        h = int(math.floor(v * hold + 0.5))
+        views, holds = views + v, holds + h
+        if s["avg_watch_ms"] is not None:
+            watch, watch_n = watch + float(s["avg_watch_ms"]) * v, watch_n + v
+        if s["shares"] is not None and s["reach"]:
+            shares, reach = shares + int(s["shares"]), reach + int(s["reach"])
+        age = s["age_h"] if s["age_h"] is not None else u.hours_between(
+            s["captured_at"], r["posted_at"])
+        ages.append(float(age) if age is not None else 0.0)
+        media.append(r["media_id"])
+        links.append(r["url"])
+        trial = trial or bool(r["is_trial"] or r["reel_trial"])
+        arch, vis = arch or r["hook_archetype"], vis or r["visual_type"]
+    if not views:
+        return None
+    a, b = 1.0 + holds, 1.0 + (views - holds)
+    return {"variant_id": vid, "archetype": arch, "visual_type": vis, "media_ids": media,
+            "permalinks": links, "trial": trial, "posts": len(media), "views": views,
+            "holds": holds, "skips": views - holds, "hold_rate": holds / views,
+            "alpha": a, "beta": b, "mean": a / (a + b), "interval90": list(interval90(a, b)),
+            "age_h": min(ages), "avg_watch_s": watch / watch_n / 1000.0 if watch_n else None,
+            "shares": shares, "share_rate": shares / reach if reach else None}
+
+
+def _guardrails(win, prim, pol):
+    """VARIANT_POLICY guardrail_rule: a non-primary winner may not be > 10%
+    (relative) worse than the primary on average watch time or shares per
+    reach. -> list of failures."""
+    if prim is None or win["variant_id"] == prim["variant_id"]:
+        return []
+    out, lim = [], 1.0 - pol["guardrail_rel"]
+    a, b = win.get("avg_watch_s"), prim.get("avg_watch_s")
+    if a is not None and b and a < lim * b:
+        out.append(f"guardrail: {win['variant_id']}'s average watch time {a:.1f} s is "
+                   f"{100 * (1 - a / b):.0f}% below {prim['variant_id']}'s {b:.1f} s (limit "
+                   f"{100 * pol['guardrail_rel']:.0f}%) — it wins the first 3 s and loses "
+                   f"the watch, a broken promise (D35)")
+    a, b = win.get("share_rate"), prim.get("share_rate")
+    if (a is not None and b and prim.get("shares", 0) >= pol["guardrail_min_shares"]
+            and a < lim * b):
+        out.append(f"guardrail: {win['variant_id']}'s shares per reach {100 * a:.2f}% are "
+                   f"{100 * (1 - a / b):.0f}% below {prim['variant_id']}'s {100 * b:.2f}%")
+    return out
+
+
+def decide(stats, look_h, primary="A", pol=None):
+    """The VARIANT_POLICY stop rule -> (decision, winner | None, leader,
+    reasons). stats need variant_id, views, p_best, expected_loss (+
+    avg_watch_s / share_rate / shares for the guardrail); look_h = the
+    youngest variant's snapshot age."""
+    pol = pol or VARIANT_POLICY
+    lead = sorted(stats, key=lambda s: (-s["p_best"], s["expected_loss"],
+                                        s["variant_id"]))[0]
+    L, pb = lead["variant_id"], _pct(lead["p_best"], 1)
+    loss = f"{100 * lead['expected_loss']:.2f} pts"
+    low = [s for s in stats if s["views"] < pol["min_views"]]
+    last = look_h is not None and look_h >= pol["looks_h"][-1]
+    stop = lead["p_best"] >= pol["p_best"] and lead["expected_loss"] <= pol["max_expected_loss"]
+    rs = []
+    if low:
+        rs.append("below the minimum views: " + ", ".join(
+            f"{s['variant_id']} {s['views']:,}" for s in low)
+            + f" (needs ≥ {pol['min_views']:,} per variant)")
+    if stop and not low:
+        prim = next((s for s in stats if s["variant_id"] == primary), None)
+        guard = _guardrails(lead, prim, pol)
+        if guard:
+            return ("inconclusive", None, L, rs + guard +
+                    [f"{L} leads on holds (P(best) {pb}) but a guardrail rules it out"])
+        return ("winner found", L, L,
+                rs + [f"{L} has P(best) {pb} ≥ {_pct(pol['p_best'])} and expected loss "
+                      f"{loss} ≤ {100 * pol['max_expected_loss']:.0f} pt, every variant "
+                      f"≥ {pol['min_views']:,} views"])
+    if last:
+        if lead["p_best"] < pol["futility_p_best"]:
+            rs.append(f"futility: at the last look ({look_h:.0f} h ≥ "
+                      f"{pol['looks_h'][-1]} h) no variant has P(best) ≥ "
+                      f"{_pct(pol['futility_p_best'])} (leader {L} {pb}) — no difference")
+        else:
+            rs.append(f"at the last look ({look_h:.0f} h) the leader {L} has P(best) {pb} "
+                      f"and expected loss {loss} — "
+                      + ("too few views" if stop else "short of the stop rule")
+                      + ", and there is no later look")
+        return "inconclusive", None, L, rs
+    if not stop:
+        rs.append(f"leader {L}: P(best) {pb} (needs ≥ {_pct(pol['p_best'])}), expected "
+                  f"loss {loss} (needs ≤ {100 * pol['max_expected_loss']:.0f} pt)")
+    nxt = min([x for x in pol["looks_h"] if x > (look_h or 0)] or [pol["looks_h"][-1]])
+    rs.append(f"next pre-registered look at {nxt} h"
+              + (" (pull's ~7 d snapshot)" if nxt == pol["looks_h"][-1] else ""))
+    return "keep testing", None, L, rs
+
+
+def _variant_action(t, by):
+    d, prim, W = t["decision"], t["primary"], t["winner"]
+    rest = "/".join(v for v in sorted(by) if v != W)
+    if d == "winner found":
+        w = by[W]
+        where = next((x for x in w["permalinks"] if x), None) or w["media_ids"][0]
+        main_cut = (f"run {W} as the main cut: re-export the master with Alt opening {W} "
+                    f"(the bundle's ALTERNATE OPENINGS, 0.0–3.0 s) for reposts, ads and the "
+                    f"other platforms")
+        if w["trial"]:
+            return (f"Graduate the winning Trial Reel {W} ({where}): share it to your "
+                    f"followers; don't graduate or repost {rest} as-is."
+                    + (f" Then {main_cut}." if W != prim else ""))
+        if W == prim:
+            return (f"Keep {W} as the main cut: the primary beat {rest}; don't graduate or "
+                    f"repost {rest} as-is.")
+        return main_cut[0].upper() + main_cut[1:] + f"; retire {rest} as they are."
+    if d == "inconclusive":
+        return (f"Keep the primary {prim} as the main cut and log 'no difference'"
+                + ("" if prim in by else f" ({prim} itself was not posted)")
+                + "; don't graduate a trial variant.")
+    return ("Keep testing: don't decide between looks; run `python3 -m vsp.feedback "
+            "variants` again after the next look.")
+
+
+def _variant_test(meta, stats, pol):
+    p_best, loss = mc_best([(s["alpha"], s["beta"]) for s in stats], pol["draws"],
+                           pol["seed"])
+    for s, pb, el in zip(stats, p_best, loss):
+        s["p_best"], s["expected_loss"] = pb, el
+        s["p_fail"] = beta_cdf(pol["kill_hold_below"], s["alpha"], s["beta"])
+        s["drop"] = s["p_fail"] >= pol["kill_p"]
+    look = min(s["age_h"] for s in stats)
+    t = dict(meta, look_h=round(look, 1), last_look=look >= pol["looks_h"][-1])
+    t["decision"], t["winner"], t["leader"], t["reasons"] = decide(
+        stats, look, meta["primary"], pol)
+    by = {s["variant_id"]: s for s in stats}
+    t["action"] = _variant_action(t, by)
+    t["drop"] = [s["variant_id"] for s in stats if s["drop"]]
+    r4 = lambda x: None if x is None else round(x, 4)  # noqa: E731
+    t["variants"] = [dict(s, hold_rate=r4(s["hold_rate"]), mean=r4(s["mean"]),
+                          interval90=[r4(x) for x in s["interval90"]],
+                          p_best=r4(s["p_best"]), expected_loss=round(s["expected_loss"], 5),
+                          p_fail=r4(s["p_fail"]), age_h=round(s["age_h"], 1),
+                          avg_watch_s=None if s["avg_watch_s"] is None
+                          else round(s["avg_watch_s"], 2),
+                          share_rate=None if s["share_rate"] is None
+                          else round(s["share_rate"], 5)) for s in stats]
+    return t
+
+
+def variants(con, now=None, path=None, slug=None, sha=None, pol=None):
+    """Bayesian A/B of the posted variants of each script (module doc) ->
+    learned/VARIANTS.md; -> the result dict (`--json`). slug / sha (a hex
+    prefix of script_sha256) limit the report to one script."""
+    u = _util()
+    pol = dict(VARIANT_POLICY, **(pol or {}))
+    now_dt = u.parse_ts(now) or u.utcnow()
+    sha = (str(sha).lower()[4:] if str(sha).lower().startswith("vsp-") else
+           str(sha).lower()) if sha else None
+    snaps = _snapshots(con)
+    scale = _skip_scale(snaps)
+    rows = con.execute(
+        "SELECT p.media_id, p.script_sha256, p.slug, p.niche, p.hook_family, p.is_trial, "
+        "p.manifest_path, " + _posts_select(con, ("variant_id", "hook_archetype",
+                                                  "visual_type"))
+        + ", r.url, r.posted_at, r.is_trial AS reel_trial, r.purge_after FROM posts p "
+        "LEFT JOIN reels r ON r.media_id = p.media_id AND r.platform = 'instagram' "
+        "ORDER BY p.script_sha256, p.media_id").fetchall()
+    groups = {}
+    for r in rows:
+        if (not r["variant_id"] or not r["script_sha256"] or r["purge_after"]
+                or (slug and r["slug"] != slug)
+                or (sha and not str(r["script_sha256"]).startswith(sha))):
+            continue
+        groups.setdefault(r["script_sha256"], []).append(r)
+    tests, not_testable = [], []
+    for s256 in sorted(groups, key=lambda k: (str(groups[k][0]["slug"] or ""), k)):
+        grp = groups[s256]
+        per = {}
+        for r in grp:
+            per.setdefault(str(r["variant_id"]).upper(), []).append(r)
+        stats = [st for st in (_variant_stat(v, per[v], snaps, scale) for v in sorted(per))
+                 if st is not None]
+        first = grp[0]
+        script = load_script(first["manifest_path"]) if first["manifest_path"] else None
+        meta = {"script_sha256": s256, "tag": tag_for(s256), "slug": first["slug"],
+                "niche": first["niche"], "hook_family": first["hook_family"],
+                "primary": primary_variant(script)}
+        if len(stats) < 2:
+            not_testable.append(dict(meta, variants_posted=sorted(per),
+                                     with_snapshots=[s["variant_id"] for s in stats]))
+            continue
+        tests.append(_variant_test(meta, stats, pol))
+    p = path or os.path.join(config.learned_dir(), "VARIANTS.md")
+    res = {"job": "variants", "at": u.sql_ts(now_dt), "path": p,
+           "skip_scale": "percent" if scale == 100.0 else "fraction",
+           "filter": {"slug": slug, "sha": sha},
+           "policy": {k: (list(v) if isinstance(v, tuple) else v) for k, v in pol.items()},
+           "tests": tests, "not_testable": not_testable}
+    _write_atomic(p, _variants_md(res, pol))
+    return res
+
+
+def _variants_md(res, pol):
+    heads = {"winner found": "WINNER FOUND", "keep testing": "KEEP TESTING",
+             "inconclusive": "INCONCLUSIVE"}
+    flt = ", ".join(f"--{k} {v}" for k, v in res["filter"].items() if v)
+    L = ["# VARIANTS — alternate openings, Bayesian A/B", "",
+         f"Updated {res['at']} UTC by `python3 -m vsp.feedback variants`"
+         + (f" ({flt})" if flt else "") + ". Hold = views × (1 − 3-second skip rate) "
+         f"(skip rate read as a {res['skip_scale']}, the same rule as `learn`); each "
+         f"variant's hold rate has posterior Beta(1 + holds, 1 + skips). P(best) and "
+         f"expected loss come from {pol['draws']:,} Monte Carlo draws "
+         f"(random.Random({pol['seed']}): the same data always gives the same numbers). "
+         f"Stop rule (docs/research/hooks-deep-dive.md VARIANT_POLICY): **winner found** "
+         f"when a variant has P(best) ≥ {_pct(pol['p_best'])} and expected loss ≤ "
+         f"{100 * pol['max_expected_loss']:.0f} pt with ≥ {pol['min_views']:,} views per "
+         f"variant, at a pre-registered look ({' / '.join(str(x) for x in pol['looks_h'])}"
+         f" h); **inconclusive** at the last look otherwise (keep the primary, log 'no "
+         f"difference'); **keep testing** before it. P(hold < "
+         f"{_pct(pol['kill_hold_below'])}) ≥ {_pct(pol['kill_p'])} marks a failing hook "
+         f"to drop. Organic results are directional: replicate a win before trusting it.",
+         ""]
+    if not res["tests"]:
+        L += ["_No script has ≥ 2 posted variants with insight snapshots yet._ Post the "
+              "bundle's alternate openings as Trial Reels (caption line 1 = the variant's "
+              "caption line, or tag `#vsp-<sha8><letter>`), run `python3 -m vsp.feedback "
+              "pull`, and check back after 24 h.", ""]
+    for t in res["tests"]:
+        L += [f"## {t['slug'] or t['tag']} — `{t['tag']}` — {heads[t['decision']]}"
+              + (f": {t['winner']}" if t["winner"] else ""), "",
+              f"Niche {t['niche'] or '—'} · hook family {t['hook_family'] or '—'} · look "
+              f"{t['look_h']:.0f} h after posting (last look {pol['looks_h'][-1]} h"
+              + (", reached" if t["last_look"] else "") + f") · primary {t['primary']}.", "",
+              "| variant | archetype | frame-0 visual | posted as | views | holds | hold "
+              "rate | ~90% interval | P(best) | expected loss |",
+              "|---|---|---|---|---:|---:|---:|---|---:|---:|"]
+        for s in t["variants"]:
+            name = s["variant_id"] + (" (primary)" if s["variant_id"] == t["primary"] else "")
+            if s["variant_id"] == t["winner"]:
+                name = f"**{name}**"
+            lo, hi = s["interval90"]
+            L.append(f"| {name} | {s['archetype'] or '—'} | {s['visual_type'] or '—'} | "
+                     f"{'Trial Reel' if s['trial'] else 'post'}"
+                     + (f" ×{s['posts']}" if s["posts"] > 1 else "")
+                     + f" | {s['views']:,} | {s['holds']:,} | {_pct(s['hold_rate'], 1)} | "
+                     f"{_pct(lo, 1)}–{_pct(hi, 1)} | {_pct(s['p_best'], 1)} | "
+                     f"{100 * s['expected_loss']:.2f} pts |")
+        L += ["", f"- **Decision: {t['decision']}**"
+              + (f" — {t['winner']}" if t["winner"] else "") + ": "
+              + "; ".join(t["reasons"]) + ".", f"- **Action:** {t['action']}"]
+        for s in t["variants"]:
+            if s["drop"]:
+                L.append(f"- Drop {s['variant_id']}: P(hold < {_pct(pol['kill_hold_below'])})"
+                         f" = {_pct(s['p_fail'])} — a failing hook (skip rate likely above "
+                         f"{_pct(1 - pol['kill_hold_below'])}).")
+        w = next((s for s in t["variants"] if s["variant_id"] == t["winner"]), None)
+        if w and (w["archetype"] or w["visual_type"]):
+            L.append(f"- Next scripts: {w['variant_id']}'s **{w['archetype'] or '—'}** hook "
+                     f"with a **{w['visual_type'] or '—'}** frame 0 is the pattern to repeat "
+                     f"(`learn` feeds every post into the archetype and visual-type priors).")
+        L.append("")
+    if res["not_testable"]:
+        L += ["## Not testable yet", ""]
+        for x in res["not_testable"]:
+            L.append(f"- {x['slug'] or x['tag']} (`{x['tag']}`): posted "
+                     f"{', '.join(x['variants_posted'])}; with insight snapshots: "
+                     f"{', '.join(x['with_snapshots']) or 'none'} — needs ≥ 2.")
+        L.append("")
+    L += ["## How to run a variant test", "",
+          "1. Render the alternates from the bundle's `## ALTERNATE OPENINGS — variant cuts` "
+          "(each ≤ 3 s opening + the master from 3.0 s).",
+          "2. Post each as a manual Trial Reel the same day, within 2 h, with the variant's "
+          "caption line (hooks.md) as caption line 1 — `link --auto` matches it by caption "
+          "fingerprint — or tag it `#vsp-<sha8><letter>`, e.g. `#vsp-0a1b2c3dB`. Instagram "
+          "has no read-side trial flag: mark trials with `python3 -m vsp.feedback link "
+          "--media-id ID --manifest outputs/<slug>/manifest.json --trial`.",
+          "3. Hourly `python3 -m vsp.ingest own && python3 -m vsp.feedback pull` links each "
+          "post to its variant and snapshots insights at ~24 h / 48 h / 7 d.",
+          "4. Decide only at the looks: `python3 -m vsp.feedback variants` after 24 h, 48 h "
+          "and 72 h (read from the 7 d snapshot)."]
+    return "\n".join(L) + "\n"
+
+
 def status(con, now=None):
     u = _util()
     now_dt = u.parse_ts(now) or u.utcnow()
@@ -1337,7 +1665,8 @@ def selfcheck_v21():
             sc = C.step("scenario", _sc_build, C, ctx)
             if sc:
                 try:
-                    for name, fn in (("link", _sc_link), ("learn", _sc_learn)):
+                    for name, fn in (("link", _sc_link), ("learn", _sc_learn),
+                                     ("variants", _sc_variants)):
                         C.step(name, fn, C, ctx, sc)
                 finally:
                     sc["con"].close()
@@ -1648,6 +1977,121 @@ def _sc_learn(C, ctx, sc):
                                                       for e in errs), "; ".join(errs)[:160])
 
 
+def _p_greater(b, a, steps=4000):
+    """Exact-ish P(X_b > X_a) for independent Betas: ∫ f_b(x) F_a(x) dx by
+    Simpson's rule over mean ± 12 sd of X_b (the Monte Carlo cross-check)."""
+    (a1, b1), (a0, b0) = b, a
+    m = a1 / (a1 + b1)
+    sd = math.sqrt(a1 * b1 / ((a1 + b1) ** 2 * (a1 + b1 + 1)))
+    lo, hi = max(1e-12, m - 12 * sd), min(1 - 1e-12, m + 12 * sd)
+    lb = math.lgamma(a1 + b1) - math.lgamma(a1) - math.lgamma(b1)
+    h = (hi - lo) / steps
+    tot = 0.0
+    for i in range(steps + 1):
+        x = lo + i * h
+        f = math.exp(lb + (a1 - 1) * math.log(x) + (b1 - 1) * math.log(1 - x))
+        tot += (1 if i in (0, steps) else 4 if i % 2 else 2) * f * beta_cdf(x, a0, b0)
+    return tot * h / 3
+
+
+def _sc_variants(C, ctx, sc):
+    import contextlib
+    import io
+    con, now, runs = sc["con"], sc["now"], sc["runs"]
+    res = variants(con, now=now)
+    T = {t["slug"]: t for t in res["tests"]}
+    F_, L_, P_ = (T.get("electric-milk-frother"), T.get("sunset-lamp"),
+                  T.get("silk-pillowcase"))
+    C.check("variants: 3 scripts with ≥ 2 posted variants that have snapshots; the "
+            "legacy script (1 variant) and the old run (no snapshot) are not testable",
+            sorted(T) == ["electric-milk-frother", "silk-pillowcase", "sunset-lamp"] and
+            sorted(x["slug"] for x in res["not_testable"]) ==
+            ["cable-organizer", "electric-milk-frother-old"], sorted(T))
+    fv = {s["variant_id"]: s for s in (F_ or {}).get("variants", [])}
+    C.check("variants: hold = views × (1 − skip %) → Beta(1 + holds, 1 + skips) per "
+            "variant (percent skip rates normalised like learn)",
+            res["skip_scale"] == "percent" and fv["A"]["holds"] == 1100 and
+            (fv["A"]["alpha"], fv["A"]["beta"]) == (1101.0, 901.0) and
+            fv["B"]["holds"] == 1296 and fv["C"]["skips"] == 780 and
+            fv["B"]["trial"] and not fv["A"]["trial"])
+    C.check("variants: clear winner — frother B (P(best) ≥ 95%, loss ≤ 1 pt, ≥ 300 views "
+            "each) at the 48 h look; C dropped (P(hold < 50%) ≥ 90%); action graduates "
+            "the Trial Reel and makes B the main cut",
+            F_["decision"] == "winner found" and F_["winner"] == "B" and
+            fv["B"]["p_best"] >= 0.95 and fv["B"]["expected_loss"] <= 0.01 and
+            F_["look_h"] == 48 and not F_["last_look"] and F_["drop"] == ["C"] and
+            F_["action"].startswith("Graduate the winning Trial Reel B") and
+            "main cut" in F_["action"] and "FIXTUREv21FB" in F_["action"], F_["action"])
+    lv = {s["variant_id"]: s for s in L_["variants"]}
+    C.check("variants: inconclusive — lamp A vs B at the last look (168 h ≥ 72 h), no "
+            "variant ≥ 80% → keep the primary, log 'no difference'",
+            L_["decision"] == "inconclusive" and L_["winner"] is None and L_["last_look"]
+            and max(s["p_best"] for s in L_["variants"]) < 0.80 and
+            L_["action"].startswith("Keep the primary A") and
+            any(r.startswith("futility") for r in L_["reasons"]), "; ".join(L_["reasons"]))
+    C.check("variants: keep testing — pillowcase at 26 h, every variant < 300 views; "
+            "next look 48 h",
+            P_["decision"] == "keep testing" and P_["winner"] is None and
+            any("minimum views" in r for r in P_["reasons"]) and
+            any("next pre-registered look at 48 h" in r for r in P_["reasons"]))
+    exact = _p_greater((lv["B"]["alpha"], lv["B"]["beta"]), (lv["A"]["alpha"],
+                                                              lv["A"]["beta"]))
+    C.check("variants: Monte Carlo P(best) agrees with numerical integration (lamp B "
+            "vs A, |Δ| < 0.015 at 20,000 draws); P(best) sums to 1",
+            abs(lv["B"]["p_best"] - exact) < 0.015 and
+            all(abs(sum(s["p_best"] for s in t["variants"]) - 1) < 1e-3
+                for t in res["tests"]), f"MC {lv['B']['p_best']} vs {exact:.4f}")
+    with open(res["path"], encoding="utf-8") as f:
+        md = f.read()
+    C.check("variants: learned/VARIANTS.md — a section per script with the decision, "
+            "the P(best) table and a concrete action",
+            res["path"] == os.path.join(ctx.learned, "VARIANTS.md") and
+            "— WINNER FOUND: B" in md and "— INCONCLUSIVE" in md and
+            "— KEEP TESTING" in md and "| P(best) | expected loss |" in md and
+            md.count("- **Action:**") == 3 and "## Not testable yet" in md and
+            "- Drop C: P(hold < 50%)" in md)
+    one = variants(con, now=now, slug="sunset-lamp", path=os.path.join(ctx.tmp, "v1.md"))
+    two = variants(con, now=now, sha="vsp-" + runs["electric-milk-frother"]["sha"][:8],
+                   path=os.path.join(ctx.tmp, "v2.md"))
+    buf, err = io.StringIO(), io.StringIO()
+    with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(err):
+        code = main(["variants", "--json", "--sha",
+                     runs["silk-pillowcase"]["sha"][:8]])
+        bad_sha = main(["variants", "--sha", "zz"])
+    try:
+        cli = json.loads(buf.getvalue())
+    except ValueError:
+        cli = {}
+    C.check("variants --slug / --sha (hex prefix or vsp- tag) filter; cli --json",
+            [t["slug"] for t in one["tests"]] == ["sunset-lamp"] and
+            [t["slug"] for t in two["tests"]] == ["electric-milk-frother"] and code == 0
+            and [t["slug"] for t in cli.get("tests", [])] == ["silk-pillowcase"] and
+            cli["tests"][0]["decision"] == "keep testing" and bad_sha == 2 and
+            "hex prefix" in err.getvalue())
+
+    def st(v, views, p, loss, trial=False, watch=12.0, sr=0.01, sh=50):
+        return {"variant_id": v, "views": views, "p_best": p, "expected_loss": loss,
+                "trial": trial, "avg_watch_s": watch, "share_rate": sr, "shares": sh,
+                "media_ids": [v], "permalinks": [None]}
+    base = [st("A", 900, 0.02, 0.05), st("B", 950, 0.97, 0.001)]
+    d1 = decide(base, 50)
+    act = _variant_action({"decision": d1[0], "winner": d1[1], "primary": "A"},
+                          {s["variant_id"]: s for s in base})
+    d2 = decide([base[0], dict(base[1], avg_watch_s=8.0)], 50)
+    d3 = decide([st("A", 900, 0.12, 0.02), st("B", 950, 0.88, 0.004)], 80)
+    d4 = decide([st("A", 900, 0.12, 0.02), st("B", 950, 0.88, 0.004)], 50)
+    d5 = decide([st("A", 900, 0.5, 0.005), st("B", 250, 0.97, 0.001)], 90)
+    C.check("decide(): a posted (non-trial) winner B → run it as the main cut; a "
+            "guardrail miss (watch −33%) → inconclusive; 88% at the last look → "
+            "inconclusive, before it → keep testing; too few views at the last look → "
+            "inconclusive",
+            d1[:2] == ("winner found", "B") and act.startswith("Run B as the main cut")
+            and d2[:2] == ("inconclusive", None) and any("guardrail" in r for r in d2[3])
+            and d3[0] == "inconclusive" and d4[0] == "keep testing" and
+            d5[0] == "inconclusive" and any("too few views" in r for r in d5[3]),
+            f"{d1[:2]} {d2[:2]} {d3[0]} {d4[0]} {d5[0]}")
+
+
 # --------------------------------------------------------------------- CLI
 def _parser():
     ap = argparse.ArgumentParser(
@@ -1679,6 +2123,14 @@ def _parser():
     p.add_argument("--search", action="append", default=[])
     sub.add_parser("learn", help="labels -> learned/priors.json")
     sub.add_parser("report", help="learned/PERFORMANCE.md")
+    p = sub.add_parser("variants", help="Bayesian A/B of posted alternate openings "
+                                        "(Trial Reels) -> learned/VARIANTS.md")
+    g = p.add_mutually_exclusive_group()
+    g.add_argument("--slug", help="only this run (the outputs/<slug> folder name)")
+    g.add_argument("--sha", help="only this script (a hex prefix of script_sha256, e.g. "
+                                 "the 8 of its #vsp- tag)")
+    p.add_argument("--json", action="store_true", default=argparse.SUPPRESS,
+                   help="print the machine-readable result")
     sub.add_parser("status")
     sub.add_parser("selfcheck")
     return ap
@@ -1778,6 +2230,18 @@ def main(argv=None):
         if a.cmd == "report":
             p, text = report(con)
             _out({"path": p}, a.json, f"wrote {p}\n\n{text}")
+            return 0
+        if a.cmd == "variants":
+            if a.sha and not re.fullmatch(r"(?i)(vsp-)?[0-9a-f]{4,64}", a.sha):
+                print(f"--sha {a.sha!r} must be a hex prefix of script_sha256",
+                      file=sys.stderr)
+                return 2
+            res = variants(con, slug=a.slug, sha=a.sha)
+            _out(res, a.json, f"wrote {res['path']}: {len(res['tests'])} variant test(s), "
+                 f"{len(res['not_testable'])} script(s) not testable yet"
+                 + "".join(f"\n- {t['slug'] or t['tag']}: {t['decision']}"
+                           + (f" ({t['winner']})" if t["winner"] else "")
+                           + f" — {t['action']}" for t in res["tests"]))
             return 0
         if a.cmd == "status":
             rep = status(con)
