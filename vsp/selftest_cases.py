@@ -890,7 +890,56 @@ def _e2e_replay(h):
             or rep.get("expected_sha256") != rep.get("actual_sha256"):
         return [f"--replay --json: exit {r.returncode}, status {d.get('status')}, "
                 f"sha {rep.get('expected_sha256')} -> {rep.get('actual_sha256')}"]
+    # the verdict must reproduce too: same script.json, different exit code
+    # (e.g. a gate that now answers differently) is a MISMATCH
+    m = _load(man)
+    m["exit_code"], m["status"] = 1, "gate1_fail"
+    tampered = _write_json(os.path.join(h.out("replay-verdict"), "manifest.json"), m)
+    r = h.run(["--replay", tampered])
+    if r.returncode != 1 or "replay: MISMATCH" not in r.stdout \
+            or "the recorded run exited 1" not in r.stdout:
+        return ["a replay whose exit code differs from the recorded one was not a "
+                "MISMATCH: " + _fail_run(r)[0]]
     return []
+
+
+def _e2e_input_errors(h):
+    """Stage 1 guardrails reject bad input loudly (STAGE 1 FAILED, status
+    input_error, report + manifest + trace + gate-report, nothing else); an
+    unknown --persona is an input error (the maker would silently swap in
+    the house persona), a display-name/case variant resolves to its key."""
+    import os
+    probs = []
+    for tag, args, want in (
+            ("blank", ["   "], "STAGE 1 FAILED (route): empty prompt"),
+            ("persona", [E2E_PROMPT, "--presenter", "ai", "--persona", "nobody"],
+             "STAGE 1 FAILED (route): unknown --persona 'nobody'")):
+        out = h.out("input-" + tag)
+        r = h.run(args + ["--out-dir", out])
+        if r.returncode != 1 or want not in r.stdout:
+            probs.append(f"{tag}: want exit 1 + {want!r}: " + _fail_run(r)[0])
+            continue
+        left = sorted(os.listdir(out))
+        if left != ["gate-report.json", "manifest.json", "trace.jsonl",
+                    "validation-report.md"]:
+            probs.append(f"{tag}: input error left {left}")
+            continue
+        gr = _load(os.path.join(out, "gate-report.json"))
+        if (gr.get("status"), (gr.get("failed_stage") or {}).get("n")) != ("input_error", 1):
+            probs.append(f"{tag}: gate-report status {gr.get('status')}, "
+                         f"failed_stage {gr.get('failed_stage')}")
+    if "normal" in h.state:
+        out = h.out("input-persona-case")
+        r = h.run([E2E_PROMPT, "--presenter", "ai", "--persona", " MAYA ", "--out-dir", out])
+        if r.returncode != 0:
+            return probs + ["--persona ' MAYA ': " + _fail_run(r)[0]]
+        with open(os.path.join(out, "script.json"), "rb") as f:
+            a = f.read()
+        with open(os.path.join(h.state["normal"], "script.json"), "rb") as f:
+            b = f.read()
+        if a != b:
+            probs.append("--persona ' MAYA ' did not resolve to the house persona 'maya'")
+    return probs
 
 
 def _e2e_json(h):
@@ -1180,7 +1229,8 @@ def e2e_checks():
             ("e2e-hook-pack-unknown-slot-rejected", _e2e_hook_pack_slots),
             ("e2e-priors-deterministic", _e2e_priors),
             ("e2e-repair-stage-6", _e2e_repair),
-            ("e2e-failing-run-is-loud", _e2e_loud_failure)]
+            ("e2e-failing-run-is-loud", _e2e_loud_failure),
+            ("e2e-stage-1-input-errors", _e2e_input_errors)]
 
 
 # modules other workstreams own; each may expose selfcheck() -> (ok, lines)

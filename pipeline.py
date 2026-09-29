@@ -11,7 +11,8 @@
 
 Stages (docs/UPGRADE-PLAN.md §2, RULES.md D147-D153):
    1 ROUTE      vsp.router — input guardrails + 3-voter router. Input errors
-                fail (STAGE 1 FAILED); --strict-route fails a split vote.
+                (incl. an unknown --persona) fail as STAGE 1 FAILED, status
+                input_error; --strict-route fails a split vote.
    2 RESEARCH   vsp.research.load_pack — pinned by sha256; stale is a
                 warning (--require-fresh-research fails); --no-research skips.
    3 GENERATE   N candidates (--candidates, default 8) from derived sub-seeds;
@@ -35,7 +36,8 @@ stage, `stage N (name): OK|FAIL|SKIPPED|BYPASSED — detail`; crashes print
 m2` and `gate 2 (brief): ...` lines are kept verbatim (evals/scorecard.py
 parses them); a `warnings:` section closes the report.
 
-Exit code is non-zero when any stage fails. No silent passes.
+Exit code is non-zero when any stage fails. No silent passes. --replay
+exits 0 only when script.json's sha256 AND the exit code reproduce.
 Gate code lives in vsp/gates.py (re-exported here); the hermetic self-test
 lives in vsp/selftest.py (fixtures in vsp/selftest_cases.py).
 """
@@ -109,6 +111,28 @@ def _tail(tb, n=500):
     return "  " + tb[-n:].strip().replace("\n", "\n  ")
 
 
+def persona_key(name, path=None):
+    """--persona NAME -> (personas.json key, None) or (None, error). NAME
+    matches a key or a display name, case-insensitively. The maker falls
+    back to "maya" for any unknown name (and to NO persona for "_"-keys), so
+    a typo would silently put a different face — or none — on an AI script
+    (personas.json: one face across every video); stage 1 fails instead."""
+    path = path or os.path.join(BASE, "personas.json")
+    try:
+        with open(path, encoding="utf-8") as f:
+            reg = json.load(f)
+    except (OSError, ValueError) as e:
+        return None, f"--persona {name!r}: cannot read {os.path.basename(path)} ({e})"
+    keys = sorted(k for k, v in reg.items() if not k.startswith("_")
+                  and isinstance(v, dict) and v.get("identity"))
+    want = str(name).strip().lower()
+    for k in keys:
+        if want in (k.lower(), str(reg[k].get("name") or "").strip().lower()):
+            return k, None
+    return None, (f"unknown --persona {name!r} — {os.path.basename(path)} has: "
+                  f"{', '.join(keys) or 'no personas'}")
+
+
 # ------------------------------------------------------------ learned state
 def _maker():
     return sys.modules.get("viral_script_maker")
@@ -177,6 +201,15 @@ def replay_main(path, as_json=False):
             m.get("learned"), learned_state())
     except Exception as e:  # noqa: BLE001 — drift is advisory
         det["warnings"] = (det.get("warnings") or []) + [f"learned drift check: {e!r}"]
+    # the verdict must reproduce too: the same script.json under a gate
+    # that now answers differently is not the recorded run
+    rec = m.get("exit_code")
+    if (ok and isinstance(rec, int) and isinstance(det.get("returncode"), int)
+            and det["returncode"] != rec):
+        ok = False
+        det["error"] = (f"script.json reproduced but the replay exited "
+                        f"{det['returncode']}, the recorded run exited {rec} "
+                        f"(status {m.get('status')!r})")
     if as_json:
         print(json.dumps({"status": "reproduced" if ok else "mismatch",
                           "exit_code": 0 if ok else 1, "replay": det},
@@ -214,6 +247,7 @@ class Run:
         self.use_research = False
         self.failed_stage = None
         self.crashed = False
+        self.input_rejected = False
         self.tr = None
 
     # ------------------------------------------------------------ report
@@ -225,14 +259,21 @@ class Run:
         self.report.append(f"stage {n} ({STAGES[n]}): {status}"
                            + (f" — {detail}" if detail else ""))
 
-    def crash(self, n, msg, tb=None):
-        """`STAGE N FAILED (name): msg` (+ traceback tail) — the stage line."""
+    def crash(self, n, msg, tb=None, input_error=False):
+        """`STAGE N FAILED (name): msg` (+ traceback tail) — the stage line.
+        input_error=True: the input was rejected (stage 1 guardrails) — the
+        same loud line, but the run status is "input_error", not "crash"."""
         self.stages[n] = {"n": n, "name": STAGES[n], "status": "FAIL",
-                          "detail": msg, "crash": True}
+                          "detail": msg, "crash": not input_error}
+        if input_error:
+            self.stages[n]["input_error"] = True
         self.report.append(f"STAGE {n} FAILED ({STAGES[n]}): {msg}"
                            + (("\n" + _tail(tb)) if tb else ""))
         self.failed_stage = self.failed_stage or n
-        self.crashed = True
+        if input_error:
+            self.input_rejected = True
+        else:
+            self.crashed = True
 
     def warn(self, source, msgs, cap=20):
         msgs = [str(m) for m in (msgs or []) if str(m).strip()]
@@ -311,8 +352,19 @@ class Run:
             sp.set(concept=r.get("concept"), niche=r.get("niche"),
                    agreement=r.get("agreement"), strict_ok=r.get("strict_ok"))
         self.warn("route", r.get("warnings"))
-        if r.get("input_errors"):
-            self.crash(1, "; ".join(r["input_errors"]))
+        errs = list(r.get("input_errors") or [])
+        if not self.from_json and a.persona is not None:
+            if a.presenter != "ai":
+                self.warn("route", [f"--persona {a.persona!r} is ignored for "
+                                    f"--presenter {a.presenter}"])
+            else:
+                key, err = persona_key(a.persona)
+                if err:
+                    errs.append(err)
+                else:
+                    a.persona = key   # the maker's key (args_record keeps the input)
+        if errs:
+            self.crash(1, "; ".join(errs), input_error=True)
             self.stop(1, "stage 1 failed")
         summ = router.summary_line(r)
         summ = summ[len("route: "):] if summ.startswith("route: ") else summ
@@ -628,6 +680,8 @@ class Run:
             return "pass"
         if self.crashed:
             return "crash"
+        if self.input_rejected:
+            return "input_error"
         if self.failed_stage == 4 or (self.g1 and self.g2 is None):
             return "gate1_fail"
         if self.failed_stage == 8 or self.g2:
