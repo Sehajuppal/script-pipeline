@@ -1054,6 +1054,9 @@ def creative_cases(good):
             c, 2, archetype="price-anchor")}, False, ["D154:"], only("D154")),
         ("d154-proof-first-without-proof", {**c, "hook_variants": _hv(
             c, 2, archetype="proof-first")}, False, ["D154:"], only("D154")),
+        ("d154-shape-features-not-numbers", {**c, "hook_variants": _hv(
+            c, 1, features={"length_band": "high"})},
+         False, ["D154: shape errors"], only("D154")),
         # ---- D155 discovery
         ("d155-not-an-object", {**c, "discovery": ["test product"]},
          False, ["D155:"], only("D155")),
@@ -1111,6 +1114,12 @@ def creative_cases(good):
         ("d155-cover-frame-outside-video", {**c, "discovery": _dsc(
             c, cover={"frame_s": 42.0, "text": "TEST PRODUCT"})},
          False, ["D155:"], only("D155")),
+        ("d155-no-primary-keyword", {**c, "discovery": {
+            k: v for k, v in c["discovery"].items() if k != "primary_keyword"}},
+         False, ["D155: shape errors"], only("D155")),
+        ("d155-shape-placement-hashtag", {**c, "discovery": _dsc(
+            c, placement={**c["discovery"]["placement"], "hashtag": "testproduct"})},
+         False, ["D155: shape errors"], only("D155")),
         # ---- D156 direction
         ("d156-not-an-object", {**c, "direction": "raw-ugc"},
          False, ["D156:"], only("D156")),
@@ -1158,6 +1167,11 @@ def creative_cases(good):
             c, **{"look.palette_hex": ["warm white"]})}, False, ["D156:"], only("D156")),
         ("d156-card-over-3-words", {**c, "direction": _dir(
             c, **{"text_style.max_words_per_card": 6})}, False, ["D156:"], only("D156")),
+        ("d156-no-vibe", {**c, "direction": {k: v for k, v in c["direction"].items()
+                                             if k != "vibe"}},
+         False, ["D156: shape errors"], only("D156")),
+        ("d156-shape-energy-not-integer", {**c, "direction": _dir(c, energy=3.5)},
+         False, ["D156: shape errors"], only("D156")),
         # ---- D158 offer / urgency (script viewer text + caption)
         ("d158-fake-limited-time", {**good, "beats": _with_beat(
             good, 2, dialogue="Limited time. One pass, done.")},

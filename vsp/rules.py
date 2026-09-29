@@ -454,6 +454,21 @@ def claim_screens(text, ctx, ai=None):
     return out
 
 
+def _shape(obj, which, label, rid):
+    """Shape errors of a creative key vs its schema/script.schema.json $def
+    (vsp.schema) as one '<rid>: …' message, or []. Stage 9 fails a run on
+    any schema error, so the gate reports them first — a candidate with a
+    malformed creative key loses selection instead of failing the run."""
+    from vsp import schema as SC
+    errs = [e.replace("$", label, 1) for e in SC.validate(obj, getattr(SC, which))]
+    if not errs:
+        return []
+    errs = [e if len(e) <= 90 else e[:89] + "…" for e in errs]
+    more = f" +{len(errs) - 3} more" if len(errs) > 3 else ""
+    return [f"{rid}: shape errors vs schema/script.schema.json "
+            f"({', '.join(errs[:3])}{more})"]
+
+
 def _cap(msgs, rid):
     if len(msgs) > MAX_MSGS:
         msgs = msgs[:MAX_MSGS - 1] + [f"{rid}: +{len(msgs) - MAX_MSGS + 1} more "
@@ -522,6 +537,8 @@ def check_d154(script, bundle_text, ctx):
     if dup3:
         out.append(f"D154: variants share their first three words {dup3}")
     ai = ctx["presenter"] == "ai"
+    for i, v in enumerate(vs):
+        out += _shape(v, "HOOK_VARIANT_SCHEMA", f"hook_variants[{i}]", "D154")
     for v, vid in zip(vs, ids):
         tag = f"variant {vid or '?'}"
         verbal, ov = _txt(v.get("verbal")).strip(), _txt(v.get("overlay")).strip()
@@ -592,7 +609,7 @@ def check_d155(script, bundle_text, ctx):
         return []
     if not isinstance(d, dict):
         return [f"D155: discovery is a {type(d).__name__}, not an object"]
-    out = []
+    out = _shape(d, "DISCOVERY_SCHEMA", "discovery", "D155")
     kw = d.get("primary_keyword")
     if kw is not None and not (isinstance(kw, str) and kw.strip()):
         out.append("D155: primary_keyword is empty — nothing to place")
@@ -723,7 +740,7 @@ def check_d156(script, bundle_text, ctx):
         return []
     if not isinstance(d, dict):
         return [f"D156: direction is a {type(d).__name__}, not an object"]
-    out = []
+    out = _shape(d, "DIRECTION_SCHEMA", "direction", "D156")
     if "schema_version" in d and d.get("schema_version") != 1:
         out.append(f"D156: schema_version {d.get('schema_version')!r} (want 1)")
     if "vibe" in d and d.get("vibe") not in CV.VIBES:
