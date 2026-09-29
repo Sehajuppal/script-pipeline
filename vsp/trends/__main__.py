@@ -202,6 +202,15 @@ def _add_text(rep):
     return "\n".join([head] + _rejections(rep))
 
 
+def _import_code(rep, accepted):
+    """Automated imports: a flagged row is reported, and it is an error only
+    when nothing else could be imported (exit 1); 3 = nothing new."""
+    if rep["rejected"] and accepted <= 0:
+        return EXIT_ERR
+    changed = rep.get("new", 0) + rep.get("updated", 0) + rep.get("refreshed", 0)
+    return EXIT_OK if changed else EXIT_NOTHING
+
+
 def _add_code(rep):
     if rep["rejected"]:
         return EXIT_ERR
@@ -288,10 +297,7 @@ def _dispatch(a, d, now, as_json, jobs, store, IM):
                          + [f"  skipped {k}: {v}" for k, v in sorted(rep["skipped"].items())]
                          + _rejections(rep))
         _out(rep, as_json, text)
-        if rep["rejected"]:
-            return EXIT_ERR
-        return EXIT_OK if (rep.get("new") or rep.get("updated") or rep.get("refreshed")) \
-            else EXIT_NOTHING
+        return _import_code(rep, rep["candidates"] - len(rep["rejected"]))
     if a.cmd == "youtube":
         rep = IM.youtube(d, now, a.query, region=a.region, max_results=a.max, days=a.days,
                          niche=a.niche, dry_run=a.dry_run, fixture=a.fixture)
@@ -310,11 +316,14 @@ def _dispatch(a, d, now, as_json, jobs, store, IM):
                               f"(today {rep['quota_today']['units']}, search "
                               f"{rep['quota_today']['search_calls']})"]
                              + ([f"  STOPPED: {rep['stopped']}"] if rep["stopped"] else [])
+                             + ([f"  ERROR: {rep['error']}"] if rep.get("error") else [])
                              + _rejections(rep))
         _out(rep, as_json, text)
+        if rep.get("error"):
+            return EXIT_ERR
         if rep.get("stopped"):
             return EXIT_NOTHING
-        return EXIT_ERR if rep["rejected"] else EXIT_OK
+        return _import_code(rep, rep.get("observations", 0)) if not a.dry_run else EXIT_OK
     if a.cmd == "tiktok-cc":
         rep = IM.tiktok_cc(d, a.file, now, region=a.region, industry=a.industry, date=a.date)
         text = "\n".join([f"tiktok-cc: accepted {rep['accepted']} of {rep['rows']} signals "

@@ -188,6 +188,13 @@ def _schema_checks(C, ctx):
             rec["creator"]["tier"] == "nano" and rec["metrics"]["views"] == 50000 and
             rec["trend_keys"] == ["format:pov-reveal", "tag:povreveal"] and
             rec["observed_at"] == S.iso(NOW), rec["trend_keys"])
+    up, errs2 = S.normalize_observation(dict(base, permalink="HTTPS://WWW.Instagram.COM/reel/"
+                                             "FIXTUREok1/?utm_source=x", language="EN-us"),
+                                        now=NOW)
+    C.check("schema: scheme/host case and tracking query normalised (same obs_id), language "
+            "tag lower-cased", not errs2 and up["obs_id"] == rec["obs_id"] and
+            up["permalink"] == "https://www.instagram.com/reel/FIXTUREok1/" and
+            up["language"] == "en-us", errs2)
     yt, errs = S.normalize_observation({"platform": "youtube", "source": "yt_data_api",
                                         "permalink": "https://youtu.be/FIXTUREyt01"}, now=NOW)
     C.check("schema: yt_data_api rows get purge_after = observed_at + 30 days",

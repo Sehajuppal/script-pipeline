@@ -443,6 +443,9 @@ def canonical_permalink(platform, url):
     if not isinstance(url, str):
         return url
     u = url.strip()
+    m = re.match(r"^([A-Za-z][A-Za-z0-9+.-]*://)([^/?#]+)(.*)$", u)
+    if m:                                   # scheme and host are case-insensitive
+        u = m.group(1).lower() + m.group(2).lower() + m.group(3)
     if platform == "youtube":
         m = re.search(r"(?:watch\?(?:.*&)?v=|youtu\.be/)([A-Za-z0-9_-]{11})", u)
         if m:
@@ -909,7 +912,8 @@ def normalize_observation(raw, now=None, defaults=None):
         r = rec["region"].strip()
         rec["region"] = "global" if r.lower() == "global" else r.upper()
     if isinstance(rec.get("language"), str):
-        rec["language"] = rec["language"].strip().replace("_", "-") or None
+        parts = rec["language"].strip().replace("_", "-").split("-")
+        rec["language"] = "-".join([parts[0].lower()] + parts[1:]) if parts[0] else None
     if isinstance(rec.get("trend_keys"), list):
         rec["trend_keys"] = derive_trend_keys(rec)
     ret = rec["retention"]

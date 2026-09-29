@@ -32,7 +32,7 @@ Returned keys (all enums valid in vsp.creative_vocab / vsp.router):
 """
 import re
 import sys
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 from vsp import config
 from vsp import creative_vocab as CV
@@ -64,7 +64,7 @@ AUDIO_RULE = ("Never use another creator's original sound in commercial posts; m
 
 def _today(today):
     if today is None:
-        return datetime.utcnow().date()
+        return datetime.now(timezone.utc).date()
     if isinstance(today, datetime):
         return today.date()
     if isinstance(today, date):

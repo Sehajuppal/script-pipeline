@@ -545,6 +545,8 @@ def youtube(d, now, query, region="US", max_results=25, days=7, niche=None, dry_
                 rep["baselines"] += 1
     except QuotaStop as ex:
         rep["stopped"] = f"quota: {ex}"
+    except ImportFailed as ex:              # keep what was fetched; units still count
+        rep["error"] = str(ex)
     rep["units"], rep["search_calls"] = quota.run_units, quota.run_search
     rep["quota_today"] = {"day": quota.y["day"], "units": quota.y["units"],
                           "search_calls": quota.y["search_calls"]}
@@ -560,7 +562,7 @@ def youtube(d, now, query, region="US", max_results=25, days=7, niche=None, dry_
     rep["observations"] = len(recs)
     if dry_run:
         return rep
-    quota.save(query, rep["stopped"])
+    quota.save(query, rep["stopped"] or rep.get("error"))
     res = store.add_observations(d, recs, now) if recs else {"new": 0, "updated": 0,
                                                               "refreshed": 0, "unchanged": 0}
     rep.update({k: res[k] for k in ("new", "updated", "refreshed", "unchanged")})
