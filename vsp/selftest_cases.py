@@ -2092,7 +2092,7 @@ for prompt in json.loads(sys.argv[2]):
         for fmt, du in (("demo", 30), ("review", 15)):
             for sd in (1, 2):
                 s = vsm.generate(prompt, presenter=pr, fmt=fmt, duration=du, seed=sd)
-                out.append(json.loads(json.dumps(s)))
+                out.append([[prompt, pr, fmt, du, sd], json.loads(json.dumps(s))])
 sys.stdout.write("\n@@CREATIVE@@" + json.dumps(out))
 """
 
@@ -2126,11 +2126,11 @@ def _e2e_creative_keys(h):
                 f"{r.stdout[-300:]}{r.stderr[-500:]}"]
     scripts = json.loads(blob[1])
     if "normal" in h.state:
-        scripts.append(_load(os.path.join(h.state["normal"], "script.json")))
+        scripts.append([["normal CLI run"], _load(os.path.join(h.state["normal"],
+                                                                "script.json"))])
     probs = []
-    for s in scripts:
-        tag = f"{s.get('prompt')!r} {s.get('presenter')}/{s.get('format')}/" \
-              f"{s.get('duration_s')}s seed {s.get('seed')}"
+    for meta, s in scripts:
+        tag = " ".join(str(x) for x in meta)
         miss = [key for _, key in present if key not in s]
         if miss:
             probs.append(f"{tag}: no {miss} although "
