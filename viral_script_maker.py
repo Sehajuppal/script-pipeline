@@ -803,6 +803,14 @@ def possessive(noun):
     return n + "'" if n.endswith("s") else n + "'s"
 
 def parse_prompt(prompt):
+    # GEN-B (D140/TAG-MISMATCH): every concept's ctx also carries the prompt
+    # text it was parsed from (added key) — the caption's tag screen checks
+    # the same prompt the gate-1 hashtag/niche MISMATCH rule reads.
+    ctx = _parse_prompt_core(prompt)
+    ctx.setdefault("prompt_text", str(prompt).strip())
+    return ctx
+
+def _parse_prompt_core(prompt):
     p = prompt.strip()
     m = re.search(r'\$(\d+(?:\.\d+)?)', p)
     # D37 (judge loop, cycle 12): PRICE IS NULLABLE. The old default "20"
@@ -3044,7 +3052,26 @@ def _default_tags(ctx):
             out.append(t)
     return out or ["#productreview"]
 
+def _mismatch_safe(tags, ctx):
+    """TAG-MISMATCH (GEN-B): drop a tag the gate-1 hashtag/niche rule
+    (vsp/gates.MISMATCH: #hair* on a "skin" prompt, #skincare/#makeup* on a
+    "hair" prompt, ...) would flag — "hair and skin serum" keeps #beautytok,
+    loses #hairtok. Never returns an empty list."""
+    try:
+        from vsp.gates import MISMATCH
+    except Exception:
+        MISMATCH = [("skincare", "hair"), ("hair", "skin"), ("makeup", "hair"),
+                    ("fitness", "beauty"), ("cooking", "beauty")]
+    cue = " ".join(str(ctx.get(k) or "") for k in
+                   ("prompt_text", "product", "category")).lower()
+    keep = [t for t in tags
+            if not any(w in t.lower() and c in cue for w, c in MISMATCH)]
+    return keep or ["#productreview"]
+
 def _scoped_tags(ctx):
+    return _mismatch_safe(_scoped_tags_raw(ctx), ctx)
+
+def _scoped_tags_raw(ctx):
     if ctx.get("niche") == "beauty":
         sub = _beauty_subcat(ctx)
         if sub:
@@ -3144,6 +3171,9 @@ def build_caption(ctx, hookline, fmt, presenter):
     if presenter == "ai":
         lines.append("made with an AI persona")
         lines.append("")
+    # D140 (GEN-B): 1-5 tags (Instagram cap), none the gate's MISMATCH rule
+    # would flag, de-duplicated in order
+    tags = list(dict.fromkeys(_mismatch_safe(tags, ctx)))[:5]
     lines.append(" ".join(tags))
     return "\n".join(lines)
 
