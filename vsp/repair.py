@@ -522,6 +522,16 @@ def repair(script, gate_fn, max_rounds=3):
             break
         for a in acts:
             log.append(dict(round=rnd, **a))
+        # v2.1 D154: variant A is the script's own opening — it follows any
+        # repair of the hook stack before the regate
+        try:
+            from vsp import creative as _cr
+            synced = _cr.resync(new)
+        except Exception as e:  # noqa: BLE001 — logged, the regate decides
+            synced = [f"error: {e!r}"]
+        if synced:
+            log.append({"round": rnd, "rule": "sync", "target": "hook_variants[A]",
+                        "action": "re-synced to the repaired hook: " + ", ".join(synced)})
         new_fails = _gate(gate_fn, new)
         log.append({"round": rnd, "rule": "regate", "target": "gate",
                     "action": f"{len(cur_fails)} -> {len(new_fails)} failure(s)"

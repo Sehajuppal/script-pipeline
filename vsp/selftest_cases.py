@@ -932,6 +932,39 @@ def _unit_repair_with_creative_keys():
     return probs
 
 
+def _unit_variant_a_resync():
+    """v2.1 (D154): after a repair edits the hook stack, vsp.creative.resync
+    makes variant A follow it (verbal, caption_line, overlay) — and is a
+    no-op on a script already in sync or without variants."""
+    import json
+    import viral_script_maker as vsm
+    from vsp import creative, rules
+    s = json.loads(json.dumps(vsm.generate("electric milk frother", presenter="human",
+                                           fmt="demo", duration=30, seed=1)))
+    if not s.get("hook_variants"):
+        return []           # no creative layer in this build: nothing to sync
+    probs = []
+    if creative.resync(s):
+        probs.append("resync changed a script that was already in sync")
+    vt = next(it for it in s["hook_stack"] if it.get("type") == "VISUAL TRIGGER")
+    vh = next(it for it in s["hook_stack"] if "VERBAL HOOK" in it.get("type", ""))
+    card = vt["on_screen"]
+    vt["on_screen"] = card.split()[-1]          # what a D142 compression does
+    vh["dialogue"] = vh["dialogue"] + " "       # whitespace-only drift stays in sync
+    if not rules.check_d154(s, None, rules.build_ctx(s)):
+        return ["fixture drift: an edited frame-0 card no longer fails D154"]
+    changed = creative.resync(s)
+    if changed != ["overlay"]:
+        probs.append(f"resync changed {changed} (want ['overlay'])")
+    msgs = rules.check_d154(s, None, rules.build_ctx(s))
+    if msgs:
+        probs.append(f"D154 still fails after resync: {msgs[:2]}")
+    legacy = {k: v for k, v in s.items() if k != "hook_variants"}
+    if creative.resync(legacy) != []:
+        probs.append("resync touched a script without hook_variants")
+    return probs
+
+
 # ------------------------------------------ WS-EVAL: rubric / eval / schema
 LEGACY_RUBRIC = (  # R01-R20 (id, tier, weight, audit) — frozen, never edited
     ("R01", "E", 3, False), ("R02", "E", 3, False), ("R03", "E", 3, False),
@@ -1124,7 +1157,8 @@ def unit_cases():
             ("v21-schema-creative-defs", _unit_schema_creative),
             ("v21-precision-negation-corpus", _unit_precision_corpus),
             ("v21-payoff-and-frame0-openers", _unit_v21_payoff_and_frame0),
-            ("v21-repair-with-creative-keys", _unit_repair_with_creative_keys)]
+            ("v21-repair-with-creative-keys", _unit_repair_with_creative_keys),
+            ("v21-variant-a-follows-repair", _unit_variant_a_resync)]
 
 
 def all_cases():
@@ -1750,7 +1784,11 @@ def _unit_hook_pack_loader():
 E2E_PROMPT = "portable door lock"
 E2E_ARTIFACTS = ("script.json", "bundle.md", "brief.md", "validation-report.md",
                  "captions.srt", "captions.vtt", "captions.json", "shotlist.csv",
-                 "shots.json", "manifest.json", "trace.jsonl", "gate-report.json")
+                 "shots.json", "direction.md", "hooks.md", "posting.md",
+                 "manifest.json", "trace.jsonl", "gate-report.json")
+# v2.1: a finished legacy --script-json (no creative keys) writes no
+# direction.md / hooks.md / posting.md
+E2E_CREATIVE_DOCS = ("direction.md", "hooks.md", "posting.md")
 SUMMARY_KEYS = ("prompt", "niche", "hook_family", "hook_source", "hook",
                 "presenter", "format", "duration_s", "seed", "candidate_seed",
                 "script_sha256")
@@ -1867,6 +1905,22 @@ def _e2e_normal(h):
         probs.append(f"winner not chosen by selection: {gr.get('selected')}")
     if not any(x.get("type") == "span" for x in trace.read(os.path.join(out, "trace.jsonl"))):
         probs.append("trace.jsonl has no spans")
+    # v2.1: the creative docs carry their sections, the summary links the
+    # posted reel back to its vibe / opening / keyword, stage 9 reports it
+    import importlib.util
+    if all(importlib.util.find_spec(m) is not None for m, _ in CREATIVE_MODULES):
+        for fname, head in zip(E2E_CREATIVE_DOCS, ("## CREATIVE DIRECTION",
+                                                   "## HOOK VARIANTS",
+                                                   "## POSTING & DISCOVERY")):
+            with open(os.path.join(out, fname), encoding="utf-8") as f:
+                if head not in f.read():
+                    probs.append(f"{fname} lacks {head!r}")
+        empty = [k for k in ("vibe", "tone", "hook_archetype", "visual_type",
+                             "variant_ids", "primary_keyword") if not ss.get(k)]
+        if empty:
+            probs.append(f"script_summary creative keys empty: {empty}")
+        if not re.search(r"^stage 9 \(export\): OK .*; creative: vibe ", r.stdout, re.M):
+            probs.append("stage 9 line lacks the creative summary")
     h.state["normal"] = out
     return probs
 

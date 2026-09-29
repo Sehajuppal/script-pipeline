@@ -55,7 +55,12 @@ DB = config.viral_db_path()  # kept for callers that read pipeline.DB
 # never leaves a stale bundle/brief/export from an earlier one (D152/D153)
 ARTIFACTS = ("script.json", "bundle.md", "brief.md", "validation-report.md",
              "captions.srt", "captions.vtt", "captions.json", "shotlist.csv",
-             "shots.json", "manifest.json", "trace.jsonl", "gate-report.json")
+             "shots.json", "direction.md", "hooks.md", "posting.md",
+             "manifest.json", "trace.jsonl", "gate-report.json")
+# v2.1 creative layer docs (stage 9): written when the script carries the key
+CREATIVE_DOCS = (("direction.md", "direction", "vsp.direction", "Creative direction"),
+                 ("hooks.md", "hook_variants", "vsp.hooks", "Hook variants (A/B test sheet)"),
+                 ("posting.md", "discovery", "vsp.discovery", "Posting & discovery"))
 
 STAGES = {1: "route", 2: "research", 3: "generate", 4: "gate 1", 5: "select",
           6: "repair", 7: "shot list", 8: "gate 2", 9: "export", 10: "manifest"}
@@ -567,7 +572,7 @@ class Run:
         self.script = json.loads(json.dumps(best))
         if self.selected:
             r = self.repairs[-1]
-            acts = [e for e in r["log"] if e.get("rule") not in ("regate", "none")]
+            acts = [e for e in r["log"] if e.get("rule") not in ("regate", "none", "sync")]
             rounds = max([e.get("round", 0) for e in r["log"]] or [0])
             rules = sorted({str(e.get("rule")) for e in acts})
             self.line(6, "OK", f"candidate #{best_idx} (seed {sel['seeds'][best_idx]}) "
@@ -669,10 +674,59 @@ class Run:
                 self.crash(9, f"export raised {type(e).__name__}: {e}",
                            traceback.format_exc())
                 self.stop(1, "stage 9 failed")
-            sp.set(files=len(self.exports), cues=len(cues), lint=len(lint))
+            docs = self.write_creative_docs()
+            sp.set(files=len(self.exports) + len(docs), cues=len(cues), lint=len(lint))
         self.warn("captions", lint)
-        self.line(9, "OK", f"{', '.join(sorted(self.exports))}; schema valid; "
-                  f"{len(cues)} cue(s), caption lint {len(lint)} warning(s)")
+        summary = self.creative_summary()
+        self.line(9, "OK", f"{', '.join(sorted(list(self.exports) + docs))}; schema valid; "
+                  f"{len(cues)} cue(s), caption lint {len(lint)} warning(s)"
+                  + (f"; creative: {summary}" if summary else ""))
+
+    def write_creative_docs(self):
+        """v2.1: direction.md (vibe, tone, pacing, music, look), hooks.md (the
+        A/B sheet for the alternate openings) and posting.md (keywords and
+        per-platform packaging), each from its module's render_md — only for
+        the keys the script carries (a legacy --script-json writes none). A
+        render error is a warning; the bundle keeps its own sections."""
+        import importlib
+        s, written = self.script, []
+        for fname, key, modname, title in CREATIVE_DOCS:
+            val = s.get(key) if isinstance(s, dict) else None
+            if not val:
+                continue
+            try:
+                mod = importlib.import_module(modname)
+                text = (mod.render_md(val) if key == "direction"
+                        else mod.render_md(val, s))
+            except Exception as e:  # noqa: BLE001 — advisory docs
+                self.warnings.append(f"export: {fname} not written "
+                                     f"({type(e).__name__}: {e})")
+                continue
+            if text and text.strip():
+                head = f"# {title} — {s.get('prompt') or self.a.prompt}\n\n"
+                _write(os.path.join(self.outdir, fname), head + text.rstrip() + "\n")
+                written.append(fname)
+        return written
+
+    def creative_summary(self):
+        """One line for the stage-9 report: vibe/tone, the openings, the
+        search keyword."""
+        s = self.script if isinstance(self.script, dict) else {}
+        parts = []
+        d = s.get("direction") if isinstance(s.get("direction"), dict) else {}
+        if d.get("vibe"):
+            tone = d.get("tone") if isinstance(d.get("tone"), dict) else {}
+            parts.append(f"vibe {d['vibe']}" + (f", tone {tone['voice']}"
+                                                  if tone.get("voice") else ""))
+        hv = [v for v in (s.get("hook_variants") or []) if isinstance(v, dict)]
+        if hv:
+            arcs = [str(v.get("archetype")) for v in hv]
+            parts.append(f"{len(hv)} openings ({'/'.join(v.get('id') or '?' for v in hv)}: "
+                         f"{', '.join(arcs)})")
+        disc = s.get("discovery") if isinstance(s.get("discovery"), dict) else {}
+        if disc.get("primary_keyword"):
+            parts.append(f"keyword {disc['primary_keyword']!r}")
+        return "; ".join(parts)
 
     # ------------------------------------------------------------ finish
     def status(self, code):
@@ -698,6 +752,11 @@ class Run:
             hook = hook_line(s)
         except Exception:  # noqa: BLE001
             hook = None
+        d = s.get("direction") if isinstance(s.get("direction"), dict) else {}
+        tone = d.get("tone") if isinstance(d.get("tone"), dict) else {}
+        hv = [v for v in (s.get("hook_variants") or []) if isinstance(v, dict)]
+        prim = next((v for v in hv if v.get("is_primary")), hv[0] if hv else {})
+        disc = s.get("discovery") if isinstance(s.get("discovery"), dict) else {}
         return {"prompt": s.get("prompt"), "niche": s.get("niche"),
                 "hook_family": s.get("hook_family"),
                 "hook_source": s.get("hook_source"), "hook": hook,
@@ -705,7 +764,14 @@ class Run:
                 "duration_s": s.get("duration_s"),
                 "seed": s.get("seed") if self.from_json else self.a.seed,
                 "candidate_seed": (self.selected or {}).get("seed"),
-                "script_sha256": _sha256_file(sp)}
+                "script_sha256": _sha256_file(sp),
+                # v2.1 creative layer (None when the script has no such key):
+                # what vsp.feedback links a posted reel's metrics back to
+                "vibe": d.get("vibe"), "tone": tone.get("voice"),
+                "hook_archetype": prim.get("archetype"),
+                "visual_type": prim.get("visual_type"),
+                "variant_ids": [v.get("id") for v in hv] or None,
+                "primary_keyword": disc.get("primary_keyword")}
 
     def gate_report(self, code, status):
         cands = []
@@ -716,7 +782,7 @@ class Run:
                  "passed": r.get("passed"), "error": r.get("error"),
                  "rounds": max([e.get("round", 0) for e in r.get("log") or []] or [0]),
                  "rules": sorted({str(e.get("rule")) for e in r.get("log") or []
-                                  if e.get("rule") not in ("regate", "none")})}
+                                  if e.get("rule") not in ("regate", "none", "sync")})}
                 for r in self.repairs]
 
         def gate(res, warns):

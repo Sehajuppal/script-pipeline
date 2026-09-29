@@ -48,3 +48,47 @@ def enrich(script, ctx=None, seed=None, maker=None):
     if warnings:
         script["creative_warnings"] = warnings
     return script
+
+
+def resync(script):
+    """After a repair edits the hook stack (D142/D103 card compression, a
+    staging note, a trim), variant A — the script's own opening — follows
+    it: verbal and caption_line = the VERBAL HOOK dialogue, overlay = the
+    VISUAL TRIGGER card (D154). Re-scores A when it changed. Mutates the
+    script; returns the changed fields ([] = already in sync, or no
+    variants)."""
+    hv = script.get("hook_variants") if isinstance(script, dict) else None
+    if not isinstance(hv, list) or not hv:
+        return []
+    try:
+        from vsp import hooks as H
+    except Exception:  # noqa: BLE001 — no hooks module, nothing to sync
+        return []
+    vt_item, vh_item = H._hook_items(script)
+    if vt_item is None or vh_item is None:
+        return []
+    dv = [v for v in hv if isinstance(v, dict)]
+    A = next((v for v in dv if v.get("is_primary")), dv[0] if dv else None)
+    if A is None:
+        return []
+    verbal = " ".join(str(vh_item.get("dialogue") or "").split())
+    overlay = str(vt_item.get("on_screen") or "")
+    changed = []
+    if A.get("verbal") != verbal:
+        A["verbal"] = verbal
+        changed.append("verbal")
+    if A.get("caption_line") != verbal:
+        A["caption_line"] = verbal
+        changed.append("caption_line")
+    if A.get("overlay") != overlay:
+        A["overlay"] = overlay
+        changed.append("overlay")
+    if changed:
+        try:
+            others = [v.get("verbal") for v in dv if v is not A]
+            s, feats, reasons = H.score_hook(verbal, overlay, A.get("visual_type"), script,
+                                             archetype=A.get("archetype"), others=others)
+            A["score"], A["features"], A["reasons"] = s, feats, reasons
+        except Exception:  # noqa: BLE001 — the stored score stays; D154 is what gates
+            pass
+    return changed
