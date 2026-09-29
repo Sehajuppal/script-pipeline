@@ -723,22 +723,45 @@ def _ratio(a, b):
         return None
 
 
-def labels(con, window=WINDOW):
-    """Per-post labels (module doc). -> {"posts": [...newest first], "median",
-    "window", "skip_scale", "stats", "pending": {...}}"""
-    rows = con.execute(
-        "SELECT r.media_id, r.url, r.posted_at, r.hook_text, r.is_trial AS reel_trial, "
-        "p.niche, p.hook_family, p.hook_source, p.hook, p.duration_s, p.is_trial, "
-        "p.presenter, p.format, p.slug, p.media_id AS linked FROM reels r LEFT JOIN "
-        "posts p ON p.media_id = r.media_id WHERE r.is_own = 1 AND r.platform = "
-        "'instagram' AND r.media_id IS NOT NULL AND r.purge_after IS NULL "
-        "ORDER BY r.posted_at DESC").fetchall()
+def _snapshots(con):
+    """media_id -> its latest reel_metrics row at >= 24 h (or of unknown age)."""
     snaps = {}
     for s in con.execute("SELECT * FROM reel_metrics WHERE age_h IS NULL OR age_h >= 24 "
                          "ORDER BY media_id, age_h, captured_at"):
         snaps[s["media_id"]] = s                        # keeps the latest per media
+    return snaps
+
+
+def _skip_scale(snaps):
+    """100.0 when the account's skip rates are percents (any value > 1), else
+    1.0 — one rule for learn and variants."""
     skips = [s["skip_rate"] for s in snaps.values() if s["skip_rate"] is not None]
-    scale = 100.0 if any(float(v) > 1.0 for v in skips) else 1.0
+    return 100.0 if any(float(v) > 1.0 for v in skips) else 1.0
+
+
+def _posts_select(con, cols, alias="p"):
+    """'p.col, …' for posts columns, 'NULL AS col' for ones a legacy posts
+    table lacks (a connection opened without migrating)."""
+    from vsp.ingest.db import table_columns
+    have = set(table_columns(con, "posts"))
+    return ", ".join(f"{alias}.{c}" if c in have else f"NULL AS {c}" for c in cols)
+
+
+def labels(con, window=WINDOW):
+    """Per-post labels (module doc). -> {"posts": [...newest first], "median",
+    "window", "skip_scale", "stats", "pending": {...}}. Posts also carry the
+    v2.1 columns (variant_id, hook_archetype, visual_type, vibe, tone,
+    primary_keyword) and script_sha256 (None when unknown)."""
+    rows = con.execute(
+        "SELECT r.media_id, r.url, r.posted_at, r.hook_text, r.is_trial AS reel_trial, "
+        "p.niche, p.hook_family, p.hook_source, p.hook, p.duration_s, p.is_trial, "
+        "p.presenter, p.format, p.slug, p.media_id AS linked, p.script_sha256, "
+        + _posts_select(con, CREATIVE_COLUMNS) + " FROM reels r LEFT JOIN "
+        "posts p ON p.media_id = r.media_id WHERE r.is_own = 1 AND r.platform = "
+        "'instagram' AND r.media_id IS NOT NULL AND r.purge_after IS NULL "
+        "ORDER BY r.posted_at DESC, r.media_id DESC").fetchall()
+    snaps = _snapshots(con)
+    scale = _skip_scale(snaps)
     posts, pending = [], {"no snapshot >= 24 h": 0}
     for r in rows:
         s = snaps.get(r["media_id"])
@@ -760,7 +783,9 @@ def labels(con, window=WINDOW):
              "age_h": s["age_h"], "views": s["views"], "reach": s["reach"],
              "hook_rate": hr, "watch_ratio": wr,
              "share_rate": _ratio(s["shares"], s["reach"]),
-             "save_rate": _ratio(s["saves"], s["reach"])}
+             "save_rate": _ratio(s["saves"], s["reach"]),
+             "script_sha256": r["script_sha256"]}
+        p.update({c: r[c] for c in CREATIVE_COLUMNS})
         if all(p[k] is None for k in LABELS):
             pending["snapshot without usable metrics"] = \
                 pending.get("snapshot without usable metrics", 0) + 1
@@ -808,16 +833,63 @@ def posteriors(lab):
             dict(sorted(glob.items())))
 
 
+# priors v2 sections (vsp.priors.SECTIONS, same order) -> the posts column
+SECTION_COLUMNS = {"archetype": "hook_archetype", "visual_type": "visual_type",
+                   "vibe": "vibe", "tone": "tone"}
+SECTIONS = tuple(SECTION_COLUMNS)
+
+
+def section_vocab():
+    """{section: frozenset(valid ids)} from vsp.creative_vocab (an empty set
+    accepts any id, should the vocabulary module be absent)."""
+    try:
+        from vsp import creative_vocab as V
+    except ImportError:
+        return {s: frozenset() for s in SECTIONS}
+    return {"archetype": frozenset(V.HOOK_ARCHETYPES),
+            "visual_type": frozenset(V.VISUAL_TYPES),
+            "vibe": frozenset(V.VIBES), "tone": frozenset(V.TONES)}
+
+
+def section_posteriors(lab):
+    """-> {section: {"by_niche": {niche: {key: {alpha, beta, n}}}, "global":
+    {key: {...}}}} for SECTIONS: the families rule (linked post, maker niche,
+    Beta(1, 1) + wins / losses of the same success label) over the posts
+    whose key is known and a creative_vocab id."""
+    from vsp.ingest.settings import MAKER_NICHES
+    vocab = section_vocab()
+    out = {}
+    for sec, col in SECTION_COLUMNS.items():
+        per, glob = {}, {}
+        for p in lab["posts"]:
+            n, k = p.get("niche"), p.get(col)
+            if (not p["linked"] or n not in MAKER_NICHES or not isinstance(k, str) or not k
+                    or (vocab[sec] and k not in vocab[sec])):
+                continue
+            for tbl in (per.setdefault(n, {}), glob):
+                e = tbl.setdefault(k, {"alpha": 1.0, "beta": 1.0, "n": 0})
+                e["alpha" if p["success"] else "beta"] += 1.0
+                e["n"] += 1
+        out[sec] = {"by_niche": {n: dict(sorted(t.items())) for n, t in sorted(per.items())},
+                    "global": dict(sorted(glob.items()))}
+    return out
+
+
 def validate_priors(obj):
-    """learned/README.md schema v1 -> list of problems ([] = valid)."""
+    """learned/README.md schema v1 or v2 -> list of problems ([] = valid).
+    v2 = v1 + "sections": every SECTIONS name -> {"by_niche": {niche: {key:
+    entry}}, "global": {key: entry}}, entries as in v1."""
     errs = []
     if not isinstance(obj, dict):
         return ["priors must be a JSON object"]
+    ver = obj.get("schema_version")
     want = {"schema_version", "updated_at", "metric", "families", "global"}
+    if ver == 2 and not isinstance(ver, bool):
+        want = want | {"sections"}
     if set(obj) != want:
         errs.append(f"top-level keys {sorted(obj)} != {sorted(want)}")
-    if obj.get("schema_version") != 1:
-        errs.append("schema_version must be 1")
+    if isinstance(ver, bool) or ver not in (1, 2):
+        errs.append("schema_version must be 1 or 2")
     if _util().parse_ts(obj.get("updated_at")) is None:
         errs.append("updated_at must be an ISO timestamp")
     if not isinstance(obj.get("metric"), str) or not obj.get("metric"):
@@ -851,6 +923,27 @@ def validate_priors(obj):
     else:
         for fam, e in glob.items():
             entry(f"global[{fam!r}]", e)
+    if "sections" in want:
+        secs = obj.get("sections")
+        if not isinstance(secs, dict) or set(secs) != set(SECTIONS):
+            errs.append(f"sections must be an object with exactly {list(SECTIONS)}")
+            secs = secs if isinstance(secs, dict) else {}
+        for sec, body in secs.items():
+            if not isinstance(body, dict) or set(body) != {"by_niche", "global"}:
+                errs.append(f"sections[{sec!r}] must be {{by_niche, global}}")
+                continue
+            by, g = body["by_niche"], body["global"]
+            if not isinstance(by, dict) or not isinstance(g, dict):
+                errs.append(f"sections[{sec!r}]: by_niche and global must be objects")
+                continue
+            for niche, tbl in by.items():
+                if not isinstance(tbl, dict):
+                    errs.append(f"sections[{sec!r}].by_niche[{niche!r}] must be an object")
+                    continue
+                for key, e in tbl.items():
+                    entry(f"sections[{sec!r}].by_niche[{niche!r}][{key!r}]", e)
+            for key, e in g.items():
+                entry(f"sections[{sec!r}].global[{key!r}]", e)
     return errs
 
 
@@ -864,13 +957,19 @@ def _write_atomic(path, text):
 
 
 def learn(con, now=None, path=None, window=WINDOW):
-    """labels -> posteriors -> learned/priors.json. -> report."""
+    """labels -> posteriors -> learned/priors.json. -> report. schema_version
+    2 (v1 + "sections") as soon as any section has data; otherwise the file
+    is exactly v1, so readers that only know v1 keep working."""
     u = _util()
     now_dt = u.parse_ts(now) or u.utcnow()
     lab = labels(con, window=window)
     fams, glob = posteriors(lab)
+    secs = section_posteriors(lab)
     pri = {"schema_version": 1, "updated_at": u.iso_ts(now_dt), "metric": METRIC,
            "families": fams, "global": glob}
+    if any(body["global"] for body in secs.values()):
+        pri["schema_version"] = 2
+        pri["sections"] = secs
     errs = validate_priors(pri)
     if errs:                      # never write a file the maker would reject
         raise ValueError("priors failed validation: " + "; ".join(errs))
@@ -880,7 +979,8 @@ def learn(con, now=None, path=None, window=WINDOW):
         # good priors instead of resetting the maker to neutral
         return {"job": "learn", "priors": p, "kept": True, "labelled": 0, "linked": 0,
                 "median_composite": None, "skip_scale": lab["skip_scale"],
-                "families": {}, "global": {}, "pending": lab["pending"]}
+                "families": {}, "global": {}, "pending": lab["pending"],
+                "schema_version": None, "sections": {}}
     _write_atomic(p, json.dumps(pri, indent=1, sort_keys=False) + "\n")
     con.execute("INSERT OR REPLACE INTO meta(key, value) VALUES ('last_run:learn', ?)",
                 (u.sql_ts(now_dt),))
@@ -889,7 +989,10 @@ def learn(con, now=None, path=None, window=WINDOW):
             "linked": sum(1 for x in lab["posts"] if x["linked"]),
             "median_composite": lab["median"], "skip_scale": lab["skip_scale"],
             "families": {n: {f: e["n"] for f, e in t.items()} for n, t in fams.items()},
-            "global": {f: e["n"] for f, e in glob.items()}, "pending": lab["pending"]}
+            "global": {f: e["n"] for f, e in glob.items()}, "pending": lab["pending"],
+            "schema_version": pri["schema_version"],
+            "sections": {s: {k: e["n"] for k, e in b["global"].items()}
+                         for s, b in secs.items() if b["global"]}}
 
 
 # ---------------------------------------------------------------- report
@@ -1234,7 +1337,7 @@ def selfcheck_v21():
             sc = C.step("scenario", _sc_build, C, ctx)
             if sc:
                 try:
-                    for name, fn in (("link", _sc_link),):
+                    for name, fn in (("link", _sc_link), ("learn", _sc_learn)):
                         C.step(name, fn, C, ctx, sc)
                 finally:
                     sc["con"].close()
@@ -1468,6 +1571,83 @@ def _sc_link(C, ctx, sc):
                 "tone": None, "primary_keyword": None})
 
 
+def _sc_learn(C, ctx, sc):
+    from vsp.ingest import db as idb
+    from vsp.ingest.settings import MAKER_NICHES
+    con, now = sc["con"], sc["now"]
+    rep = learn(con, now=now)
+    with open(config.priors_path(), "rb") as f:
+        raw = f.read()
+    pri = json.loads(raw.decode("utf-8"))
+    C.check("learn: priors schema_version 2 = the v1 keys + sections {archetype, "
+            "visual_type, vibe, tone} × {by_niche, global}; validates",
+            pri["schema_version"] == 2 and rep["schema_version"] == 2 and
+            list(pri) == ["schema_version", "updated_at", "metric", "families", "global",
+                          "sections"] and list(pri["sections"]) == list(SECTIONS) and
+            not validate_priors(pri), "; ".join(validate_priors(pri))[:160])
+    lab = labels(con)
+    wins = sorted(k for k, r in sc["reels"].items() for p in lab["posts"]
+                  if p["media_id"] == r["media_id"] and p["success"])
+    exp = {s: {} for s in SECTIONS}                 # independent re-aggregation
+    for p in lab["posts"]:
+        for s, col in SECTION_COLUMNS.items():
+            if p["linked"] and p["niche"] in MAKER_NICHES and p[col]:
+                for t in (exp[s].setdefault(("n", p["niche"]), {}),
+                          exp[s].setdefault(("g",), {})):
+                    e = t.setdefault(p[col], [1.0, 1.0, 0])
+                    e[0 if p["success"] else 1] += 1.0
+                    e[2] += 1
+    got = {s: {("g",): {k: [e["alpha"], e["beta"], e["n"]]
+                        for k, e in b["global"].items()},
+               **{("n", n): {k: [e["alpha"], e["beta"], e["n"]] for k, e in t.items()}
+                  for n, t in b["by_niche"].items()}} for s, b in pri["sections"].items()}
+    C.check("learn: each section is Beta(1 + wins, 1 + losses) per (niche, key) + "
+            "global over posts whose key is known (the 2 legacy posts count nowhere)",
+            wins == ["FB", "LB", "PA", "PB", "PC"] and got == exp and
+            pri["sections"]["vibe"]["global"]["clean-aesthetic"] ==
+            {"alpha": 5.0, "beta": 3.0, "n": 6} and
+            sum(e["n"] for e in pri["sections"]["archetype"]["global"].values()) == 8,
+            f"wins {wins}")
+    fam = pri["families"]
+    C.check("learn: v1 families/global keep their meaning (legacy posts included)",
+            fam["home"]["curiosity-gap"]["n"] == 3 and
+            fam["home"]["negative-command"]["n"] == 2 and
+            fam["beauty"]["transformation"] == {"alpha": 4.0, "beta": 1.0, "n": 3} and
+            sum(e["n"] for e in pri["global"].values()) == 10, json.dumps(fam)[:160])
+    from vsp import priors as P
+    lp = P.load_priors(config.priors_path())
+    C.check("learn: round-trip through vsp.priors — load_priors v2, mean_for niche "
+            "table then global, None below n = 3, posterior_for('family') = v1",
+            lp is not None and lp["schema_version"] == 2 and tuple(P.SECTIONS) == SECTIONS
+            and P.mean_for(lp, "vibe", "home", "clean-aesthetic") == 2 / 5
+            and P.mean_for(lp, "vibe", "beauty", "clean-aesthetic") == 4 / 5
+            and P.mean_for(lp, "vibe", "fitness", "clean-aesthetic") == 5 / 8
+            and P.mean_for(lp, "tone", "home", "warm") is None
+            and P.mean_for(lp, "tone", "beauty", "calm") == 4 / 5
+            and P.mean_for(lp, "archetype", "home", "transformation", min_n=1) == 2 / 3
+            and P.posterior_for(lp, "visual_type", "home", "result-reveal") ==
+            (2.0, 2.0, 2) and P.posterior_for(lp, "family", "home", "curiosity-gap")
+            == (2.0, 3.0, 3) and P.posterior_for(lp, "archetype", "home", "nope") is None)
+    C.check("learn: CLI summary carries the schema version + section counts",
+            rep["sections"]["vibe"] == {"clean-aesthetic": 6, "cozy-calm": 2} and
+            rep["sections"]["tone"] == {"calm": 3, "confident": 3, "warm": 2})
+    empty = idb.connect(os.path.join(ctx.tmp, "empty-v21.db"), create=True)
+    try:
+        kept = learn(empty, now=now)
+    finally:
+        empty.close()
+    with open(config.priors_path(), "rb") as f:
+        C.check("learn: a DB without labelled posts keeps the last good v2 priors",
+                kept.get("kept") and f.read() == raw)
+    bad = json.loads(raw.decode("utf-8"))
+    bad["sections"]["tone"]["global"]["calm"]["n"] = 7
+    del bad["sections"]["vibe"]
+    errs = validate_priors(bad)
+    C.check("validate_priors v2: missing section and alpha + beta - 2 != n flagged",
+            any("exactly" in e for e in errs) and any("calm" in e and "!= n" in e
+                                                      for e in errs), "; ".join(errs)[:160])
+
+
 # --------------------------------------------------------------------- CLI
 def _parser():
     ap = argparse.ArgumentParser(
@@ -1591,7 +1771,9 @@ def main(argv=None):
                 return 0
             _out(rep, a.json, f"wrote {rep['priors']}: {rep['labelled']} labelled posts "
                  f"({rep['linked']} linked), median composite {rep['median_composite']}, "
-                 f"families {rep['families']}")
+                 f"families {rep['families']}; schema v{rep['schema_version']}"
+                 + (f", sections {rep['sections']}" if rep["sections"] else
+                    " (no post carries a v2.1 archetype / visual type / vibe / tone yet)"))
             return 0
         if a.cmd == "report":
             p, text = report(con)
