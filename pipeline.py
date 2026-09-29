@@ -95,6 +95,16 @@ def _sha256_file(path):
         return None
 
 
+def _rule_label(msg):
+    """D-number of a gate message, else a short label (report summaries)."""
+    m = re.match(r"\s*(D\d+[a-z]?|B4a|R\d+)\b", str(msg))
+    if m:
+        return m.group(1)
+    if "hashtag/niche mismatch" in str(msg):
+        return "TAG-MISMATCH"
+    return " ".join(str(msg).split()[:4]).rstrip(" —-:;,.")
+
+
 def _tail(tb, n=500):
     return "  " + tb[-n:].strip().replace("\n", "\n  ")
 
@@ -265,8 +275,9 @@ class Run:
             code = 0
         except _Stop as s:
             code = s.code
-        except Exception:  # noqa: BLE001 — an orchestrator bug still reports
-            self.crash(self.cur, "unexpected pipeline error", traceback.format_exc())
+        except Exception as e:  # noqa: BLE001 — an orchestrator bug still reports
+            self.crash(self.cur, f"unexpected {type(e).__name__}: {e}",
+                       traceback.format_exc())
             self.skip_reason = f"stage {self.cur} failed"
             code = 1
         self.finish(code)
@@ -292,8 +303,9 @@ class Run:
             try:
                 self.route = router.route(a.prompt, presenter=presenter, fmt=fmt,
                                           pack=self.pack if self.pack is not None else False)
-            except Exception:  # noqa: BLE001
-                self.crash(1, "router error", traceback.format_exc())
+            except Exception as e:  # noqa: BLE001
+                self.crash(1, f"router raised {type(e).__name__}: {e}",
+                           traceback.format_exc())
                 self.stop(1, "stage 1 failed")
             r = self.route
             sp.set(concept=r.get("concept"), niche=r.get("niche"),
@@ -369,8 +381,9 @@ class Run:
                 sel = vsel.run(gen_fn, seed=a.seed, n=a.candidates,
                                gate_fn=vsel.gate_cascade, score_fn=rubric.score,
                                trace=self.tr)
-            except Exception:  # noqa: BLE001 — select.run never raises; belt
-                self.crash(3, "candidate generation failed", traceback.format_exc())
+            except Exception as e:  # noqa: BLE001 — select.run never raises; belt
+                self.crash(3, f"candidate generation raised {type(e).__name__}: {e}",
+                           traceback.format_exc())
                 self.stop(1, "stage 3 failed")
             sp.set(winner=sel["winner"])
         self.sel = sel
@@ -392,7 +405,6 @@ class Run:
         self.cur = 4
         from collections import Counter
         g1_ok, rules = 0, Counter()
-        from vsp.repair import rule_of
         for c in live:
             if c["passed"]:
                 g1_ok += 1
@@ -403,7 +415,7 @@ class Run:
             except Exception:  # noqa: BLE001 — counted as a gate-1 failure
                 pass
             for m in c["gate1"]:
-                rules[rule_of(m) or m.split(":")[0][:24]] += 1
+                rules[_rule_label(m)] += 1
         casc = sum(1 for c in live if c["passed"] and not c["error"])
         top = ", ".join(f"{k} ×{v}" for k, v in rules.most_common(4))
         self.line(4, "OK" if g1_ok else "FAIL",
@@ -537,8 +549,8 @@ class Run:
             try:
                 import make_shotlist
                 bundle_text, self.shots, self.vo = make_shotlist.build_bundle(self.script)
-            except Exception:  # noqa: BLE001
-                self.crash(7, "make_shotlist.build_bundle raised",
+            except Exception as e:  # noqa: BLE001
+                self.crash(7, f"make_shotlist.build_bundle raised {type(e).__name__}: {e}",
                            traceback.format_exc())
                 self.stop(1, "stage 7 failed")
         self.bundle = bundle_text
@@ -594,8 +606,9 @@ class Run:
                 self.exports = exporters.write_exports(self.outdir, self.script,
                                                        self.shots, self.vo, cues=cues)
                 lint = captions.lint(cues)
-            except Exception:  # noqa: BLE001
-                self.crash(9, "export failed", traceback.format_exc())
+            except Exception as e:  # noqa: BLE001
+                self.crash(9, f"export raised {type(e).__name__}: {e}",
+                           traceback.format_exc())
                 self.stop(1, "stage 9 failed")
             sp.set(files=len(self.exports), cues=len(cues), lint=len(lint))
         self.warn("captions", lint)
