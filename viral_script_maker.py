@@ -1888,6 +1888,10 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
     if fmt == "transformation":
         ctx["ndays"] = rng.choice([3, 7, 14, 30])
     fam, hookline = pick_hook(ctx, rng)
+    # D63/D144 (pipeline v2): the frame-0 overlay below is cut from the hook
+    # line — cut it from the SPOKEN form generate() ships (the voice pass is
+    # idempotent), so a contraction can't split the overlay from the hook.
+    hookline = humanize_dialogue(hookline)
     # D33 (judge loop, cycle 11): AUDIO-PRODUCT DEMO GRAMMAR. Sound products
     # are AUDIO-LED — the reference class (josh.harmon "Ratatouille Sounds",
     # 409K likes, 1,030 comments) lets the product's actual sound be heard
