@@ -925,7 +925,7 @@ def _platforms(script, ctx, kw, secondary, parts, cover, cw):
     tt_notes = [
         f"Cover: video_cover_timestamp_ms={ms} (the API picks a frame, no "
         f"image upload; covers reportedly cannot be changed after posting).",
-        "After publish: Manage Keywords, suggest the keywords below and block "
+        "After publish: Manage Keywords, suggest the listed keywords and block "
         "off-topic auto keywords; pin a comment that repeats the keyword and "
         "the caption's CTA line.",
         "Hashtags label the video, they do not buy reach: keep 3 on-topic "
@@ -1189,4 +1189,113 @@ def warnings(disc, script):
         out.append(f"D161: {kw!r} not spoken by 3.0 s")
     if pl.get("on_screen_by_s") is None or pl["on_screen_by_s"] > 3.0:
         out.append(f"D161: {kw!r} not on screen by 3.0 s")
+    return out
+
+
+# ------------------------------------------------------------ render
+_PLATFORM_TITLE = (("tiktok", "TikTok"), ("instagram", "Instagram Reels"),
+                   ("youtube_shorts", "YouTube Shorts"))
+
+
+def _cell(v):
+    return str(v).replace("|", "/").replace("\n", " ")
+
+
+def _secs(v):
+    return "not placed" if v is None else f"{v:.1f} s"
+
+
+def _mark(ok):
+    return "yes" if ok else "no"
+
+
+def render_md(discovery, script):
+    """posting.md / the bundle's discovery section. Starts with the exact
+    heading "## POSTING & DISCOVERY"; carries no "### Shot" heading, no
+    BUNDLE_FORBIDDEN phrase and no D46 link group beyond the caption's."""
+    d = discovery if isinstance(discovery, dict) else {}
+    kw = d.get("primary_keyword") or ""
+    L = ["## POSTING & DISCOVERY", ""]
+    sec = d.get("secondary_keywords") or []
+    L.append(f"**Primary keyword:** {kw}"
+             + (f" · secondary: {', '.join(sec)}" if sec else ""))
+    if d.get("comment_word"):
+        L.append(f"**Comment word:** {d['comment_word']}")
+    if d.get("search_intents"):
+        L.append("**Search intents** (labels for research and Manage Keywords, "
+                 "never claims): " + " · ".join(d["search_intents"]))
+    L += ["", "### Keyword placement", "",
+          "| Slot | Target | This video |", "|---|---|---|"]
+    pl = d.get("placement") or {}
+    sp, osc = pl.get("spoken_by_s"), pl.get("on_screen_by_s")
+    L += [f"| Spoken | by 3.0 s | {_secs(sp)} |",
+          f"| On screen | by 3.0 s, >= 1.0 s, inside the safe box | {_secs(osc)} |",
+          f"| Caption line 1 | first 60 chars | {_mark(pl.get('caption_first_60'))} |",
+          f"| Hashtag | one compact keyword tag | {_cell(pl.get('hashtag') or 'missing')} |",
+          f"| Cover text | head noun, <= 5 words | {_mark(pl.get('cover_text'))} |", ""]
+    cov = d.get("cover") or {}
+    if cov:
+        L += ["### Cover", "",
+              f"- Frame: {cov.get('frame_s', 0):g} s · text **{_cell(cov.get('text', ''))}** "
+              f"· safe box {cov.get('safe_box', '')} on 1080x1920",
+              f"- Why: {cov.get('why', '')}", ""]
+    plats = d.get("platforms") or {}
+    for name, title in _PLATFORM_TITLE:
+        p = plats.get(name)
+        if not isinstance(p, dict):
+            continue
+        L += [f"### {title}", ""]
+        if name == "youtube_shorts":
+            L.append(f"- Title ({len(p.get('title', ''))} chars): {p.get('title', '')}")
+            L += ["- Description:", "", "```text"] + str(p.get("description", "")).split("\n") \
+                + ["```", ""]
+            if p.get("related_video"):
+                L.append(f"- Related video: {p['related_video']}")
+        else:
+            L += ["Caption (post as-is):", "", "```text"] \
+                + str(p.get("caption", "")).split("\n") + ["```", ""]
+        L.append(f"- Hashtags ({len(p.get('hashtags') or [])}): "
+                 + " ".join(p.get("hashtags") or []))
+        if p.get("description_line"):
+            L.append(f"- Description line (alt-text substitute): {p['description_line']}")
+        if p.get("keywords_to_suggest"):
+            L.append("- Manage Keywords, suggest: " + ", ".join(p["keywords_to_suggest"]))
+        tg = p.get("toggles") or {}
+        if tg:
+            L.append("- Toggles: " + ", ".join(f"{k}={str(v).lower()}" for k, v in tg.items()))
+        tr = p.get("trial_reels")
+        if isinstance(tr, dict):
+            L.append(f"- Trial Reels ({'recommended' if tr.get('recommended') else 'optional'}): "
+                     f"{tr.get('protocol', '')}")
+        for n in p.get("notes") or []:
+            L.append(f"- {n}")
+        L.append("")
+    posting = d.get("posting") or []
+    if posting:
+        L += ["### Posting guidance", "",
+              "Grades: P platform rule, S strong, M moderate, A anecdotal; "
+              "myth = do not rely on it.", ""]
+        for g in posting:
+            L.append(f"- [{g.get('grade')}] ({_PLATFORM_LABEL.get(g.get('platform'), g.get('platform'))}) "
+                     f"{g.get('item')} ({g.get('source')})")
+        L.append("")
+    ck = d.get("checklist") or []
+    if ck:
+        L += ["### Checklist", ""] + [f"- [ ] {c}" for c in ck] + [""]
+    return "\n".join(L).rstrip("\n") + "\n"
+
+
+def render_problems(md, script):
+    """render_md contract violations -> messages (selfcheck)."""
+    from vsp import creative_vocab as V
+    out = []
+    if not md.startswith("## POSTING & DISCOVERY"):
+        out.append("render_md does not start with '## POSTING & DISCOVERY'")
+    low = md.lower()
+    for ph in V.BUNDLE_FORBIDDEN:
+        if ph.lower() in low:
+            out.append(f"render_md carries forbidden phrase {ph!r}")
+    extra = V.link_groups_in(md) - V.link_groups_in(script.get("caption") or "")
+    if extra:
+        out.append(f"render_md adds D46 link groups {sorted(extra)}")
     return out
