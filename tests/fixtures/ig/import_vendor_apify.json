@@ -1,0 +1,46 @@
+[
+ {
+  "id": "3470000000000000501_900",
+  "shortCode": "FIXTUREvn01",
+  "url": "https://www.instagram.com/reel/FIXTUREvn01/",
+  "type": "Video",
+  "productType": "clips",
+  "caption": "The reason your foundation separates by noon #skincare",
+  "ownerUsername": "fixture_vendor_creator",
+  "likesCount": 15400,
+  "commentsCount": 212,
+  "videoViewCount": 380000,
+  "videoPlayCount": 510000,
+  "timestamp": "2026-09-26T08:15:00.000Z",
+  "videoUrl": "https://scontent.cdninstagram.com/FIXTURE-vn01.mp4",
+  "displayUrl": "https://scontent.cdninstagram.com/FIXTURE-vn01.jpg"
+ },
+ {
+  "id": "3470000000000000501_900",
+  "shortCode": "FIXTUREvn01",
+  "url": "https://www.instagram.com/reel/FIXTUREvn01/",
+  "type": "Video",
+  "caption": "duplicate row in the same export"
+ },
+ {
+  "id": "3470000000000000502_900",
+  "shortCode": "FIXTUREvn02",
+  "url": "https://www.instagram.com/p/FIXTUREvn02/",
+  "type": "Sidecar",
+  "caption": "carousel, not a reel",
+  "likesCount": 800
+ },
+ {
+  "shortCode": "FIXTUREvn03",
+  "type": "Video",
+  "caption": "Me when the gym finally clears out #gym",
+  "likesCount": "1.2k",
+  "timestamp": "2026-09-27"
+ },
+ {
+  "id": "3470000000000000504_900",
+  "url": "https://www.tiktok.com/@x/video/1",
+  "type": "Video",
+  "caption": "not instagram"
+ }
+]

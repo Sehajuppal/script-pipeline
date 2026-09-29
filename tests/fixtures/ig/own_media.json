@@ -1,0 +1,142 @@
+{
+ "_comment": "GET /{ig-user-id}/media?fields=id,caption,media_type,media_product_type,permalink,timestamp,like_count,comments_count — newest first. Captions carry the pipeline tag #vsp-<first 8 hex of script_sha256>; '#vsp-SCRIPTJSON' is replaced by the selfcheck with the tag of a script.json it writes (a manifest without script_summary).",
+ "p1": {
+  "data": [
+   {
+    "id": "17900000000001009",
+    "caption": "Behind the scenes of today's shoot",
+    "media_type": "IMAGE",
+    "media_product_type": "FEED",
+    "permalink": "https://www.instagram.com/p/FIXTUREown09/",
+    "timestamp": "2026-09-28T00:00:00+0000",
+    "like_count": 0,
+    "comments_count": 0
+   },
+   {
+    "id": "17900000000001011",
+    "caption": "Trial: the 60-second desk reset #vsp-5e5e5e5e",
+    "media_type": "VIDEO",
+    "media_product_type": "REELS",
+    "permalink": "https://www.instagram.com/reel/FIXTUREown11/",
+    "timestamp": "2026-09-28T00:00:00+0000",
+    "like_count": 0,
+    "comments_count": 0
+   },
+   {
+    "id": "17900000000001008",
+    "caption": "Quick one today. No tag on this one.",
+    "media_type": "VIDEO",
+    "media_product_type": "REELS",
+    "permalink": "https://www.instagram.com/reel/FIXTUREown08/",
+    "timestamp": "2026-09-27T10:00:00+0000",
+    "like_count": 0,
+    "comments_count": 0
+   },
+   {
+    "id": "17900000000001007",
+    "caption": "Stop stacking cords behind your desk. #vsp-SCRIPTJSON #homeoffice",
+    "media_type": "VIDEO",
+    "media_product_type": "REELS",
+    "permalink": "https://www.instagram.com/reel/FIXTUREown07/",
+    "timestamp": "2026-09-26T10:00:00+0000",
+    "like_count": 0,
+    "comments_count": 0
+   },
+   {
+    "id": "17900000000001006",
+    "caption": "This lamp beats every smart bulb I own. #vsp-66666666",
+    "media_type": "VIDEO",
+    "media_product_type": "REELS",
+    "permalink": "https://www.instagram.com/reel/FIXTUREown06/",
+    "timestamp": "2026-09-25T12:00:00+0000",
+    "like_count": 0,
+    "comments_count": 0
+   },
+   {
+    "id": "17900000000001005",
+    "caption": "This organizer replaced three drawers. #vsp-55555555",
+    "media_type": "VIDEO",
+    "media_product_type": "REELS",
+    "permalink": "https://www.instagram.com/reel/FIXTUREown05/",
+    "timestamp": "2026-09-23T12:00:00+0000",
+    "like_count": 0,
+    "comments_count": 0
+   }
+  ],
+  "paging": {
+   "cursors": {
+    "after": "T1dOMQ"
+   },
+   "next": "https://graph.facebook.com/v26.0/17841400000000001/media?after=T1dOMQ"
+  }
+ },
+ "p2": {
+  "data": [
+   {
+    "id": "17900000000001010",
+    "caption": "Old test post #vsp-deadbeef",
+    "media_type": "VIDEO",
+    "media_product_type": "REELS",
+    "permalink": "https://www.instagram.com/reel/FIXTUREown10/",
+    "timestamp": "2026-09-21T12:00:00+0000",
+    "like_count": 0,
+    "comments_count": 0
+   },
+   {
+    "id": "17900000000001004",
+    "caption": "Nobody tells you this about vitamin C serums. #vsp-44444444",
+    "media_type": "VIDEO",
+    "media_product_type": "REELS",
+    "permalink": "https://www.instagram.com/reel/FIXTUREown04/",
+    "timestamp": "2026-09-18T12:00:00+0000",
+    "like_count": 0,
+    "comments_count": 0
+   },
+   {
+    "id": "17900000000001003",
+    "caption": "The reason your moisturizer pills. #vsp-33333333",
+    "media_type": "VIDEO",
+    "media_product_type": "REELS",
+    "permalink": "https://www.instagram.com/reel/FIXTUREown03/",
+    "timestamp": "2026-09-13T12:00:00+0000",
+    "like_count": 0,
+    "comments_count": 0
+   },
+   {
+    "id": "17900000000001002",
+    "caption": "Day 1 vs day 14 with this hair oil. #vsp-22222222",
+    "media_type": "VIDEO",
+    "media_product_type": "REELS",
+    "permalink": "https://www.instagram.com/reel/FIXTUREown02/",
+    "timestamp": "2026-09-08T12:00:00+0000",
+    "like_count": 0,
+    "comments_count": 0
+   },
+   {
+    "id": "17900000000001001",
+    "caption": "This is the after. #vsp-11111111",
+    "media_type": "VIDEO",
+    "media_product_type": "REELS",
+    "permalink": "https://www.instagram.com/reel/FIXTUREown01/",
+    "timestamp": "2026-08-29T12:00:00+0000",
+    "like_count": 0,
+    "comments_count": 0
+   },
+   {
+    "id": "17900000000001012",
+    "caption": "Deleted later #vsp-12121212",
+    "media_type": "VIDEO",
+    "media_product_type": "REELS",
+    "permalink": "https://www.instagram.com/reel/FIXTUREown12/",
+    "timestamp": "2026-08-20T12:00:00+0000",
+    "like_count": 0,
+    "comments_count": 0
+   }
+  ],
+  "paging": {
+   "cursors": {
+    "after": "T1dOMg"
+   }
+  }
+ }
+}

@@ -236,6 +236,123 @@ def build_ingest_fixture_db(path):
     return path
 
 
+FIXTURE_IG_USER = "17841400000000001"
+
+
+def _own_posted_at():
+    """{media_id: posted_at} of the own FIXTURE reels (own_media.json)."""
+    from vsp.ingest.util import parse_ts
+    om = load_ig_fixture("own_media.json")
+    return {it["id"]: parse_ts(it["timestamp"]) for page in ("p1", "p2")
+            for it in om[page]["data"]}
+
+
+def own_insights_response(media_id, now=None, table=None):
+    """/{media-id}/insights body for an own FIXTURE reel from
+    own_reels_metrics.json; with `now`, counts are scaled by age (a reel
+    keeps growing until ~7 days), rates stay constant."""
+    from vsp.ingest.util import parse_ts
+    table = table or load_ig_fixture("own_reels_metrics.json")
+    vals = table.get(str(media_id))
+    if vals is None:
+        return {"status": 400, "fixture": "insights.json", "key": "not_found"}
+    f = 1.0
+    if now is not None:
+        posted = _own_posted_at().get(str(media_id))
+        if posted is not None:
+            age_h = max(0.0, (parse_ts(now) - posted).total_seconds() / 3600.0)
+            f = min(1.0, 0.5 + 0.5 * age_h / 168.0)
+    data = []
+    for name, v in vals.items():
+        if name not in ("reels_skip_rate", "ig_reels_avg_watch_time"):
+            v = int(round(v * f))
+        item = {"name": name, "period": "lifetime",
+                "id": f"{media_id}/insights/{name}/lifetime"}
+        if name in ("reposts", "reels_skip_rate"):
+            item["total_value"] = {"value": v}
+        else:
+            item["values"] = [{"value": v}]
+        data.append(item)
+    return {"body": {"data": data}}
+
+
+def graph_routes(ig_user=FIXTURE_IG_USER, own_tag=None, now_fn=None, extra=None):
+    """FixtureTransport routes for the canned Graph API (tests/fixtures/ig):
+    identity, hashtag search (+ pagination, a transient 5xx retried, a
+    usage-header backoff), recently_searched_hashtags, Business Discovery
+    (an unsupported-field error retried, a personal account), own media (2
+    pages), media insights (own_reels_metrics.json; `now_fn()` scales counts
+    by age), account insights and the ASR endpoint. `own_tag` replaces the
+    '#vsp-SCRIPTJSON' placeholder in own captions; `extra` routes win."""
+    ig = str(ig_user)
+    tags = ("skincareroutine", "makeuphacks", "homeworkout")
+
+    def search(method, path, params):
+        q = params.get("q", "")
+        return {"fixture": "hashtag_search.json", "key": q if q in tags else "unknown"}
+
+    def own_page(key):
+        def fn(method, path, params):
+            page = load_ig_fixture("own_media.json")[key]
+            if own_tag:
+                for it in page["data"]:
+                    it["caption"] = it["caption"].replace("#vsp-SCRIPTJSON", "#" + own_tag)
+            return {"body": page}
+        return fn
+
+    def insights(method, path, params):
+        return own_insights_response(path.split("/")[0], now=now_fn() if now_fn else None)
+
+    usage = load_ig_fixture("errors.json")["usage_high_headers"]
+    return list(extra or []) + [
+        {"path": r"me", "params": {"fields": r"^id,username$"},
+         "response": {"status": 400, "fixture": "graph_identity.json",
+                      "key": "me_username_error"}},
+        {"path": r"me", "response": {"fixture": "graph_identity.json", "key": "me"}},
+        {"path": r"me/permissions",
+         "response": {"fixture": "graph_identity.json", "key": "permissions_ok"}},
+        {"path": r"debug_token",
+         "response": {"fixture": "graph_identity.json", "key": "debug_token"}},
+        {"path": ig, "params": {"fields": r"^id,username,name,followers_count,media_count$"},
+         "response": {"fixture": "graph_identity.json", "key": "ig_account"}},
+        {"path": ig, "params": {"fields": r"^business_discovery\.username\(fixture_glowlab\)"
+                                          r".*media_product_type"},
+         "response": {"status": 400, "fixture": "business_discovery.json",
+                      "key": "nonexisting_field"}},
+        {"path": ig, "params": {"fields": r"^business_discovery\.username\(fixture_glowlab\)"},
+         "response": {"fixture": "business_discovery.json", "key": "fixture_glowlab_p1"}},
+        {"path": ig, "params": {"fields": r"^business_discovery\.username\(fixture_personal\)"},
+         "response": {"status": 400, "fixture": "business_discovery.json",
+                      "key": "user_not_found"}},
+        {"path": r"ig_hashtag_search", "response": search},
+        {"path": r"17843000000000101/top_media", "params": {"after": None},
+         "response": {"fixture": "hashtag_media.json", "key": "skincareroutine_top_p1"}},
+        {"path": r"17843000000000101/top_media", "params": {"after": r"^QVFIUk1$"},
+         "response": {"fixture": "hashtag_media.json", "key": "skincareroutine_top_p2",
+                      "headers": usage}},
+        {"path": r"17843000000000101/top_media", "params": {"after": r"^QVFIUk2$"},
+         "response": {"fixture": "hashtag_media.json", "key": "skincareroutine_top_p3"}},
+        {"path": r"17843000000000101/recent_media",
+         "response": {"fixture": "hashtag_media.json", "key": "skincareroutine_recent_p1"}},
+        {"path": r"17843000000000102/top_media",
+         "response": [{"status": 500, "fixture": "errors.json", "key": "transient"},
+                      {"fixture": "hashtag_media.json", "key": "makeuphacks_top_p1"}]},
+        {"path": r"17843000000000103/top_media",
+         "response": {"fixture": "hashtag_media.json", "key": "homeworkout_top_p1"}},
+        {"path": ig + r"/recently_searched_hashtags",
+         "response": {"fixture": "recently_searched.json"}},
+        {"path": ig + r"/media", "params": {"after": None}, "response": own_page("p1")},
+        {"path": ig + r"/media", "params": {"after": r"^T1dOMQ$"}, "response": own_page("p2")},
+        {"path": ig + r"/insights", "params": {"metric": r"follows_and_unfollows"},
+         "response": {"fixture": "account_insights.json", "key": "follows"}},
+        {"path": ig + r"/insights",
+         "response": {"fixture": "account_insights.json", "key": "rest"}},
+        {"path": r"\d+/insights", "response": insights},
+        {"method": "POST", "path": r"v1/asr/transcribe", "params": {"sessionId": r"^vsp-"},
+         "response": {"fixture": "asr.json", "key": "ok"}},
+    ]
+
+
 _CREDENTIAL_ENV = ("VSP_IG_ACCESS_TOKEN", "VSP_IG_USER_ID", "VSP_IG_APP_SECRET",
                    "VSP_IG_APP_ID", "VSP_IG_GRAPH_VERSION", "VSP_ASR_API_KEY",
                    "VSP_LLM_API_KEY", "VSP_LLM_MODEL", "VSP_LLM_PROVIDER",

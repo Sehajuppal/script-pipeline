@@ -1,0 +1,167 @@
+{
+ "_comment": "GET /{hashtag-id}/top_media|recent_media?user_id=&fields=id,caption,media_type,media_url,permalink,timestamp,like_count,comments_count&limit=50. No username, no views; like_count omitted when hidden; media_url withheld for licensed audio. Permalinks contain FIXTURE.",
+ "skincareroutine_top_p1": {
+  "data": [
+   {
+    "id": "17900000000000101",
+    "media_type": "VIDEO",
+    "like_count": 5100,
+    "comments_count": 88,
+    "timestamp": "2026-09-27T09:00:00+0000",
+    "permalink": "https://www.instagram.com/reel/FIXTUREht01/",
+    "media_url": "https://scontent.cdninstagram.com/v/FIXTURE-ht01.mp4?_nc_sig=FIXTURE",
+    "caption": "POV: your serum finally stopped pilling ✨\n\n#skincareroutine #skincare"
+   },
+   {
+    "id": "17900000000000102",
+    "media_type": "IMAGE",
+    "like_count": 900,
+    "comments_count": 4,
+    "timestamp": "2026-09-27T08:00:00+0000",
+    "permalink": "https://www.instagram.com/p/FIXTUREht02/",
+    "caption": "Shelfie Sunday #skincareroutine"
+   },
+   {
+    "id": "17900000000000103",
+    "media_type": "VIDEO",
+    "comments_count": 51,
+    "timestamp": "2026-09-26T11:00:00+0000",
+    "permalink": "https://www.instagram.com/reel/FIXTUREht03/",
+    "caption": "Stop rubbing your face dry after cleansing 🙅‍♀️ @fixture_derm https://fixture.example/routine #skincaretips"
+   },
+   {
+    "id": "17900000000000104",
+    "media_type": "VIDEO",
+    "like_count": 88000,
+    "comments_count": 1200,
+    "timestamp": "2026-09-10T10:00:00+0000",
+    "permalink": "https://www.instagram.com/reel/FIXTUREht04/",
+    "caption": "Old but gold: the 3-step routine"
+   },
+   {
+    "id": "17900000000000105",
+    "media_type": "CAROUSEL_ALBUM",
+    "like_count": 300,
+    "comments_count": 2,
+    "timestamp": "2026-09-27T07:00:00+0000",
+    "permalink": "https://www.instagram.com/p/FIXTUREht05/",
+    "caption": "Swipe for the routine"
+   }
+  ],
+  "paging": {
+   "cursors": {
+    "after": "QVFIUk1"
+   },
+   "next": "https://graph.facebook.com/v26.0/17843000000000101/top_media?after=QVFIUk1&limit=50&access_token=FIXTURE"
+  }
+ },
+ "skincareroutine_top_p2": {
+  "data": [
+   {
+    "id": "17900000000000106",
+    "media_type": "VIDEO",
+    "like_count": 12000,
+    "comments_count": 340,
+    "timestamp": "2026-09-25T15:30:00+0000",
+    "permalink": "https://www.instagram.com/reel/FIXTUREht06/",
+    "caption": "Nobody talks about how long retinol purging actually lasts\nsave this for later #skincareroutine"
+   },
+   {
+    "id": "17900000000000101",
+    "media_type": "VIDEO",
+    "like_count": 5100,
+    "comments_count": 88,
+    "timestamp": "2026-09-27T09:00:00+0000",
+    "permalink": "https://www.instagram.com/reel/FIXTUREht01/",
+    "caption": "POV: your serum finally stopped pilling ✨\n\n#skincareroutine #skincare"
+   },
+   {
+    "id": "17900000000000107",
+    "media_type": "VIDEO",
+    "like_count": 700,
+    "comments_count": 9,
+    "timestamp": "2026-09-26T19:00:00+0000",
+    "permalink": "https://www.instagram.com/p/FIXTUREht07/",
+    "caption": "Feed video, not a reel"
+   }
+  ],
+  "paging": {
+   "cursors": {
+    "after": "QVFIUk2"
+   },
+   "next": "https://graph.facebook.com/v26.0/17843000000000101/top_media?after=QVFIUk2&limit=50&access_token=FIXTURE"
+  }
+ },
+ "skincareroutine_top_p3": {
+  "data": [
+   {
+    "id": "17900000000000108",
+    "media_type": "VIDEO",
+    "like_count": 100,
+    "comments_count": 1,
+    "timestamp": "2026-09-26T19:00:00+0000",
+    "permalink": "https://www.instagram.com/reel/FIXTUREht08/",
+    "caption": "Page 3 must never be fetched with top_pages=2"
+   }
+  ],
+  "paging": {
+   "cursors": {
+    "after": "QVFIUk3"
+   },
+   "next": "https://graph.facebook.com/v26.0/17843000000000101/top_media?after=QVFIUk3&limit=50&access_token=FIXTURE"
+  }
+ },
+ "makeuphacks_top_p1": {
+  "data": [
+   {
+    "id": "17900000000000201",
+    "media_type": "VIDEO",
+    "like_count": 23000,
+    "comments_count": 410,
+    "timestamp": "2026-09-27T21:00:00+0000",
+    "permalink": "https://www.instagram.com/reel/FIXTUREmk01/",
+    "caption": "Unpopular opinion: setting spray is a waste of money #makeuphacks"
+   },
+   {
+    "id": "17900000000000202",
+    "media_type": "VIDEO",
+    "like_count": 4100,
+    "comments_count": 77,
+    "timestamp": "2026-09-26T13:00:00+0000",
+    "permalink": "https://www.instagram.com/reel/FIXTUREmk02/",
+    "caption": "💥💥\n#makeuphacks #makeup #grwm"
+   }
+  ],
+  "paging": {
+   "cursors": {
+    "after": "TUtIMQ"
+   }
+  }
+ },
+ "homeworkout_top_p1": {
+  "data": [
+   {
+    "id": "17900000000000301",
+    "media_type": "VIDEO",
+    "like_count": 900,
+    "comments_count": 12,
+    "timestamp": "2026-09-27T20:00:00+0000",
+    "permalink": "https://www.instagram.com/reel/FIXTUREhw01/",
+    "caption": "Day 1 vs day 30 of 10-minute core workouts"
+   }
+  ]
+ },
+ "skincareroutine_recent_p1": {
+  "data": [
+   {
+    "id": "17900000000000109",
+    "media_type": "VIDEO",
+    "like_count": 45,
+    "comments_count": 3,
+    "timestamp": "2026-09-28T09:00:00+0000",
+    "permalink": "https://www.instagram.com/reel/FIXTUREht09/",
+    "caption": "Is double cleansing actually necessary? #skincareroutine"
+   }
+  ]
+ }
+}

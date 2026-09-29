@@ -157,7 +157,7 @@ _EMOJI = re.compile(
 _URL = re.compile(r"(?i)\b(?:https?://|www\.)\S+")
 # a hashtag has at least one non-digit ("#1 mistake" is not a tag); the
 # pipeline's own #vsp-<sha8> caption tag goes with its suffix
-_HASHTAG = re.compile(r"#(?!\d+\b)\w+(?:-[0-9a-fA-F]{8}\b)?")
+_HASHTAG = re.compile(r"#vsp-\w+|#(?!\d+\b)\w+(?:-[0-9a-fA-F]{8}\b)?")
 _MENTION = re.compile(r"(?<![\w.@])@[\w.]*\w")
 _EDGE = " \t-\u2013\u2014|\u2022\u00b7:;,/_*~=+^"
 

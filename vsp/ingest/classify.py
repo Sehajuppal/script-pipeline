@@ -65,7 +65,7 @@ CATEGORY_RULES = [
                          r"\bwrong\b|\bstop (?:buying|using|doing|making|rubbing|"
                          r"washing|putting)\b|\b\d+\s+(?:mistakes|things?)\s+.{0,30}"
                          r"(?:wrong|ruin|kill|mistake)|\bmistakes?\b.{0,30}\b(?:you|"
-                         r"everyone)\b|\bif you (?:struggle|suffer|have)\b|"
+                         r"everyone)\b|\b\d+\s+mistakes?\b|\bif you (?:struggle|suffer|have)\b|"
                          r"\bno more\b|\bfix(?:es|ed)? (?:your|my|the)\b"),
     ("tease-command", r"^\s*(?:don'?t|never|quit|stop)\b"),
     ("payoff-tease", r"\bwait (?:for it|till|until|for the end)\b|"
@@ -75,7 +75,7 @@ CATEGORY_RULES = [
                     r"\bnobody wants to hear\b|\bi'?m sorry but\b|\bchange my mind\b|"
                     r"\bis a scam\b|\bwaste of money\b"),
     ("loophole-tip", r"\bhack\b|\bhacks\b|\btrick\b|\bloophole\b|\bpro tip\b|"
-                     r"^\s*tip\s*[:#\d]"),
+                     r"^\s*tip\s*[:#\d]|\b\d+\s+(?:ways|tips|tricks)\b"),
     ("money-origin", r"\bhow i (?:made|make|earn|paid off|saved)\b|\bside hustle\b|"
                      r"\bpassive income\b|\$\d[\d,.]*k?\s*(?:a|per) (?:month|day|week|year)\b"),
     ("fomo", r"\bbefore it'?s gone\b|\bsold out\b|\blast chance\b|\brunning out\b|"
@@ -86,7 +86,8 @@ CATEGORY_RULES = [
     ("curiosity-gap", r"\bnobody (?:talks|is talking|tells|told|mentions|shows)\b|"
                       r"\bdon'?t want you to know\b|\bthe truth about\b|"
                       r"\byou won'?t believe\b|\bthe reason\b|\bhere'?s why\b|"
-                      r"\bwhat nobody\b|\bsecret\b|\bi almost\b|\bthe one thing\b"),
+                      r"\bwhat nobody\b|\bsecret\b|\bi almost\b|\bthe one thing\b|"
+                      r"\b\d+\s+(?:reasons?|things)\b"),
     ("relatable", r"\bme when\b|^\s*when (?:you|your)\b|\bthat moment when\b|"
                   r"\btell me you\b|\bwho else\b|\bis it just me\b|\bbe honest\b"),
     ("superlative", r"\bthe best\b|\bthe worst\b|\bbest \w+ ever\b|\b#1\b|"
