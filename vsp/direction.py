@@ -445,10 +445,43 @@ def _pacing(vibe, items, duration):
         pi = min(pi, 3.0)
     elif idx == 2:
         pi = min(pi, 6.0)
+    avg, max_static = _cadence_fit(vibe, [float(x) for x in p["avg_shot_s"]])
     return {"target_wpm": [lo, hi],
-            "avg_shot_s": [float(x) for x in p["avg_shot_s"]],
+            "avg_shot_s": avg,
             "cuts_per_10s": [int(x) for x in p["cuts_per_10s"]],
-            "max_static_s": MAX_STATIC_S, "pattern_interrupt_s": pi}
+            "max_static_s": max_static, "pattern_interrupt_s": pi}
+
+
+def _shot_cadence(vibe):
+    """The shot plan's own cadence for the vibe (vsp/data/shot_library.json
+    SHOT_RULES.cadence: avg_shot_s band, max_static_s), or {} when the shot
+    library is unavailable."""
+    try:
+        from vsp import shotplan as _SP
+        cad = (_SP.data().get("SHOT_RULES") or {}).get("cadence") or {}
+    except Exception:  # noqa: BLE001 — direction still works standalone
+        return {}
+    c = cad.get(vibe)
+    return c if isinstance(c, dict) else {}
+
+
+def _cadence_fit(vibe, avg):
+    """(avg_shot_s, max_static_s) the shot plan actually cuts to: the vibe
+    profile's average-shot band clipped to the shot library's cadence band
+    for that vibe (hype-energy 1.2-2.0 -> 1.25-2.0), and the vibe's own
+    static-shot cap (hype-energy 2.0 s, playful 2.5 s, cinematic 2.5 s,
+    clean/story/reveal 3.0 s), never above D48's 3.5 s. The direction never
+    promises a cadence the shot list does not cut to (v2.1 R21)."""
+    cad = _shot_cadence(vibe)
+    band = cad.get("avg_shot_s")
+    if (isinstance(band, (list, tuple)) and len(band) == 2
+            and all(isinstance(x, (int, float)) for x in band)):
+        a0, a1 = max(avg[0], float(band[0])), min(avg[1], float(band[1]))
+        avg = [a0, a1] if a0 <= a1 else [float(band[0]), float(band[1])]
+    ms = cad.get("max_static_s")
+    max_static = (min(MAX_STATIC_S, float(ms))
+                  if isinstance(ms, (int, float)) and ms > 0 else MAX_STATIC_S)
+    return [round(a, 2) for a in avg], max_static
 
 
 # --------------------------------------------------------- energy curve

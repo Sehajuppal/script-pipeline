@@ -638,7 +638,7 @@ _AFTER_RX = re.compile(r"\bafter\b|\bbefore\b|\bday 1 vs day\b|\blater\b|\b\d+ d
                        r"\bday \d+\b|\bresult\b", re.I)
 _DAYN_RX = re.compile(r"\bday (\d+)\b|\b(\d+) days\b", re.I)
 _ALT_RX = re.compile(r"\bvs\.?\b|\bor\b|\bside by side\b|\btwo\b|\bwhich wins\b", re.I)
-_MUTED_TAIL = re.compile(r"\s*Works muted \(85% watch sound-off\)\.?\s*$")
+_MUTED_TAIL = re.compile(r"\s*Works muted(?: too)?(?: \([^()]*\))?\.?\s*$")
 
 
 def variants(script, ctx=None, seed=None, maker=None):
@@ -837,6 +837,192 @@ def _card_has_content(ov):
     return any(len(w) >= 3 and w not in _STOP for w in toks(ov))
 
 
+# ------------------------------------------------------------ cards (v2.1)
+# VARIANT_POLICY.diversity.unique_fields lists on_screen: every opening of a
+# set gets its own frame-0 card. The maker's card names the product noun, so
+# openings of one product mostly share it ("ALARM LAMP" x3 in the v2.1
+# integration run); an opening whose card repeats takes the next clean card
+# of its OWN line instead (D144: a contiguous <=3-word phrase of the hook).
+_CARD_WORD = re.compile(r"[A-Za-z0-9$][A-Za-z0-9'\u2019.\-]*")
+_IDIOM_PREP = frozenset(("in", "up", "at", "on"))
+_CARD_BREAK = re.compile(r"[,:;!?()\[\]\"\u201c\u201d|\u2014\u2013\u2192]|\s-\s|\.(?:\s|$)")
+_CARD_SETS = {}
+
+
+def _card_sets(maker):
+    """(function words, starters, weak words, time words) — the maker's own
+    overlay vocabulary (overlay_truncate), so alternates read like its cards."""
+    key = id(maker)
+    if key not in _CARD_SETS:
+        fn = set(getattr(maker, "_OV_FUNC", ())) | set(_STOP) | {
+            "here's", "here\u2019s", "what's", "it's", "that's", "there's"}
+        _CARD_SETS[key] = (frozenset(fn),
+                           frozenset(getattr(maker, "_OV_STARTERS", ()) or
+                                     ("all", "any", "each", "every", "most", "no", "one", "zero")),
+                           frozenset(getattr(maker, "_OV_WEAK", ())),
+                           frozenset(getattr(maker, "_OV_TIME", ()) or
+                                     ("day", "days", "week", "weeks", "night", "nights")))
+    return _CARD_SETS[key]
+
+
+def card_key(card, maker=None):
+    """Content stems of a card (function words and starters dropped)."""
+    fn, st, _w, _t = _card_sets(maker or _maker())
+    return frozenset(_stem(t) for t in toks(card) if t not in fn and t not in st)
+
+
+def cards_clash(a, b, payload=frozenset()):
+    """Two cards are one card when they differ only by product-name words
+    ("ALARM LAMP" / "SUNRISE ALARM LAMPS", "SUGAR" / "NO SUGAR"); "ALARM
+    LAMP FLAW" and "ALARM LAMPS FAIL" are cards of their own."""
+    if not a or not b:
+        return False
+    return (a - b) <= payload and (b - a) <= payload
+
+
+def card_options(verbal, default, info, maker, kw=None, ai=False):
+    """[default] + the other clean frame-0 cards of this opening, best first:
+    contiguous 1-3-word phrases of the line (D144) inside one clause, never
+    opening or closing on a function word, never a price, never cutting a
+    product name in two, naming something (a content word, or a number with
+    its unit: "7 DAYS"). Ranked: carries the discovery keyword, ends on the
+    product's head noun or a counted unit, names a product word, content
+    words, 2 words before 3 before 1, earlier first. A label-pair default
+    ("BEFORE | AFTER") keeps its split-screen frame (D25/D135) and has no
+    alternates."""
+    out = [default] if default else []
+    if "|" in (default or "") or maker is None:
+        return out
+    fn, st, weak, tim = _card_sets(maker)
+    payload0 = set(info.get("payload") or ())
+    dw = toks(default or "")
+    weak_default = bool(dw) and ":" not in (default or "") and (
+        not any(w not in fn and w not in st and w not in weak for w in dw)
+        or (len(dw) == 1 and _stem(dw[0]) not in payload0))
+    if weak_default:
+        out = []       # "WHAT" / "WIN" never ship as an alternate's card
+    # the maker's fragment verbs ("KITCHEN FINDS WORK", "7 DAYS SHOWED"); a
+    # problem verb phrase still closes a card ("EARBUDS KEEP FAILING")
+    bad_end = frozenset(getattr(maker, "_OV_TRAIL_VERB", ())) - {
+        "failing", "breaks", "ruins", "keep", "keeps"}
+    text = " ".join(str(verbal or "").split())
+    prompt = info.get("prompt") or ""
+    payload, head = set(info.get("payload") or ()), info.get("head") or ""
+    segs, cur, sent, last = [], [], 0, 0
+    for m in _CARD_WORD.finditer(text):
+        gap = text[last:m.start()]
+        raw = m.group(0)
+        last = m.end()
+        if cur and _CARD_BREAK.search(gap):
+            segs.append((sent, cur))
+            cur = []
+            if re.search(r"[.!?]", gap):
+                sent += 1
+        w = raw.rstrip(".'\u2019-")
+        if not w:
+            continue
+        low = w.lower()
+        cur.append({"w": w, "low": low, "stem": _stem(low),
+                    "num": bool(re.match(r"^\d+(?:\.\d+)?$", low)) or low in _NUMWORDS,
+                    "price": "$" in raw or "$" in gap[-2:]})
+        if raw.endswith(".") and not re.search(r"\d\.\d", raw):
+            segs.append((sent, cur))
+            cur, sent = [], sent + 1
+    if cur:
+        segs.append((sent, cur))
+    ranked, seen = [], {(default or "").upper()}
+    for si, seg in segs:
+        for i in range(len(seg)):
+            for n in (1, 2, 3):
+                win = seg[i:i + n]
+                if len(win) < n:
+                    break
+                a, z = win[0], win[-1]
+                end = i + n == len(seg)
+                # idioms a card may open or close on: "IN ACTION", "UP
+                # CLOSE", "AT WORK"; "7 DAYS IN"
+                start_ok = a["low"] not in fn or (
+                    n == 2 and end and a["low"] in _IDIOM_PREP and z["low"] not in fn)
+                end_ok = (z["low"] not in fn and z["low"] not in st) or (
+                    end and z["low"] == "in" and n >= 2 and win[-2]["low"] in tim)
+                if not start_ok or not end_ok or any(t["price"] for t in win) or \
+                        z["low"] in bad_end:
+                    continue
+                content = [t for t in win if t["low"] not in weak and t["low"] not in fn
+                           and t["low"] not in st and t["low"] not in tim and not t["num"]]
+                counted = any(t["num"] for t in win) and any(t["low"] in tim for t in win)
+                if not content and not counted:
+                    continue
+                if n == 1 and (len(a["low"]) < 4 or a["stem"] not in payload):
+                    continue       # a one-word alternate names the product ("EXPECT" no)
+                if not end and not (z["stem"] in payload or z["low"] in tim or z["num"]):
+                    continue       # mid-clause cards end on a noun: "EVERY KITCHEN NEEDS" no
+                nxt = seg[i + n] if i + n < len(seg) else None
+                prv = seg[i - 1] if i > 0 else None
+
+                def _name(t):
+                    return t["stem"] in payload or (
+                        len(t["low"]) == 1 and t["low"].isalpha() and t["low"] not in "ai")
+                if (nxt is not None and _name(z) and _name(nxt)) or \
+                        (prv is not None and _name(a) and _name(prv)):
+                    continue       # "LED SUNRISE ALARM" / "KEPT THE VITAMIN" cut the name
+                if (prv is not None and prv["num"] and a["low"] in tim) or \
+                        (nxt is not None and z["num"] and nxt["low"] in tim):
+                    continue       # "DAYS LATER" / "LAST 21" cut a count from its unit
+                card = " ".join(t["w"] for t in win).upper()
+                if card in seen:
+                    continue
+                seen.add(card)
+                ok, _why = L.overlay_is_clean(card, text)
+                if not ok or not _card_has_content(card) or screen_text(card, prompt, ai):
+                    continue
+                has_kw = bool(kw) and L.keyword_in(card, kw)
+                ends = (bool(head) and z["stem"] == head) or (counted and z["low"] in tim)
+                focus = any(t["stem"] in payload for t in win)
+                ranked.append(((has_kw, ends, focus, len(content), {2: 2, 3: 1, 1: 0}[n],
+                                -si, -i), card))
+    ranked.sort(key=lambda x: x[0], reverse=True)
+    return out + [c for _k, c in ranked]
+
+
+# near-duplicate wording (VARIANT_POLICY.diversity.max_trigram_jaccard): the
+# content-trigram measure (trigrams) misses shared function-word codas
+# ("... Here's the after." on two openings); this second measure keeps
+# function words and drops only the words every opening shares by design
+# (the product, keyword and prompt nouns). A pair must pass both.
+_PROMPT_GENERIC = frozenset(L.keyword_tokens(
+    " ".join(sorted(_STOP)) + " day days every daily week weeks why how stopped quit "
+    "deleted ditched dropped gave up tried did unfollowed buying make me script about "
+    "video reel under best new set stopping things thing just"))
+
+
+def _fw_drop(info, kw):
+    drop = set(L.keyword_tokens(kw or ""))
+    drop |= {t for t in L.keyword_tokens(info.get("prompt") or "")
+             if len(t) >= 3 and t not in L.KEYWORD_STOP and t not in _PROMPT_GENERIC}
+    drop |= set(L.keyword_tokens(" ".join(info.get("payload") or ())))
+    return drop - set(L.KEYWORD_STOP)
+
+
+def trigrams_fw(text, drop=()):
+    t = [x for x in L.keyword_tokens(text) if x not in drop]
+    if len(t) < 3:
+        return {tuple(t)} if t else set()
+    return {tuple(t[i:i + 3]) for i in range(len(t) - 2)}
+
+
+def _pair_jaccard(c, x):
+    return max(jaccard(c["tri"], x["tri"]), jaccard(c["tri_fw"], x["tri_fw"]))
+
+
+def _discovery_kw(ctx):
+    try:
+        from vsp import discovery as _D
+        return _D.primary_keyword(ctx)
+    except Exception:  # noqa: BLE001 — discovery is optional here
+        return None
+
+
 def _load_priors():
     try:
         from vsp import priors as P
@@ -898,7 +1084,14 @@ def _variants(script, ctx, seed, maker):
     # added per MMR round (score_hook is linear in both)
     w = d["_feat_w"]
     bsum = d["_bonus_sum"]
+    dkw = _discovery_kw(ctx)
+    fw_drop = frozenset(_fw_drop(info, dkw))
+    info_k = (tuple(sorted(info.get("payload") or ())), info.get("head"), info.get("prompt"))
     for c in cands:
+        c["cards"] = [(cd, card_key(cd, maker)) for cd in _memo(
+            _CARDS_MEMO, (c["verbal"], c["overlay"], dkw, ai, info_k, id(maker)),
+            lambda: tuple(card_options(c["verbal"], c["overlay"], info, maker, dkw, ai)))]
+        c["tri_fw"] = trigrams_fw(c["verbal"], fw_drop)
         _s, feats, _r = score_hook(c["verbal"], c["overlay"], None, script, ctx,
                                    archetype=c["archetype"], others=(), info=info)
         raw = 0.0
@@ -915,7 +1108,11 @@ def _variants(script, ctx, seed, maker):
         c["f3"] = first3(c["verbal"])
     # D35/D5: an opening whose loop the payoff does not pay never ships
     cands = [c for c in cands if c["paid"] and c["vts"]]
-    chosen = _select(A, cands, info, ctx)
+    chosen = []
+    for mode in (0, 1, 2):
+        chosen = _select(A, cands, info, ctx, fw_drop, maker, mode)
+        if len(chosen) >= MIN_VARIANTS:
+            break
     if len(chosen) < MIN_VARIANTS:
         return None
     out = []
@@ -941,28 +1138,48 @@ def _variants(script, ctx, seed, maker):
 # selection levels, tried in order for every slot: (new archetype only, max
 # trigram Jaccard, cluster cap, alternate floor). 0 = VARIANT_POLICY (a new
 # archetype, Jaccard <= 0.2, <= 2 per cluster) at HOOK-08's alternate floor
-# (score >= 0.50); 1 = an archetype may repeat while >= 3 stay distinct
-# (§1.2); 2 = near-miss wording / weaker lines, only to reach 4 openings
-# (VARIANT_POLICY: 3 alternates)
+# (score >= 0.50); 1 = a new archetype at 0.40 with no cluster cap, only
+# while the set has < 3 archetypes; 2 = an archetype may repeat while >= 3
+# stay distinct (§1.2); 3 = weaker lines, only to reach 4 openings
+# (VARIANT_POLICY: 3 alternates). Every level keeps Jaccard <= 0.2.
 ALT_MIN_SCORE = 0.50
+# v2.1: level 2 relaxes the score floor and the cluster cap only — a
+# near-duplicate (Jaccard > 0.2 on either measure) never ships, not even to
+# reach a 4th opening (the old level 2 allowed 1/3: "Day 30 of reading 10
+# pages every day." next to "30 days of reading 10 pages every day.")
+# v2.1: level 1 = a NEW archetype at a relaxed floor, tried before any
+# repeat while the set has < 3 archetypes (VARIANT_POLICY lists archetype
+# among the unique fields; a 3-opening set with 2 archetypes tested one
+# idea twice)
+ALT_NEW_MIN = 0.40
 _LEVELS = ((True, MAX_JACCARD, True, ALT_MIN_SCORE),
+           (True, MAX_JACCARD, False, ALT_NEW_MIN),
            (False, MAX_JACCARD, True, ALT_MIN_SCORE),
-           (False, 1.0 / 3 + 1e-9, False, 0.0))
+           (False, MAX_JACCARD, False, 0.0))
+_CARDS_MEMO = {}
 
 
-def _select(A, cands, info, ctx):
+def _select(A, cands, info, ctx, fw_drop=frozenset(), maker=None, mode=0):
     """Maximal marginal relevance over (candidate, visual type): λ·score +
-    (1-λ)·(1 - max trigram Jaccard) + a bonus for a new archetype and a new
-    card. Always distinct visual types and first three words (§1.2); the
-    archetype's own pairings (hooks-deep-dive §2.5) before other frames;
-    learned priors break ties only (n >= 3)."""
+    (1-λ)·(1 - max trigram Jaccard) + a bonus for a new archetype and for
+    the line's own maker card. Always distinct visual types, first three
+    words and frame-0 cards (§1.2, VARIANT_POLICY unique on_screen — a
+    repeated card takes the line's next clean card, see card_options);
+    pairwise Jaccard <= 0.2 on both measures; the archetype's own pairings
+    (hooks-deep-dive §2.5) before other frames; learned priors break ties
+    only (n >= 3). mode 1/2 = the fallbacks when the strict pass finds < 3
+    openings: 1 = cards need only differ as text; 2 = also the v2.1-
+    integration Jaccard (content trigrams <= 1/3 at the last level), so a
+    script never loses the variants it had before the strict pass."""
     d = data()
     w_vt, w_nov, bsum = d["_feat_w"]["visual_type_strength"], d["_feat_w"]["novelty"], \
         d["_bonus_sum"]
     drop = set(info["kw"])
     sel = [{"verbal": A["verbal"], "archetype": A["archetype"], "vt": A["visual_type"],
             "overlay": A["overlay"], "tri": trigrams(A["verbal"], drop),
-            "f3": first3(A["verbal"])}]
+            "tri_fw": trigrams_fw(A["verbal"], fw_drop),
+            "ck": card_key(A["overlay"], maker), "f3": first3(A["verbal"])}]
+    pay = frozenset(info.get("payload") or ())
     used = set()
     niche = ctx.get("niche")
     pri = _load_priors()
@@ -970,20 +1187,27 @@ def _select(A, cands, info, ctx):
         arcs = [x["archetype"] for x in sel]
         f3s = {x["f3"] for x in sel}
         vts = {x["vt"] for x in sel}
-        ovs = {x["overlay"] for x in sel}
+        cks = [x["ck"] for x in sel]
+        ovn = {L.norm(x["overlay"]) for x in sel}
         clusters = {}
         for x in sel:
             cl = cluster_of(x["archetype"])
             clusters[cl] = clusters.get(cl, 0) + 1
         best = None
         for lvl, (new_only, max_jac, cap, floor) in enumerate(_LEVELS):
-            if lvl == 2 and len(sel) >= 4:
-                break          # near-miss wording only to reach 4 openings
+            if lvl == 1 and len(set(arcs)) >= 3:
+                continue       # the relaxed new-archetype pass fills archetypes only
+            if lvl == 3 and len(sel) >= 4:
+                break          # weaker lines only to reach 4 openings
             best_key = None
             for c in cands:
                 if c["idx"] in used or c["f3"] in f3s:
                     continue
-                jac = max(jaccard(c["tri"], x["tri"]) for x in sel)
+                if mode == 2 and lvl == 3:
+                    jac = max(jaccard(c["tri"], x["tri"]) for x in sel)
+                    max_jac = 1.0 / 3 + 1e-9
+                else:
+                    jac = max(_pair_jaccard(c, x) for x in sel)
                 new_arc = c["archetype"] not in arcs
                 if jac > max_jac or (new_only and not new_arc):
                     continue
@@ -991,6 +1215,17 @@ def _select(A, cands, info, ctx):
                     continue
                 if not new_arc and len(set(arcs)) < 3 and len(sel) >= 3:
                     continue   # a 4th+ opening keeps >= 3 distinct archetypes
+                if mode == 0:
+                    card = next(((cd, ck) for cd, ck in c["cards"]
+                                 if not any(cards_clash(ck, o, pay) for o in cks)), None)
+                else:
+                    opts = c["cards"] if mode == 1 else (
+                        c["cards"] + [(c["overlay"], card_key(c["overlay"], maker))])
+                    card = next(((cd, ck) for cd, ck in opts
+                                 if L.norm(cd) not in ovn), None)
+                if card is None:
+                    continue   # VARIANT_POLICY: every opening its own card
+                own_card = card[0] == c["overlay"]
                 free = [v for v in c["vts"] if v not in vts]
                 paired = [v for v in free if v in c["pair"]]
                 for vt in (paired or free):
@@ -1002,11 +1237,11 @@ def _select(A, cands, info, ctx):
                     if score < floor:
                         continue
                     mmr = MMR_LAMBDA * score + (1 - MMR_LAMBDA) * (1.0 - jac) + \
-                        0.05 * new_arc + 0.02 * (c["overlay"] not in ovs)
+                        0.05 * new_arc + 0.02 * own_card
                     pa, pv = _prior_means(pri, niche, c["archetype"], vt)
                     key = (round(mmr, 2), round(pa, 4), round(pv, 4), -c["idx"], vt)
                     if best_key is None or key > best_key:
-                        best, best_key = dict(c, vt=vt), key
+                        best, best_key = dict(c, vt=vt, overlay=card[0], ck=card[1]), key
             if best is not None:
                 break
         if best is None:

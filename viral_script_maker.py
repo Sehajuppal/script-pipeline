@@ -1816,7 +1816,9 @@ keeps failing revealed reveals asks ask think decides misjudged ruins ruin
 breaks break held showed shows works work passes fixes fix missing winning
 go getting""".split())
 _OV_TRAIL = frozenset("""wrong alone anyway again honestly instead yet already
-too first today now daily""".split())
+too first today now daily actually really finally still truly""".split())
+# (v2.1: trailing adverbs joined — "POV: your silk pillowcase actually works"
+# carded "POV: PILLOWCASE ACTUALLY"; now "POV: SILK PILLOWCASE")
 # WS-HOOKS: verbs that read as a fragment at the end of a card ("MILK
 # FROTHER HELD", "KITCHEN FINDS WORK") drop when a noun is left
 _OV_TRAIL_VERB = frozenset("""held showed shows works work passes ruins breaks
@@ -1865,7 +1867,10 @@ def overlay_truncate(s, max_words=3):
         # "POV: MILK FROTHER"), not the first two words ("POV: YOUR DESK")
         rest = re.sub(r"^\s*pov\s*:\s*", "", body, flags=re.I)
         sub = overlay_truncate(rest, max_words) if max_words > 1 and rest else ""
-        sub = " ".join(sub.split()[-(max_words - 1):]) if sub and "|" not in sub else ""
+        sw = sub.split()[-(max_words - 1):] if sub and "|" not in sub else []
+        while len(sw) > 1 and len(sw[0]) == 1 and sw[0].isalpha():
+            sw = sw[1:]        # v2.1: "POV: C SERUM" -> "POV: SERUM"
+        sub = " ".join(sw)
         return ("POV: " + sub).strip().upper() if sub else "POV"
     body = _OV_LABEL_PREFIX.sub("", body) or body
     for m in _OV_WORD.finditer(body):
@@ -2314,6 +2319,11 @@ CHALLENGE_ALT_HOOKS = [
  ("challenge", "One creator, {span} of {noun}.", ("practice",)),
  ("day-counter", "Day {span_n} without {noun}.", ("abstinence",)),
  ("day-counter", "Day {span_n} of no {noun}.", ("abstinence",)),
+ # v2.1 D161/DISC-01: the day-count spoken with the discovery keyword when
+ # it is a noun phrase ("Day 21 of the no sugar challenge.", "Day 14 of the
+ # Instagram detox.") — {kw_noun} is None otherwise and the template drops
+ ("day-counter", "Day {span_n} of the {kw_noun}.", ("abstinence",)),
+ ("day-counter", "{Kw_noun}, day {span_n}: what changed?", ("abstinence",)),
  ("question", "Can you really quit {noun} for {span}?", ("abstinence",)),
  ("question", "Quit {noun} for {span}?", ("abstinence",)),
  ("question", "Could you go {span} without {noun}?", ("abstinence",)),
@@ -2746,6 +2756,8 @@ def _hook_template_ok(ctx, fam, line, req, ai, payoff=None, variant=False):
         return None          # D26
     if "proof" in slots and not ctx.get("proof"):
         return None          # D136: no invented receipts
+    if slots & {"kw_noun", "Kw_noun"} and not _challenge_kw_noun(ctx):
+        return None          # v2.1 D161: no noun-phrase keyword to speak
     if fmt in ("demo", "review") and "industry" in low:
         return None          # D35: a secret the demo/review payoff never reveals
     payoff = payoff or _hook_payoff(ctx)
@@ -2917,6 +2929,37 @@ def _hook_nouns(ctx):
             out.append((pv, noun))
     return out
 
+def _hook_keyword_noun(ctx):
+    """v2.1 D161/DISC-01: the discovery primary keyword as the hook noun when
+    it is a longer form of the product's compound hook noun with the same
+    head ("sunrise alarm lamp" for "alarm lamp", "mini projector" for
+    "projector"), 2-3 words, every word taken from the product name — so the
+    spoken hook and its frame-0 card can carry the search phrase by 3.0 s.
+    A template it does not fit (8-word budget, screens, D144 card) falls
+    back to the compound level exactly as before. None when not a product
+    or when the keyword adds nothing."""
+    if ctx.get("concept", "product") != "product" or not ctx.get("product"):
+        return None
+    kw = _primary_kw(ctx)
+    if not kw:
+        return None
+    kt = kw.lower().split()
+    nouns = _hook_nouns(ctx)
+    if not nouns or not 2 <= len(kt) <= 3:
+        return None
+    comp = str(nouns[0][1] or "").lower().split()
+    if not comp or kt == comp or singular(kt[-1]) != singular(comp[-1]):
+        return None
+    words = {singular(w) for w in re.findall(r"[a-z0-9]+", str(ctx.get("product")).lower())}
+    if not all(singular(w) in words for w in kt):
+        return None                     # never a word the prompt did not use
+    d = _disc()
+    try:
+        return d.display_keyword(kw, ctx) if d is not None else kw
+    except Exception:
+        return kw
+
+
 def _hook_slots(ctx, pv=None, noun=None):
     noun = noun or ctx["category"]
     # WS-HOOKS: an acronym the prompt writes in capitals keeps them
@@ -2984,7 +3027,26 @@ def _hook_slots(ctx, pv=None, noun=None):
         "domain": domain, "Domain": _cap1(domain),
         # D13/D145 (GEN-B): advice topic slots
         "topic": topic, "Topic": _cap1(topic),
+        # v2.1 D161: the challenge's discovery keyword as a noun phrase
+        "kw_noun": _challenge_kw_noun(ctx),
+        "Kw_noun": _cap1(_challenge_kw_noun(ctx)),
     }
+
+
+def _challenge_kw_noun(ctx):
+    """v2.1 D161/DISC-01: a challenge's discovery keyword when it reads as a
+    noun phrase ("no sugar challenge", "Instagram detox"), display-cased;
+    None for verb phrases ("quit buying coffee") and every other concept."""
+    if ctx.get("concept") != "challenge":
+        return None
+    kw = _primary_kw(ctx)
+    if not kw or not re.search(r"\b(?:challenge|detox)$", kw.lower()):
+        return None
+    d = _disc()
+    try:
+        return d.display_keyword(kw, ctx) if d is not None else kw
+    except Exception:
+        return kw
 
 def _render_hook_line(ctx, rng, line, auth, pv=None, noun=None):
     # pipeline v2 crash fix: the old double .format() re-parsed rendered text,
@@ -3035,7 +3097,12 @@ def _hook_levels(ctx):
     "reading 10 pages") so a long streak still fits 8 words."""
     concept = ctx.get("concept", "product")
     if concept == "product":
-        return [(ctx, pv, noun) for pv, noun in _hook_nouns(ctx)]
+        levels = [(ctx, pv, noun) for pv, noun in _hook_nouns(ctx)]
+        kwn = _hook_keyword_noun(ctx)
+        if kwn and levels:
+            # v2.1 D161/DISC-01: the search phrase first, the compound after
+            levels.insert(0, (ctx, levels[0][1], kwn))
+        return levels
     out = [(ctx, None, None)]
     if concept == "challenge":
         cn = str(ctx.get("challenge_noun") or "")
@@ -3158,6 +3225,9 @@ def _hook_candidates(ctx, pool, ai, lex, fam_pref):
     focus = _hook_focus(ctx)
     payoff = _hook_payoff(ctx)
     levels = _hook_levels(ctx)
+    # v2.1 D161/DISC-01: does the line speak the discovery keyword (exact or
+    # every content word)? read by pick_hook's draw among equals
+    kw = _primary_kw(ctx) if lex is not None and hasattr(lex, "keyword_in") else None
     out, seen = [], set()
     for fam, line, req in pool:
         arc = _hook_template_ok(ctx, fam, line, req, ai, payoff)
@@ -3192,6 +3262,7 @@ def _hook_candidates(ctx, pool, ai, lex, fam_pref):
             # by _hook_strength once every candidate is known
             out.append({"family": fam, "line": r, "overlay": ov,
                         "archetype": arc, "template": line,
+                        "kw": bool(kw) and lex.keyword_in(r, kw, loose=True),
                         "score": (anchored, ov_focus, (contract, 0), LEARNED_NEUTRAL,
                                   fam == fam_pref)})
             break
@@ -3250,6 +3321,16 @@ def pick_hook(ctx, rng):
         label = str(ctx.get("routine_label") or "")
         if re.search(r"\broutine\b", label, re.I) or not label:
             pin = ROUTINE_HOOK_PINNED_AI if ai else ROUTINE_HOOK_PINNED
+            # v2.1 D161/DISC-01: a 3-word "<time> <word> routine" label is
+            # spoken whole ("Day 14 of my 5AM morning routine.") so the pin
+            # carries the discovery keyword; same day-count contract (D47)
+            core = re.sub(r"(?i)^\s*my\s+", "", label).split()
+            tm = str(ctx.get("routine_time") or "")
+            if (tm and len(core) == 3 and core[-1].lower() == "routine"
+                    and any(w.lower() == tm.lower() for w in core)
+                    and not re.search(r"[{}]", label)):
+                lab = " ".join(tm if w.lower() == tm.lower() else w for w in core)
+                pin = pin.replace("{time} routine", lab)
             line = _render_hook_line(ctx, hrng, pin, auth)
         else:
             lab = re.sub(r"\bmy\b", "the", label, flags=re.I) if ai else label
@@ -3316,6 +3397,10 @@ def pick_hook(ctx, rng):
         # hrng draw, the niche family weighted HOOK_PREF_WEIGHT
         top = max(c["score"][:4] for c in cands)
         best = [c for c in cands if c["score"][:4] == top]
+        # v2.1 D161/DISC-01: among those equals, a line that speaks the
+        # discovery keyword by 3.0 s (search indexes speech) — quality,
+        # strength and the learned prior still rank first; same single draw
+        best = [c for c in best if c.get("kw")] or best
         wts = [HOOK_PREF_WEIGHT if c["score"][4] else 1 for c in best]
         pick = best[-1]
         r = hrng.randrange(sum(wts))
@@ -3481,7 +3566,7 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
             if ctx.get("concept") == "routine" else
             "Frame 0 MID-ACTION: creator mid-gesture, text overlay already up. "))
     beats.append({"t": "0.0–0.5s", "type": "VISUAL TRIGGER",
-        "direction": vis + "No logos, no static intro. Works muted (85% watch sound-off).",
+        "direction": vis + "No logos, no static intro. Works muted too (most plays are sound-on; the card carries the hook for the rest).",
         "on_screen": overlay_truncate(hookline.split('.')[0])})
     beats.append({"t": "0.5–3.0s", "type": "VERBAL HOOK + LOCK",
         "dialogue": hookline,
@@ -5172,7 +5257,7 @@ def research_notes(ctx, presenter, fmt, fam):
       "3-layer hook stack: visual 0–0.5s / verbal ≤8 words 0.5–1.5s / lock by 3.0s (playbook §1).",
       "Payoff contract: specific reward named in hook, delivered ~78% through — never frontloaded (playbook §3).",
       "Re-hooks every beat: open loops keep retention past the 3–5s mark (Robins analysis).",
-      "85% watch muted → frame-0 visual + ≤3-word on-screen text (playbook §4).",
+      "Sound-on by default (Meta: >80% of Reels plays are sound-on) — voice + music carry the hook; frame-0 visual + ≤3-word on-screen text keep it readable muted (playbook §4; vibe-tone-music §2.3).",
       "Educational beats before evaluative pitch (F103, persona dossier: educational > evaluative for VIs).",
       "Pacing by objective: unhurried for trust beats, brisk 160–180 wpm for CTA (F86/F138/F139).",
       "No scripted laughs/sighs — volitional vocalizations read inauthentic (F142).",

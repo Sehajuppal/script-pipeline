@@ -1140,6 +1140,11 @@ def plan(script, shots, ctx=None):
                            f"fits {dur:.1f} s and avoids repeating a shot type")
             if k == 1 and dur > STATIC_MAX and move == "static":
                 move = "push-in"              # D48: a long unsplit shot really moves
+            elif move == "static" and dur > c["max_static_s"] + 1e-9:
+                # v2.1: the vibe's own static cap (SHOT_RULES.cadence, e.g.
+                # hype-energy 2.0 s) — what direction.pacing.max_static_s
+                # promises; a slow push-in keeps the shot type and framing
+                move = "push-in"
             _apply(sh, eff, move, c, st["frame0_desc"], i, explicit_text, first_shot and explicit_text is None)
             if eff == "loop-return-frame" and out:
                 # the loop inherits frame 0's scale, angle and subject (and its footage)
