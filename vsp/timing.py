@@ -27,6 +27,7 @@ from vsp.lexicon import SLACK, SLOW_KEYS, WPS_BRISK, WPS_SLOW
 
 PAUSE = 0.3
 MIN_BEAT = 1.5
+CPS_MAX = 20.0      # D142: on-screen reading rate cap (Netflix timed text)
 STATIC_CAP = 3.5
 SPLITTABLE = {"EDUCATION BEAT", "DEMO BEAT", "EVIDENCE BEAT", "TEACHING BEAT",
               "STORY BEAT", "RITUAL BEAT"}
@@ -55,7 +56,14 @@ def speech_seconds(beat, include_rehook=True):
 
 def min_window(beat):
     s = speech_seconds(beat)
-    return max(MIN_BEAT, s + PAUSE) if s else MIN_BEAT
+    m = max(MIN_BEAT, s + PAUSE) if s else MIN_BEAT
+    # D142: on-screen text must read at <= CPS_MAX over its window — a
+    # 47-char payoff card needs >= 2.35s even when the spoken line is short
+    # (+0.1s: boundaries are rounded to 0.1s).
+    card = (beat.get("on_screen") or "").strip()
+    if card:
+        m = max(m, len(card) / CPS_MAX + 0.1)
+    return m
 
 
 def word_budget(seconds, delivery, rehook_words=0):
