@@ -3024,6 +3024,15 @@ def _fit_timeline(hook, body, duration, presenter="ai"):
             for k in ("rehook", "_rh_last", "_rh_fallback"):
                 if b.get(k) and _ai_claims(b[k]):
                     b[k] = ""
+        if b.get("type") == "PAYOFF":
+            # D143: boundary cuts of the spoken payoff ("Test result: before
+            # and after." from "..., side by side.") as last-resort variants
+            # for sub-25s bands — never mid-clause (fit_words), >=4 tokens.
+            for a in list(uniq):
+                for n in range(_gate_words(a) - 1, 3, -1):
+                    cut = timing.fit_words(a, n)
+                    if cut and cut not in uniq and _gate_words(cut) >= 4:
+                        uniq.append(cut)
         uniq.sort(key=lambda a: -_gate_words(a))       # stable: longest first
         cap = _TYPE_WORD_CAP.get(b.get("type"))
         if cap and uniq:
@@ -3098,9 +3107,10 @@ def _fit_timeline(hook, body, duration, presenter="ai"):
         return True
 
     def drop_cta():
-        # sub-20s only: PAYOFF+BAIT+CTA cannot fit the 28% post-payoff band
-        # at their floors; the comment bait already carries the follow ask
-        # (playbook: 215/349 viral reels ship no CTA) — the band wins.
+        # sub-18s only, and only once every post-payoff variant is spent:
+        # PAYOFF+BAIT+CTA cannot fit the 28% post-payoff band at their
+        # floors (3 x 1.5s > 0.28*15s); the comment bait already carries the
+        # follow ask (playbook: 215/349 viral reels ship no CTA) — D7 wins.
         i = next((j for j, b in enumerate(body) if b.get("type") == "CTA"), None)
         if i is None or sum(1 for b in body if b.get("type") != "CTA") < 3:
             return False
@@ -3154,7 +3164,7 @@ def _fit_timeline(hook, body, duration, presenter="ai"):
                 break
         if post_over and post_alt():
             continue
-        if post_over and D < 20 and drop_cta():
+        if post_over and D < 18 and drop_cta():
             continue
         if pre_over:
             if drop(_DROP_OPTIONAL, 10 ** 6) or pre_alt() or drop_rehook() or trim():
