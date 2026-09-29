@@ -50,6 +50,16 @@ def pending_pack():
     return props[-1] if props else None
 
 
+def _guarded(out, name, fn):
+    """Run one step; a failure is recorded (and ledgered), never a crash."""
+    try:
+        return fn()
+    except Exception as e:  # noqa: BLE001
+        out["ok"] = False
+        out["steps"][name] = {"verdict": "ERROR", "error": f"{type(e).__name__}: {e}"[:400]}
+        return None
+
+
 def cycle(budget="small", use_llm="auto", python=None, log=None, seed=None):
     say = log or (lambda m: None)
     t0 = time.time()
@@ -66,43 +76,52 @@ def cycle(budget="small", use_llm="auto", python=None, log=None, seed=None):
                               "research_pack_stale": h["research_pack"].get("stale"),
                               "packs": h["packs"]["by_status"]}
     say("cycle: measure ...")
-    latest = M.measure(budget=budget, python=python, log=say)
-    out["steps"]["measure"] = {s: v["headline"] for s, v in latest["suites"].items()}
+    latest = _guarded(out, "measure", lambda: M.measure(budget=budget, python=python, log=say))
+    if latest:
+        out["steps"]["measure"] = {s: v["headline"] for s, v in latest["suites"].items()}
     say("cycle: diagnose ...")
-    dg = Dg.diagnose(latest=latest, health=h)
-    out["steps"]["diagnose"] = {"opportunities": len(dg["opportunities"]),
-                                "tasks": len(dg["tasks"])}
-    out["top_tasks"] = [{"id": t["id"], "score": t["score"], "title": t["title"],
-                         "acceptance": t["acceptance"], "self_serve": t.get("self_serve")}
-                        for t in dg["tasks"][:3]]
+    dg = _guarded(out, "diagnose", lambda: Dg.diagnose(latest=latest, health=h))
+    if dg:
+        out["steps"]["diagnose"] = {"opportunities": len(dg["opportunities"]),
+                                    "tasks": len(dg["tasks"])}
+        out["top_tasks"] = [{"id": t["id"], "score": t["score"], "title": t["title"],
+                             "acceptance": t["acceptance"], "self_serve": t.get("self_serve")}
+                            for t in dg["tasks"][:3]]
     if not h["selftest"]["ok"]:
         out["ok"] = False
         out["halted"] = "self-test RED: evolve/promote skipped until it is green"
     else:
         seed = seed if seed is not None else int(C.today().replace("-", "")) % 100000
         say(f"cycle: evolve (seed {seed}) ...")
-        ev = E.evolve(budget=budget, use_llm=use_llm, seed=seed, write=True, log=say)
-        out["steps"]["evolve"] = {"verdict": ev["verdict"], "why": ev["why"], "id": ev["id"],
-                                  "path": C.rel(ev["path"]) if ev.get("path") else None,
-                                  "templates": len(ev["pack"]), "preview": ev["preview"],
-                                  "llm": ev["llm"], "secs": ev["secs"],
-                                  "holdout_opened": ev["holdout_opened"]}
-        out["evolve_pack"] = ev["pack"]
-        target = ev.get("path") or pending_pack()
+        ev = _guarded(out, "evolve", lambda: E.evolve(budget=budget, use_llm=use_llm,
+                                                        seed=seed, write=True, log=say))
+        if ev:
+            out["steps"]["evolve"] = {"verdict": ev["verdict"], "why": ev["why"],
+                                      "id": ev["id"],
+                                      "path": C.rel(ev["path"]) if ev.get("path") else None,
+                                      "templates": len(ev["pack"]), "preview": ev["preview"],
+                                      "llm": ev["llm"], "secs": ev["secs"],
+                                      "holdout_opened": ev["holdout_opened"]}
+            out["evolve_pack"] = ev["pack"]
+        target = (ev or {}).get("path") or pending_pack()
         if target:
             say(f"cycle: promote {os.path.basename(target)} ...")
-            pr = PR.promote(target, budget=budget, python=python, log=say)
-            out["steps"]["promote"] = {"pack": pr["pack"], "verdict": pr["verdict"],
-                                       "status": pr["status"], "diversity": pr["diversity"],
-                                       "reasons": pr["decision"]["reasons"][:6],
-                                       "evidence": pr.get("evidence")}
+            pr = _guarded(out, "promote", lambda: PR.promote(target, budget=budget,
+                                                             python=python, log=say))
+            if pr:
+                out["steps"]["promote"] = {"pack": pr["pack"], "verdict": pr["verdict"],
+                                           "status": pr["status"],
+                                           "diversity": pr["diversity"],
+                                           "reasons": pr["decision"]["reasons"][:6],
+                                           "evidence": pr.get("evidence")}
         else:
             out["steps"]["promote"] = {"verdict": "SKIPPED", "reasons": ["no proposed pack"]}
     out["secs"] = round(time.time() - t0, 1)
     out["finished"] = C.now_iso()
     lines = summary_lines(out)
     C.write_text(C.learned("CYCLE.md"), render_md(out, lines))
-    verdict = "HALTED" if out.get("halted") else \
+    errors = [k for k, v in out["steps"].items() if isinstance(v, dict) and v.get("error")]
+    verdict = "HALTED" if out.get("halted") else "ERROR" if errors else \
         (out["steps"].get("promote") or {}).get("verdict", "DONE")
     ledger.append("cycle", f"budget {budget}", verdict, lines,
                   evidence=[C.learned("CYCLE.md"), C.learned("DIAGNOSIS.md"),
@@ -118,15 +137,20 @@ def summary_lines(out):
              f"age {h.get('research_pack_age_h')} h (stale {h.get('research_pack_stale')}) · "
              f"hook packs {h.get('packs') or {}} · maker loader "
              f"{out['health']['packs']['maker_loader']}")
-    for suite, hl in (s.get("measure") or {}).items():
+    for name, v in s.items():
+        if isinstance(v, dict) and v.get("error"):
+            L.append(f"{name}: ERROR {v['error']}")
+    for suite, hl in ((s.get("measure") or {}) if "error" not in (s.get("measure") or {})
+                      else {}).items():
         L.append(f"measure {suite}: {hl['runs']} runs · e2e {hl['e2e_pass']} · shippable "
                  f"{hl['shippable']} · rubric {hl['rubric_mean']} (audit {hl['audit_mean']}) · "
                  f"compliance {hl['compliance_flags']} · hooks distinct {hl['hook_distinct']} "
                  f"· distinct-2 {hl['hook_distinct2']}")
     d = s.get("diagnose") or {}
-    L.append(f"diagnose: {d.get('opportunities')} opportunities, {d.get('tasks')} tasks")
+    if not d.get("error"):
+        L.append(f"diagnose: {d.get('opportunities')} opportunities, {d.get('tasks')} tasks")
     ev = s.get("evolve")
-    if ev:
+    if ev and not ev.get("error"):
         pv = ev.get("preview") or {}
         L.append(f"evolve: {ev['verdict']} ({ev['why']}) · {ev['templates']} templates"
                  + (f" · {ev['id']}" if ev.get("id") else "")
@@ -134,7 +158,7 @@ def summary_lines(out):
                     if pv else "") + f" · llm {'used' if ev['llm'].get('used') else 'off'}"
                  + f" · holdout opened: {ev['holdout_opened'] or 'never'}")
     pr = s.get("promote")
-    if pr:
+    if pr and not pr.get("error"):
         L.append(f"promote {pr.get('pack', '-')}: {pr['verdict']}"
                  + (f" → {pr['status']}" if pr.get("status") else "")
                  + ("; " + "; ".join(pr["reasons"][:2]) if pr.get("reasons") else ""))
@@ -170,5 +194,6 @@ def render_md(out, lines):
 
 
 def render(out):
-    return "\n".join(["cycle " + ("OK" if out.get("ok") else "HALTED") +
-                      f" (budget {out['budget']})"] + ["  " + x for x in summary_lines(out)])
+    state = "OK" if out.get("ok") else "HALTED" if out.get("halted") else "ERROR"
+    return "\n".join([f"cycle {state} (budget {out['budget']})"]
+                     + ["  " + x for x in summary_lines(out)])

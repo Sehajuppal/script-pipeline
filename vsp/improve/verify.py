@@ -104,8 +104,12 @@ def verify(base_ref, cand_ref, budget="full", python=None, log=None, keep=False,
         findings, gev = G.check(bi["path"], ci["path"], python)
         say(f"verify: weakening guard — {len(findings)} finding(s)")
         label = f"verify-{C.slug(base_ref, 20)}-{C.slug(cand_ref, 20)}"
-        ev_dir = C.learned("verify", f"{C.stamp(started)}-{C.slug(bi.get('sha') or base_ref, 12)}"
-                                     f"-{C.slug(ci.get('sha') or cand_ref, 12)}")
+        def _name(info, ref):
+            if info.get("kind") == "dir":
+                return f"dir-{os.path.basename(os.path.abspath(ref)) or 'tree'}"
+            return info.get("sha") or ref
+        ev_dir = C.learned("verify", f"{C.stamp(started)}-{C.slug(_name(bi, base_ref), 16)}"
+                                     f"-{C.slug(_name(ci, cand_ref), 16)}")
         ab = A.run_ab(bi["path"], ci["path"], budget=budget, python=python, label=label,
                       raw_dir=C.learned("verify", "results"), evidence_dir=ev_dir, log=say,
                       pys=pys)
