@@ -1260,51 +1260,138 @@ def parse_prompt(prompt):
                                   else _dt_pair[0])),
             "demo_test": _dt_pair}
 
+# D144 (GEN-B, pipeline v2): FRAME-0 OVERLAY = A CONTIGUOUS PHRASE OF THE
+# HOOK'S FIRST SENTENCE. The D17/D17b/D109 stack (strip a leading "I tested",
+# trim a dangling function word, then refill from the sentence TAIL) stitched
+# non-adjacent words together — "Nobody mentions the lamp flaw" rendered
+# "NOBODY MENTIONS FLAW" (582/990 baseline runs), "I quit buying coffee for 30
+# days" rendered "BUYING COFFEE DAYS", "Things in my kitchen that just make
+# sense" rendered "THINGS SENSE". The overlay is now always a run of ADJACENT
+# words (case/punctuation-insensitive, the lexicon.norm view the gate uses):
+#   * content runs = maximal stretches of non-function words inside one
+#     clause (",", ":", "—", "$" price break a run); a run never ends on a
+#     function word or a dangling quantifier ("every", "no", "one"), so the
+#     D17b "NOBODY MENTIONS THE" class cannot recur;
+#   * pure durations ("30 days", "Day 14") and trailing frequency tails
+#     ("every day") yield to a content run — D17/D47/D109's payoff-noun
+#     intent: "I tested car headrest hook for 7 days" -> "CAR HEADREST HOOK",
+#     "Day 14 of my 5AM routine" -> "5AM ROUTINE", "Nobody mentions the lamp
+#     flaw" -> "LAMP FLAW", "I quit sugar for 21 days" -> "QUIT SUGAR";
+#   * the longest run wins (ties: the later run — the object/payoff-noun
+#     slot); an over-long run keeps its LAST words ("white noise machine
+#     flaw" -> "NOISE MACHINE FLAW");
+#   * label forms stay labels: "day 1 vs day 7" -> "DAY 1 | DAY 7" and
+#     "before and after" -> "BEFORE | AFTER" (D25/D135 split-screen), a
+#     leading "POV:" keeps its label ("POV: YOUR KITCHEN"), a leading
+#     "Story time:" prefix is skipped.
+# Prices never reach the overlay (a "$12.99" hook split at its decimal would
+# otherwise print a "$12" fragment; D37-safe).
+_OV_FUNC = frozenset("""a an the of to for on in at by with without from into
+onto about over than then and or but nor so if as vs versus via per until till
+unless while because since i me my mine we us our you your yours he him his she
+her it its they them their this that these those here there is are was were be
+been being am do does did has have had can could will would shall should may
+might must it's that's here's there's what's who's i'm i've i'd i'll you're
+you've we're they're he's she's let's don't doesn't didn't isn't aren't wasn't
+weren't won't can't couldn't wouldn't shouldn't haven't hasn't not what which
+who whom whose when where why how under below above behind near off out up down
+through across around against between among upon within inside outside like
+""".split())
+_OV_STARTERS = frozenset("no every one zero all most each any".split())
+_OV_TIME = frozenset("""day days week weeks night nights hour hours minute minutes
+second seconds month months year years""".split())
+_OV_NUMWORDS = frozenset("""one two three four five six seven eight nine ten
+eleven twelve fourteen fifteen twenty thirty sixty ninety hundred first last
+next""".split())
+_OV_WORD = re.compile(r"[A-Za-z0-9][A-Za-z0-9'\u2019.\-]*")
+_OV_BREAK = re.compile(r"[,:;!?()\[\]\"\u201c\u201d|\u2014\u2013\u2192]|\s-\s")
+_OV_LABEL_PREFIX = re.compile(r"^\s*(?:story ?time|psa|update|reminder|"
+                              r"confession|hot take|unpopular opinion|"
+                              r"full disclosure)\s*:\s*", re.I)
+
+def _ov_is_num(w):
+    return w.replace(".", "").replace(",", "").isdigit() or w in _OV_NUMWORDS
+
+def _ov_duration(run):
+    ws = [t["low"] for t in run]
+    return (any(w in _OV_TIME for w in ws) and any(_ov_is_num(w) for w in ws)
+            and all(w in _OV_TIME or _ov_is_num(w) for w in ws))
+
 def overlay_truncate(s, max_words=3):
     # hook playbook §4: frame-0 on-screen text ≤3 words, works muted
-    # D17 (judge loop, cycle 7): naive words[:3] sliced mid-phrase — "I tested
-    # car headrest hook for 7 days" rendered "I TESTED CAR". Strip leading
-    # pronoun-verb boilerplate ("I tested"/"I tried"/"I stopped"...) so the
-    # truncation lands on a phrase boundary and names the product/concept.
-    # D47 (judge loop, cycle 13): day-counter hooks open with "Day N of my X"
-    # ("Day 14 of my 5AM routine" truncated to "DAY 14 OF") — strip the
-    # day-counter prefix too so the overlay names the concept ("5AM ROUTINE").
-    words = s.strip().split()
-    stripped = re.sub(
-        r"^(i|we|you)\s+(tested|tried|stopped|quit|started|bought|built|"
-        r"fixed|used|using|reviewed|review|gave\s+up)\s+"
-        r"(the|a|an|my|this|these|that)?\s*"
-        r"|^(this|these|here'?s)\s+(is|are)\s+(the|a|an|my)?\s*"
-        r"|^(day|week|month)\s+\d+\s+(of\s+)?(the|a|an|my|this)?\s*",
-        "", s.strip(), flags=re.I)
-    if stripped.strip():
-        words = stripped.strip().split()
-    # D17b (judge loop, cycle 15): leading-strip fixed the front, but
-    # truncation can dangle a function word at the END — "Nobody mentions the
-    # lid flaw" rendered "NOBODY MENTIONS THE". Strip trailing articles /
-    # prepositions / conjunctions so the overlay never ends mid-phrase.
-    out = words[:max_words]
-    while len(out) > 1 and out[-1].lower() in (
-            "the", "a", "an", "of", "to", "for", "on", "in", "at", "by",
-            "with", "and", "or", "but", "my", "your", "his", "her", "its",
-            "their", "this", "that", "these", "those", "is", "are", "as"):
-        out = out[:-1]
-    # D109 (judge loop, cycle 27): the truncation can land mid-phrase and the
-    # D17b trailing strip then drops the hook's payoff noun — "Nobody mentions
-    # the box flaw" (seed 934) rendered "NOBODY MENTIONS", an overlay naming
-    # nothing. When the strip freed slots, refill from the sentence TAIL: the
-    # final content word sits in the payoff-noun position in flaw/bold-claim
-    # hooks ("... the box flaw" -> "NOBODY MENTIONS FLAW").
-    func_words = ("the", "a", "an", "of", "to", "for", "on", "in", "at", "by",
-                  "with", "and", "or", "but", "my", "your", "his", "her",
-                  "its", "their", "this", "that", "these", "those", "is",
-                  "are", "as")
-    if len(out) < max_words and len(out) < len(words[:max_words]):
-        tail = next((w for w in reversed(words)
-                     if w.lower() not in func_words), None)
-        if tail and tail.lower() not in (w.lower() for w in out):
-            out = out + [tail]
-    return " ".join(out).upper()
+    text = (s or "").strip()
+    cut = re.search(r"[.!?](?:\s|$)", text)   # first sentence only (D144)
+    if cut:
+        text = text[:cut.start()]
+    lp = re.search(r"\bday\s+(\d+)\s+(?:vs\.?|versus|to|\u2192|->)\s+day\s+(\d+)\b",
+                   text, re.I)
+    if lp:
+        return f"DAY {lp.group(1)} | DAY {lp.group(2)}"
+    if re.search(r"\bbefore\s+(?:and|vs\.?|versus|&|/|\u2192|->)\s+after\b", text, re.I):
+        return "BEFORE | AFTER"
+    toks, last = [], 0
+    body = text
+    if re.match(r"\s*pov\s*:", body, re.I):
+        # D22 listicle grammar: the POV label is part of the card
+        ws = _OV_WORD.findall(body)[:max_words]
+        ws = [w.strip(".'\u2019") for w in ws]
+        while len(ws) > 1 and ws[-1].lower() in _OV_FUNC:
+            ws = ws[:-1]
+        return ("POV: " + " ".join(ws[1:])).strip().upper() if len(ws) > 1 else "POV"
+    body = _OV_LABEL_PREFIX.sub("", body) or body
+    for m in _OV_WORD.finditer(body):
+        gap = body[last:m.start()]
+        w = m.group(0).strip(".'\u2019")
+        last = m.end()
+        if not w:
+            continue
+        toks.append({"w": w, "low": w.lower(),
+                     "brk": bool(_OV_BREAK.search(gap)),
+                     "price": "$" in gap})
+    # the caller splits the hook on "." — a first "sentence" ending in a
+    # digit was cut inside a decimal ("4.9", "12.99"): that fragment is not
+    # a word of the hook, so it never reaches the card
+    if toks and re.search(r"\d$", body.rstrip()):
+        toks[-1]["price"] = True
+    runs, cur = [], []
+    for i, t in enumerate(toks):
+        if t["brk"] and cur:
+            runs.append(cur); cur = []
+        if t["price"] or t["low"] in _OV_FUNC:
+            # idiom: "worth it" keeps its object ("IS IT WORTH IT" class)
+            if t["low"] == "it" and cur and cur[-1]["low"] == "worth":
+                cur.append(t)
+                continue
+            if cur:
+                runs.append(cur); cur = []
+            continue
+        cur.append(t)
+    if cur:
+        runs.append(cur)
+    clean = []
+    for r in runs:
+        r = list(r)
+        # trailing frequency tail: "... every day" / "... each night" / "daily"
+        if (len(r) > 2 and r[-2]["low"] in ("every", "each")
+                and r[-1]["low"] in _OV_TIME):
+            r = r[:-2]
+        elif len(r) > 1 and r[-1]["low"] == "daily":
+            r = r[:-1]
+        while r and r[-1]["low"] in _OV_STARTERS:
+            r = r[:-1]
+        if r:
+            clean.append(r)
+    if not clean:
+        ws = [t["w"] for t in toks[:max_words]]
+        while len(ws) > 1 and ws[-1].lower() in _OV_FUNC:
+            ws = ws[:-1]
+        return " ".join(ws).upper()
+    pool = [r for r in clean if not _ov_duration(r)] or clean
+    best = max(range(len(pool)), key=lambda i: (min(len(pool[i]), max_words), i))
+    run = pool[best][-max_words:]
+    while len(run) > 1 and run[0]["low"] in _OV_FUNC:
+        run = run[1:]
+    return " ".join(t["w"] for t in run).upper()
 
 def word_truncate(s, n=30):
     s = s.strip()
