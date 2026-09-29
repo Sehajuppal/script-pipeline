@@ -18,8 +18,16 @@ Modules:
   classify    hook_category / hook family / pattern (+ aggregates)
   transcribe  optional first-3.5 s ASR (Muse Voice Transcribe)
   settings    config/ingest.json (template config/ingest.example.json)
-  jobs        the runnable jobs behind the CLI
-  checks      the hermetic selfcheck
+  jobs        the runnable jobs behind the CLI (hashtags, watchlist, own,
+              insights, import, classify, transcribe, purge, status)
+  doctor      env / token / permissions / budget / schema / pack checks +
+              the exact setup steps
+  checks      the hermetic selfchecks (this package's and vsp.feedback's)
+  util        time / text / number helpers shared with vsp.feedback
+
+The closed loop over YOUR posted reels (link -> pull -> learn -> report)
+lives in vsp.feedback. Setup, cron schedule and compliance notes:
+docs/ws-data-notes.md.
 
 CLI: python3 -m vsp.ingest --help
 """
