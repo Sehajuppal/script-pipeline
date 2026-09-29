@@ -2016,7 +2016,7 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
                 # closes two beats later.
                 # D143: "Okay — with that out of the way:" was 7 tokens of
                 # filler in a 3–5s beat (D12); the event is the payload.
-                "rehook": f"Now the test: {_demo_test_for(ctx)[0]}.",
+                "rehook": f"So: {_demo_test_for(ctx)[0]}.",
                 # if every demo beat is budgeted out (15s transformation) the
                 # promise must still be answered by what follows (D45)
                 "_rh_needs": "DEMO BEAT",
@@ -2820,6 +2820,7 @@ _DROP_OPTIONAL = 30   # D143: a beat whose _drop rank is >= this is OPTIONAL
 # an em dash counts) — the first variant inside the cap is the one that ships.
 _TYPE_WORD_CAP = {"IMPERFECTION BEAT": 12, "COMMENT BAIT": 9, "CTA": 6, "PAYOFF": 11}
 _CARD_TOKENS, _CARD_CHARS = 12, 66   # D142/D103 card budget (R09: <=70 chars)
+_D12_MAX_S = 5.0                     # D12: imperfection beat is 3–5s
 
 
 def _gate_words(text):
@@ -3041,6 +3042,18 @@ def _fit_timeline(hook, body, duration, presenter="ai"):
                 cut = timing.fit_words(uniq[-1], cap)
                 inside = [cut] if cut else uniq[-1:]
             uniq = inside
+        if uniq and b.get("type") == "IMPERFECTION BEAT":
+            # D12: the confession + its re-hook are a 3–5s beat — only the
+            # variants that fit 5.0s with the re-hook may ship (the restore
+            # pass must not bring a longer one back); if none does, the
+            # shortest ships and the re-hook goes past 5.5s.
+            fit5 = [a for a in uniq
+                    if timing.min_window(dict(b, dialogue=a)) <= _D12_MAX_S]
+            uniq = fit5 or uniq[-1:]
+            if b.get("rehook") and \
+                    timing.min_window(dict(b, dialogue=uniq[0])) > _D12_MAX_S + 0.5:
+                b["rehook"] = ""
+                b["_rh_dropped"] = True
         if uniq:
             b["dialogue"], b["_alts"] = uniq[0], uniq
     # 2. D41/D93: a re-hook never restates its own beat or another re-hook

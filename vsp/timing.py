@@ -32,6 +32,9 @@ STATIC_CAP = 3.5
 SPLITTABLE = {"EDUCATION BEAT", "DEMO BEAT", "EVIDENCE BEAT", "TEACHING BEAT",
               "STORY BEAT", "RITUAL BEAT"}
 MOVING = {"PAYOFF", "IMPERFECTION BEAT"}
+# D12: the imperfection beat is a 3–5s confession — it moves (handheld) but
+# never soaks up the body's slack (a 10-word line held 7.1s at 30s).
+TYPE_CAP = {"IMPERFECTION BEAT": 5.0}
 BAND = (0.72, 0.85)
 TARGET = 0.78
 T_RE = re.compile(r"(\d+(?:\.\d+)?)")
@@ -109,8 +112,11 @@ def _caps(beats, mins):
     caps = []
     for b, m in zip(beats, mins):
         t = b.get("type", "")
-        caps.append(float("inf") if (t in SPLITTABLE or t in MOVING)
-                    else max(m, STATIC_CAP))
+        if t in TYPE_CAP:
+            caps.append(max(m, TYPE_CAP[t]))
+        else:
+            caps.append(float("inf") if (t in SPLITTABLE or t in MOVING)
+                        else max(m, STATIC_CAP))
     return caps
 
 
