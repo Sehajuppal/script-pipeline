@@ -19,13 +19,21 @@ LLM (optional): when vsp.llm.complete_json exists (WS-IMPROVE) and returns
 a dict, it labels the hook under a strict enum schema; the untrusted caption
 text is capped and fenced (oss-pipelines #16). Anything missing, None or
 off-schema falls back to the deterministic rules. After 3 consecutive None
-replies the LLM is not asked again in that run.
+(or raising) replies the LLM is not asked again in that run, and at most
+classify.llm_max_calls calls are made per run.
 
 Aggregates: counts of classified, non-own, ingested reels per (category,
 niche) and (pattern, niche) are written as vsp.ingest's OWN rows in the
-legacy hooks / patterns tables — tracked by rowid in ingest_aggregates, so a
-re-run updates them in place (idempotent) and the research agent's rows are
-never modified. 'unknown' is stored per reel but never aggregated.
+legacy hooks / patterns tables, so research_bridge's SUM(times_seen)
+rankings include them; a re-run updates them in place (idempotent) and the
+research agent's rows are never modified. ingest_aggregates remembers what
+was written: patterns rows by pattern_id (an INTEGER PRIMARY KEY, stable);
+hooks rows by CONTENT (category, niche, last written times_seen) with the
+rowid only as a hint — `hooks` has no INTEGER PRIMARY KEY, so VACUUM
+renumbers its rowids, and rows with identical content are interchangeable
+for the SUM research_bridge computes. 'unknown' is stored per reel but never
+aggregated. Rows adopted from the research agent (hook_source 'curated')
+are never re-classified or counted: the agent already counted them.
 """
 import re
 
@@ -227,58 +235,97 @@ def _pattern_row(con, name, niche):
     return cur.lastrowid
 
 
-def rebuild_aggregates(con, cfg=None):
-    """Write vsp.ingest's counts into hooks / patterns (see module doc)."""
+OWN_ROWS_SQL = ("classified_by IS NOT NULL AND source IS NOT NULL "
+                "AND COALESCE(is_own, 0) = 0 AND niche IS NOT NULL "
+                "AND COALESCE(hook_source, '') != 'curated'")
+
+
+def _find_hooks_row(con, name, niche, hint, written):
+    """rowid of vsp.ingest's hooks row for (name, niche) — the hint rowid if
+    it still holds exactly what we last wrote, else any row with that exact
+    content (VACUUM renumbered it); None if it is gone or was modified."""
+    if hint is not None:
+        row = con.execute("SELECT 1 FROM hooks WHERE rowid=? AND hook_category=? AND "
+                          "niche=? AND times_seen=?", (hint, name, niche, written)).fetchone()
+        if row:
+            return hint
+    row = con.execute("SELECT MAX(rowid) FROM hooks WHERE hook_category=? AND niche=? "
+                      "AND times_seen=?", (name, niche, written)).fetchone()
+    return row[0] if row and row[0] is not None else None
+
+
+def _find_pattern_row(con, name, niche, pid):
+    if pid is None:
+        return None
+    row = con.execute("SELECT 1 FROM patterns WHERE pattern_id=? AND pattern_name=? AND "
+                      "niche=?", (pid, name, niche)).fetchone()
+    return pid if row else None
+
+
+def aggregate_counts(con, cfg=None):
+    """-> (hooks {(category, niche): n}, patterns {(pattern, niche): n}) over
+    the reels vsp.ingest classified (vendor rows dropped when excluded)."""
     vend = f" AND {NOT_VENDOR_SQL}" if exclude_vendor(cfg) else ""
-    base = ("FROM reels WHERE classified_by IS NOT NULL AND source IS NOT NULL "
-            "AND COALESCE(is_own, 0) = 0 AND niche IS NOT NULL" + vend)
+    base = "FROM reels WHERE " + OWN_ROWS_SQL + vend
     hooks = {(r[0], r[1]): r[2] for r in con.execute(
         "SELECT hook_category, niche, COUNT(*) " + base +
         " AND hook_category IS NOT NULL AND hook_category != 'unknown' GROUP BY 1, 2")}
     pats = {}
     for pid, n in con.execute("SELECT pattern_id, COUNT(*) " + base +
-                              " AND pattern_id IS NOT NULL GROUP BY 1"):
+                              " AND pattern_id IS NOT NULL GROUP BY 1").fetchall():
         row = con.execute("SELECT pattern_name, niche FROM patterns WHERE pattern_id=?",
                           (pid,)).fetchone()
         if row:
             pats[(row[0], row[1])] = pats.get((row[0], row[1]), 0) + n
+    return hooks, pats
+
+
+def rebuild_aggregates(con, cfg=None):
+    """Write vsp.ingest's counts into hooks / patterns (see module doc).
+    -> {"hooks": rows written, "patterns": rows written}. Idempotent."""
+    hooks, pats = aggregate_counts(con, cfg)
     now = sql_ts()
     out = {}
-    for kind, table, name_col, counts in (("hooks", "hooks", "hook_category", hooks),
-                                          ("patterns", "patterns", "pattern_name", pats)):
+    for kind, counts in (("hooks", hooks), ("patterns", pats)):
         contrib = _contrib(con, kind)
         written = 0
         for key in sorted(set(counts) | set(contrib)):
             name, niche = key
             n = counts.get(key, 0)
-            rid = (contrib.get(key) or (None, None))[0]
-            valid = False
-            if rid is not None:
-                row = con.execute(f"SELECT {name_col}, niche FROM {table} WHERE rowid=?",
-                                  (rid,)).fetchone()
-                valid = bool(row and row[0] == name and row[1] == niche)
+            hint, last = contrib.get(key) or (None, None)
+            if kind == "hooks":
+                rid = _find_hooks_row(con, name, niche, hint, last) if key in contrib else None
+            else:
+                rid = _find_pattern_row(con, name, niche, hint)
             if n == 0:
-                if valid and kind == "hooks":
+                if rid is not None and kind == "hooks":
                     con.execute("DELETE FROM hooks WHERE rowid=?", (rid,))
-                elif valid:
+                elif rid is not None:
                     used = con.execute("SELECT 1 FROM reels WHERE pattern_id=? LIMIT 1",
                                        (rid,)).fetchone()
-                    if used:
-                        con.execute("UPDATE patterns SET times_seen=0 WHERE rowid=?", (rid,))
+                    if used:          # e.g. only excluded vendor rows point at it
+                        con.execute("UPDATE patterns SET times_seen=0 WHERE pattern_id=?",
+                                    (rid,))
+                        con.execute("UPDATE ingest_aggregates SET times_seen=0, "
+                                    "updated_at=? WHERE kind=? AND name=? AND niche=?",
+                                    (now, kind, name, niche))
                         continue
-                    con.execute("DELETE FROM patterns WHERE rowid=?", (rid,))
+                    con.execute("DELETE FROM patterns WHERE pattern_id=?", (rid,))
                 con.execute("DELETE FROM ingest_aggregates WHERE kind=? AND name=? AND "
                             "niche=?", (kind, name, niche))
                 continue
-            if valid:
-                con.execute(f"UPDATE {table} SET times_seen=? WHERE rowid=?", (n, rid))
+            if rid is not None:
+                col = "rowid" if kind == "hooks" else "pattern_id"
+                con.execute(f"UPDATE {kind} SET times_seen=? WHERE {col}=?", (n, rid))
+            elif kind == "hooks":
+                rid = con.execute("INSERT INTO hooks(hook_category, niche, times_seen) "
+                                  "VALUES (?, ?, ?)", (name, niche, n)).lastrowid
             else:
-                cur = con.execute(f"INSERT INTO {table}({name_col}, niche, times_seen) "
-                                  f"VALUES (?, ?, ?)", (name, niche, n))
-                if kind == "patterns" and rid is not None:   # re-point orphaned reels
+                rid = con.execute("INSERT INTO patterns(pattern_name, niche, times_seen) "
+                                  "VALUES (?, ?, ?)", (name, niche, n)).lastrowid
+                if hint is not None:          # re-point reels at the lost row
                     con.execute("UPDATE reels SET pattern_id=? WHERE pattern_id=? AND "
-                                "classified_by IS NOT NULL", (cur.lastrowid, rid))
-                rid = cur.lastrowid
+                                "classified_by IS NOT NULL", (rid, hint))
             con.execute("INSERT OR REPLACE INTO ingest_aggregates(kind, name, niche, "
                         "row_id, times_seen, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
                         (kind, name, niche, rid, n, now))
@@ -288,11 +335,28 @@ def rebuild_aggregates(con, cfg=None):
 
 
 # ------------------------------------------------------------- classify
+def families_source():
+    """'viral_script_maker.HOOKS' when the maker's families were read at
+    runtime, else 'fallback' (static copy in vsp.research)."""
+    try:
+        import viral_script_maker as vsm
+        return "viral_script_maker.HOOKS" if tuple(vsm.HOOKS.keys()) else "fallback"
+    except Exception:  # noqa: BLE001
+        return "fallback"
+
+
 def classify(con, llm="auto", limit=None, reclassify=False, max_llm_calls=50, cfg=None):
+    """Label ingested, non-own reels (unlabelled ones, or all with
+    reclassify=True), then rebuild the aggregates. -> report dict."""
+    if cfg:
+        c = cfg.get("classify") or {}
+        if llm == "auto" and str(c.get("llm", "auto")).lower() in ("off", "false", "no"):
+            llm = "off"
+        max_llm_calls = int(c.get("llm_max_calls", max_llm_calls) or 0)
     fams = maker_families()
     fn = resolve_llm(llm)
     where = ("source IS NOT NULL AND COALESCE(is_own, 0) = 0 AND hook_text IS NOT NULL "
-             "AND hook_text != ''")
+             "AND hook_text != '' AND COALESCE(hook_source, '') != 'curated'")
     if not reclassify:
         where += " AND classified_by IS NULL"
     q = f"SELECT id, hook_text, caption, media_audio_type, niche FROM reels WHERE {where} ORDER BY id"
@@ -301,14 +365,14 @@ def classify(con, llm="auto", limit=None, reclassify=False, max_llm_calls=50, cf
     rows = con.execute(q).fetchall()
     rep = {"candidates": len(rows), "rules": 0, "llm": 0, "llm_calls": 0,
            "llm_fallbacks": 0, "llm_available": fn is not None, "by_category": {},
-           "unknown": 0}
+           "unknown": 0, "families": list(fams), "families_source": families_source()}
     none_streak = 0
     for r in rows:
         lab = None
         if fn is not None and rep["llm_calls"] < max_llm_calls and none_streak < 3:
             rep["llm_calls"] += 1
             lab, why = _llm_label(fn, r["hook_text"], r["caption"], r["niche"], fams)
-            none_streak = none_streak + 1 if why == "none" else 0
+            none_streak = none_streak + 1 if why in ("none", "error") else 0
             if lab is None:
                 rep["llm_fallbacks"] += 1
         by = "llm" if lab else "rules"

@@ -32,6 +32,7 @@ import json
 import os
 import re
 from collections import Counter
+from datetime import timedelta
 
 from vsp.ingest.db import is_vendor
 from vsp.ingest.normalize import normalize_item, upsert_reel
@@ -94,9 +95,12 @@ def _k(key):
 
 
 ALIASES = {field: [_k(a) for a in names] for field, names in _A.items()}
-_REEL_TYPES = {"reel", "reels", "clips", "clip", "video", "igtv", "graphvideo"}
+_REEL_TYPES = {"reel", "reels", "clips", "clip", "video", "igtv", "graphvideo",
+               "igreel", "igreels", "instagramreel", "instagramreels", "reelvideo"}
 _NOT_REEL = {"image", "photo", "carousel", "carouselalbum", "sidecar", "graphimage",
-             "graphsidecar", "album", "story", "text"}
+             "graphsidecar", "album", "story", "text", "igimage", "igphoto",
+             "igcarousel", "igcarouselalbum", "igstory", "instagramimage",
+             "instagramcarousel", "instagramstory"}
 
 
 class ImportError_(ValueError):
@@ -188,6 +192,12 @@ def _is_reelish(mtype, url):
     return False, "not a reel (no video type, not a /reel/ permalink)"
 
 
+def _count(v):
+    """Non-negative integer count or None ("1.2M", "12,345" accepted)."""
+    n = to_int(v)
+    return n if n is not None and n >= 0 else None
+
+
 def _watch_ms(value, header_hint=""):
     """Average watch time -> ms: 'm:ss', seconds (<= 600) or ms."""
     if value is None or value == "":
@@ -210,17 +220,18 @@ def import_file(con, path, source, niche=None, cfg=None, own=False, now=None,
     if niche is not None and niche not in MAKER_NICHES:
         raise ImportError_(f"--niche {niche!r} is not a maker niche: "
                            + ", ".join(MAKER_NICHES))
+    if own and is_vendor(src):
+        raise ImportError_("own exports come from your own account: use import:<name>")
     warn = warn or (lambda msg: None)
     report = {"file": os.path.abspath(path), "source": src, "format": None,
               "rows_read": 0, "inserted": 0, "updated": 0, "adopted": 0,
               "metrics_snapshots": 0, "skipped": Counter(), "errors": [],
-              "warnings": [], "own": bool(own), "dry_run": bool(dry_run)}
+              "warnings": [], "own": bool(own), "dry_run": bool(dry_run),
+              "media_ids": []}
     if is_vendor(src):
         msg = VENDOR_WARNING.format(src=src)
         report["warnings"].append(msg)
         warn(msg)
-    if own and is_vendor(src):
-        raise ImportError_("own exports come from your own account: use import:<name>")
     records, fmt = read_records(path)
     report["format"], report["rows_read"] = fmt, len(records)
     now_dt = parse_ts(now) or utcnow()
@@ -229,6 +240,8 @@ def import_file(con, path, source, niche=None, cfg=None, own=False, now=None,
         rec = {_k(k): v for k, v in _flatten(raw).items()}
         url = _pick(rec, "url")
         url = str(url).strip() if url else None
+        if url and re.match(r"^(?:www\.)?instagram\.com/", url, re.I):
+            url = "https://" + url
         sc = _pick(rec, "shortcode")
         if not url and sc:
             url = f"https://www.instagram.com/reel/{str(sc).strip()}/"
@@ -265,12 +278,14 @@ def import_file(con, path, source, niche=None, cfg=None, own=False, now=None,
         if not n and not own:
             report["skipped"]["no niche (pass --niche or map a caption hashtag)"] += 1
             continue
-        ts = _pick(rec, "timestamp")
+        ts = parse_ts(_pick(rec, "timestamp"))
+        if ts is not None and ts > now_dt + timedelta(days=1):
+            ts = None                             # a future date is not a post time
         item = {"id": mid, "permalink": url, "caption": caption,
-                "like_count": to_int(_pick(rec, "likes")),
-                "comments_count": to_int(_pick(rec, "comments")),
-                "view_count": to_int(_pick(rec, "views")),
-                "timestamp": sql_ts(parse_ts(ts)) if parse_ts(ts) else None,
+                "like_count": _count(_pick(rec, "likes")),
+                "comments_count": _count(_pick(rec, "comments")),
+                "view_count": _count(_pick(rec, "views")),
+                "timestamp": sql_ts(ts) if ts else None,
                 "media_type": "VIDEO", "media_product_type": "REELS"}
         user = _pick(rec, "username")
         row, why = normalize_item(item, source=src, source_query=os.path.basename(path),
@@ -281,8 +296,8 @@ def import_file(con, path, source, niche=None, cfg=None, own=False, now=None,
         if row is None:
             report["skipped"][why] += 1
             continue
-        row["shares"] = to_int(_pick(rec, "shares"))
-        row["saves"] = to_int(_pick(rec, "saves"))
+        row["shares"] = _count(_pick(rec, "shares"))
+        row["saves"] = _count(_pick(rec, "saves"))
         tr = _pick(rec, "transcript")
         if tr:
             row["transcript"] = clean_text(str(tr), limit=4000)
@@ -299,20 +314,21 @@ def import_file(con, path, source, niche=None, cfg=None, own=False, now=None,
             report["errors"].append(f"row {i}: {type(e).__name__}: {e}")
             continue
         report[status] += 1
+        report["media_ids"].append(mid)
         if own:
-            report["metrics_snapshots"] += _own_snapshot(con, rec, mid, row, now_dt)
+            report["metrics_snapshots"] += _own_snapshot(con, rec, mid, row, now_dt, src)
     if not dry_run:
         con.commit()
     report["skipped"] = dict(report["skipped"])
     return report
 
 
-def _own_snapshot(con, rec, mid, row, now_dt):
-    vals = {"views": to_int(_pick(rec, "views")), "reach": to_int(_pick(rec, "reach")),
-            "likes": to_int(_pick(rec, "likes")),
-            "comments": to_int(_pick(rec, "comments")),
-            "shares": to_int(_pick(rec, "shares")), "saves": to_int(_pick(rec, "saves")),
-            "reposts": to_int(_pick(rec, "reposts")),
+def _own_snapshot(con, rec, mid, row, now_dt, src=None):
+    vals = {"views": _count(_pick(rec, "views")), "reach": _count(_pick(rec, "reach")),
+            "likes": _count(_pick(rec, "likes")),
+            "comments": _count(_pick(rec, "comments")),
+            "shares": _count(_pick(rec, "shares")), "saves": _count(_pick(rec, "saves")),
+            "reposts": _count(_pick(rec, "reposts")),
             "skip_rate": to_float(_pick(rec, "skip_rate"))}
     hint = next((a for a in ALIASES["avg_watch"] if a in rec), "")
     vals["avg_watch_ms"] = _watch_ms(_pick(rec, "avg_watch"), hint)
@@ -321,9 +337,9 @@ def _own_snapshot(con, rec, mid, row, now_dt):
     age = hours_between(now_dt, row.get("posted_at"))
     con.execute(
         "INSERT OR REPLACE INTO reel_metrics(media_id, captured_at, age_h, views, reach, "
-        "likes, comments, shares, saves, reposts, avg_watch_ms, total_watch_ms, skip_rate) "
-        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        "likes, comments, shares, saves, reposts, avg_watch_ms, total_watch_ms, skip_rate, "
+        "source) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         (mid, sql_ts(now_dt), int(age) if age is not None else None, vals["views"],
          vals["reach"], vals["likes"], vals["comments"], vals["shares"], vals["saves"],
-         vals["reposts"], vals["avg_watch_ms"], None, vals["skip_rate"]))
+         vals["reposts"], vals["avg_watch_ms"], None, vals["skip_rate"], src))
     return 1

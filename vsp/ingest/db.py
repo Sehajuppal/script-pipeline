@@ -25,7 +25,8 @@ Migrations (schema v1):
     account_metrics (daily account insights) and ingest_aggregates (which
     hooks/patterns rows vsp.ingest.classify contributed — so re-running
     classify never double counts and never touches the research agent's
-    own rows).
+    own rows); posts also carries hook + candidate_seed and reel_metrics a
+    source (api | import:<name>) — OPTIONAL_COLUMNS, added when missing.
 Legacy readers select named columns (make_shotlist.niche_references,
 research_bridge), so they keep working on both schemas. External WRITERS
 must use named-column INSERTs into reels once it is migrated.
@@ -127,6 +128,11 @@ NEW_TABLES = [
      "updated_at TEXT, PRIMARY KEY (kind, name, niche))",
      ("kind", "name", "niche", "row_id", "times_seen", "updated_at")),
 ]
+# additive columns on the new tables (added when missing, like reels')
+OPTIONAL_COLUMNS = {
+    "posts": [("hook", "TEXT"), ("candidate_seed", "INTEGER")],
+    "reel_metrics": [("source", "TEXT")],        # api | import:<name>
+}
 INDEXES = [
     "CREATE UNIQUE INDEX IF NOT EXISTS reels_media ON reels(platform, media_id)",
     "CREATE INDEX IF NOT EXISTS reels_niche_analyzed ON reels(niche, analyzed_at)",
@@ -260,6 +266,11 @@ def migrate(con):
                     f"point VSP_VIRAL_DB elsewhere.")
             if not existed:
                 actions.append(f"created table {name}")
+            for col, decl in OPTIONAL_COLUMNS.get(name, []):
+                if col not in got:
+                    con.execute(f"ALTER TABLE {name} ADD COLUMN {col} {decl}")
+                    if existed:
+                        actions.append(f"{name} +{col}")
         dupes = con.execute(
             "SELECT platform, media_id, COUNT(*) FROM reels WHERE media_id IS NOT NULL "
             "GROUP BY 1, 2 HAVING COUNT(*) > 1 LIMIT 3").fetchall()
