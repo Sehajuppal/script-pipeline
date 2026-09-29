@@ -1,0 +1,1590 @@
+{
+ "_about": "Discovery packaging data (pipeline v2.1, WS-DISCOVERY). PLATFORM_PACKAGING, KEYWORD_RULES, POSTING_GUIDANCE, DISCOVERY_CHECKLIST and GATE_RULES are the JSON blocks of docs/research/discovery-seo.md (checked 2026-09-29), transcribed verbatim; ENGINE holds the tables vsp/discovery.py runs on.",
+ "schema_version": 1,
+ "source": "docs/research/discovery-seo.md",
+ "PLATFORM_PACKAGING": {
+  "tiktok": {
+   "caption_max_chars": 2200,
+   "caption_max_chars_in_app": 4000,
+   "caption_length_unit": "UTF-16 code units (Content Posting API 'title')",
+   "caption_recommended_chars": [
+    100,
+    300
+   ],
+   "first_line_chars_visible": 100,
+   "hashtags": {
+    "min": 1,
+    "max": 5,
+    "recommended": 3
+   },
+   "title_max_chars": null,
+   "description_max_chars": null,
+   "alt_text": {
+    "supported": false,
+    "max_chars": null,
+    "how": "Video posts have no alt-text field (photo posts only). Use one plain descriptive caption sentence containing the primary keyword + auto-captions."
+   },
+   "cover": {
+    "aspect": "9:16 (1080x1920)",
+    "safe_crop": "text box x120-888, y420-1248; grid crop assumed centre 3:4 (UNVERIFIED)",
+    "text_max_words": 5,
+    "api": "video_cover_timestamp_ms picks a frame; no image upload; cover reportedly not editable after posting"
+   },
+   "keyword_slots": [
+    {
+     "slot": "spoken_hook",
+     "required": true,
+     "rule": "primary keyword spoken by 3.0 s"
+    },
+    {
+     "slot": "on_screen_text",
+     "required": true,
+     "rule": "primary keyword card visible by 3.0 s for >=1.0 s"
+    },
+    {
+     "slot": "caption_line_1",
+     "required": true,
+     "rule": "primary keyword within first 60 chars"
+    },
+    {
+     "slot": "hashtag",
+     "required": true,
+     "rule": "one hashtag = compact primary keyword"
+    },
+    {
+     "slot": "cover_text",
+     "required": true,
+     "rule": "keyword head noun on the cover frame"
+    },
+    {
+     "slot": "comment_word",
+     "required": false,
+     "rule": "comment-word = keyword head noun (seeds search suggestions)"
+    },
+    {
+     "slot": "manage_keywords",
+     "required": false,
+     "rule": "after publish: suggest primary + <=2 secondary; block off-topic auto keywords"
+    },
+    {
+     "slot": "shop_anchor_name",
+     "required": false,
+     "rule": "Shop videos: product link name = primary keyword + 1 attribute; no promo text, emoji or price"
+    }
+   ],
+   "disclosure": {
+    "ai_label_toggle": "is_aigc=true (API) / AI-generated content toggle (app)",
+    "paid_partnership": "brand_content_toggle=true (paid third party); brand_organic_toggle=true (own business)"
+   },
+   "audio_notes": "Speech is the keyword carrier: keep VO intelligible over ducked music. Shoppable videos: TikTok library music only (virality §3). Sounds are 'video information' for ranking.",
+   "sources": [
+    "https://developers.tiktok.com/doc/content-posting-api-reference-direct-post",
+    "https://wordcount.com/guides/character-limits-social-media",
+    "https://searchengineland.com/tiktok-limits-hashtags-460894",
+    "https://www.hootsuite.com/social-media-tools/social-media-caption-preview",
+    "https://newsroom.tiktok.com/en-us/how-tiktok-recommends-videos-for-you",
+    "https://ads.tiktok.com/resources/help/article/search-ads-creative",
+    "https://www.socialmediatoday.com/news/tiktok-lets-users-add-relevant-keywords-to-metadata/818507/",
+    "https://arxiv.org/html/2505.08385v1",
+    "https://ads.tiktok.com/help/article/add-product-links-tiktok-videos?lang=en",
+    "https://newsroom.tiktok.com/en-us/celebrating-global-accessibility-awareness"
+   ]
+  },
+  "instagram": {
+   "caption_max_chars": 2200,
+   "caption_recommended_chars": [
+    125,
+    400
+   ],
+   "first_line_chars_visible": 125,
+   "hashtags": {
+    "min": 1,
+    "max": 5,
+    "recommended": 3
+   },
+   "mentions_max": 20,
+   "title_max_chars": null,
+   "description_max_chars": null,
+   "alt_text": {
+    "supported": false,
+    "max_chars": 1000,
+    "how": "API alt_text works on IMAGE/carousel-image containers only (Reels and Stories unsupported); app: Advanced settings > Accessibility for photos. Reels in-app alt text UNVERIFIED -> put the description sentence in the caption."
+   },
+   "cover": {
+    "aspect": "9:16 JPEG <=8MB via cover_url (or thumb_offset ms)",
+    "safe_crop": "grid = centre 3:4 (y240-1680); feed share = centre 1:1 (y420-1500); use text box x120-888, y420-1248",
+    "text_max_words": 5
+   },
+   "keyword_slots": [
+    {
+     "slot": "spoken_hook",
+     "required": true,
+     "rule": "primary keyword spoken by 3.0 s"
+    },
+    {
+     "slot": "on_screen_text",
+     "required": true,
+     "rule": "primary keyword card by 3.0 s"
+    },
+    {
+     "slot": "caption_line_1",
+     "required": true,
+     "rule": "keyword within first 60 chars; natural sentence (doubles as Google snippet)"
+    },
+    {
+     "slot": "caption_description_sentence",
+     "required": true,
+     "rule": "alt-text substitute: one literal description of what is shown"
+    },
+    {
+     "slot": "hashtags",
+     "required": true,
+     "rule": "<=5; one = primary keyword"
+    },
+    {
+     "slot": "cover_text",
+     "required": true,
+     "rule": "keyword head noun"
+    },
+    {
+     "slot": "profile_name_bio",
+     "required": false,
+     "rule": "account-level niche keyword"
+    },
+    {
+     "slot": "audio_name",
+     "required": false,
+     "rule": "original audio can be renamed once; optional '<keyword> test - original audio' [A]"
+    }
+   ],
+   "disclosure": {
+    "ai_label_toggle": "is_ai_generated=true (API, since 2026-06-22) / AI info label (app)",
+    "paid_partnership": "is_paid_partnership=true or branded_content_sponsor_ids (Facebook Login only)"
+   },
+   "extras": {
+    "trial_reels": "trial_params.graduation_strategy MANUAL|SS_PERFORMANCE; metrics ~24 h; auto-share window 72 h",
+    "collaborators_api_max": 3,
+    "location": "location_id only if true",
+    "post_publish_check": "config_issue must not be CAPTION_NOT_ATTACHED"
+   },
+   "audio_notes": "Library music withholds media_url from API readers and limits commercial use; original audio + VO keeps the spoken keyword clean.",
+   "sources": [
+    "https://developers.facebook.com/docs/instagram-platform/instagram-graph-api/reference/ig-user/media/",
+    "https://developers.facebook.com/docs/instagram-platform/changelog",
+    "https://about.instagram.com/blog/announcements/break-down-how-instagram-search-works/",
+    "https://transparency.meta.com/features/explaining-ranking/ig-search/",
+    "https://www.socialmediatoday.com/news/instagram-implements-new-limits-on-hashtag-use/808309/",
+    "https://about.fb.com/news/2024/12/trial-reels-try-content-non-followers-first-see-what-perfoms-best/",
+    "https://creators.instagram.com/recommendations-and-originality?locale=en_US",
+    "https://ppc.land/instagram-content-becomes-searchable-on-google-starting-july-10/"
+   ]
+  },
+  "youtube_shorts": {
+   "caption_max_chars": null,
+   "caption_recommended_chars": null,
+   "first_line_chars_visible": null,
+   "title_max_chars": 100,
+   "title_recommended_chars": 60,
+   "title_forbidden_chars": [
+    "<",
+    ">"
+   ],
+   "description_max_chars": 5000,
+   "description_length_unit": "UTF-8 bytes (API)",
+   "description_recommended_chars": [
+    100,
+    400
+   ],
+   "tags_max_chars_total": 500,
+   "hashtags": {
+    "min": 1,
+    "max": 3,
+    "recommended": 2,
+    "all_ignored_above": 60
+   },
+   "alt_text": {
+    "supported": false,
+    "max_chars": null,
+    "how": "No alt text; upload captions.srt (plain UTF-8) as the accessible text track."
+   },
+   "cover": {
+    "aspect": "9:16",
+    "safe_crop": "text box x120-888, y420-1248",
+    "text_max_words": 5,
+    "custom_upload": "YPP channels, desktop Studio, since 2026-07-24, no A/B; otherwise choose a frame"
+   },
+   "keyword_slots": [
+    {
+     "slot": "title",
+     "required": true,
+     "rule": "primary keyword within first 40 chars; no hashtags beyond 1"
+    },
+    {
+     "slot": "spoken_hook",
+     "required": true,
+     "rule": "primary keyword spoken by 3.0 s"
+    },
+    {
+     "slot": "on_screen_text",
+     "required": true,
+     "rule": "primary keyword card by 3.0 s"
+    },
+    {
+     "slot": "description_line_1",
+     "required": true,
+     "rule": "one sentence with primary + one secondary keyword"
+    },
+    {
+     "slot": "hashtags",
+     "required": true,
+     "rule": "2-3 in description; one = primary keyword"
+    },
+    {
+     "slot": "captions_track",
+     "required": true,
+     "rule": "upload captions.srt"
+    },
+    {
+     "slot": "tags",
+     "required": false,
+     "rule": "misspellings/variants only"
+    },
+    {
+     "slot": "related_video",
+     "required": false,
+     "rule": "link the series_plan follow-up"
+    }
+   ],
+   "disclosure": {
+    "ai_label_toggle": "Altered or synthetic content = Yes / status.containsSyntheticMedia=true",
+    "paid_partnership": "Paid promotion / paidProductPlacementDetails.hasPaidProductPlacement=true"
+   },
+   "audio_notes": "Audio Library sounds can surface on sound pages; Content ID changes for 1-3 min Shorts in virality §3.",
+   "sources": [
+    "https://support.google.com/youtube/answer/57407?hl=en",
+    "https://developers.google.com/youtube/v3/docs/videos",
+    "https://support.google.com/youtube/answer/6390658?hl=en",
+    "https://support.google.com/youtube/answer/15424877?hl=en",
+    "https://support.google.com/youtube/answer/16090438?hl=en",
+    "https://support.google.com/youtube/answer/11914225?co=YOUTUBE._YTVideoType%3Dshorts&hl=en",
+    "https://www.tubefilter.com/2026/07/24/youtube-shorts-custom-thumbnails-neal-mohan-feature-update/"
+   ]
+  }
+ },
+ "KEYWORD_RULES": {
+  "primary": {
+   "count": 1,
+   "words": {
+    "min": 2,
+    "max": 4
+   },
+   "form": "lowercase search phrase, singular head noun, no brand unless owned",
+   "match": "exact phrase, or all content-word lemmas present (order-free); pronouns never count",
+   "placement": {
+    "spoken": {
+     "by_s": 3.0,
+     "min": 1,
+     "max_per_30s": 3
+    },
+    "on_screen": {
+     "by_s": 3.0,
+     "min_duration_s": 1.0,
+     "max_words": 4,
+     "box_1080x1920": {
+      "x": [
+       120,
+       888
+      ],
+      "y": [
+       288,
+       1248
+      ]
+     },
+     "max_cards_with_keyword": 2
+    },
+    "caption_first_line": {
+     "within_chars": 60,
+     "line_max_chars": {
+      "tiktok": 100,
+      "instagram": 125
+     }
+    },
+    "yt_title": {
+     "within_chars": 40
+    },
+    "alt_text_substitute": "one literal description sentence containing the keyword once",
+    "cover_text": {
+     "contains": "head noun",
+     "max_words": 5
+    },
+    "hashtag": "exactly one hashtag = primary keyword without spaces"
+   }
+  },
+  "secondary": {
+   "max": 2,
+   "placement": [
+    "caption line 2 or YT description",
+    "optional one hashtag each",
+    "optional one spoken mention in body",
+    "TikTok Manage Keywords suggestions"
+   ]
+  },
+  "density": {
+   "caption_primary_exact_max": 2,
+   "caption_plus_hashtags_same_stem_max": 3,
+   "hashtags_off_topic_max": 0,
+   "banned_filler_tags": [
+    "#fyp",
+    "#foryou",
+    "#foryoupage",
+    "#viral",
+    "#trending",
+    "#explorepage",
+    "#shorts"
+   ],
+   "yt_description_rules": [
+    "no tag lists",
+    "no repeated sentences"
+   ],
+   "manage_keywords_suggest_max": 3
+  },
+  "intent_templates": [
+   {
+    "template": "{product} review",
+    "formats": [
+     "review"
+    ],
+    "hook_families": [
+     "transformation",
+     "question",
+     "proof-first"
+    ]
+   },
+   {
+    "template": "is {product} worth it",
+    "formats": [
+     "review"
+    ],
+    "hook_families": [
+     "question",
+     "curiosity-gap"
+    ]
+   },
+   {
+    "template": "{product} vs {alternative}",
+    "formats": [
+     "review",
+     "demo"
+    ],
+    "hook_families": [
+     "comparison"
+    ],
+    "requires": "real side-by-side footage; factual only"
+   },
+   {
+    "template": "how to use {product}",
+    "formats": [
+     "demo"
+    ],
+    "hook_families": [
+     "showcase",
+     "listicle"
+    ]
+   },
+   {
+    "template": "what to know before buying {product}",
+    "formats": [
+     "demo",
+     "review"
+    ],
+    "hook_families": [
+     "negative-command",
+     "problem-agitate"
+    ]
+   },
+   {
+    "template": "{product} mistakes",
+    "formats": [
+     "demo"
+    ],
+    "hook_families": [
+     "negative-command",
+     "contrarian-reframe"
+    ]
+   },
+   {
+    "template": "does {product} work",
+    "formats": [
+     "review",
+     "demo"
+    ],
+    "hook_families": [
+     "proof-first",
+     "question"
+    ]
+   },
+   {
+    "template": "{category} hack",
+    "formats": [
+     "demo"
+    ],
+    "hook_families": [
+     "showcase",
+     "newness"
+    ]
+   },
+   {
+    "template": "{product} for {use}",
+    "formats": [
+     "demo",
+     "review"
+    ],
+    "hook_families": [
+     "problem-agitate",
+     "pov"
+    ]
+   },
+   {
+    "template": "best {category} for {use}",
+    "formats": [
+     "review"
+    ],
+    "hook_families": [
+     "question"
+    ],
+    "requires": "question/search-label form only, never asserted (D141)"
+   },
+   {
+    "template": "{product} before and after",
+    "formats": [
+     "review"
+    ],
+    "hook_families": [
+     "transformation",
+     "day-counter"
+    ],
+    "requires": "honest, dated comparison"
+   },
+   {
+    "template": "{category} under ${price}",
+    "formats": [
+     "review",
+     "demo"
+    ],
+    "hook_families": [
+     "price-anchor"
+    ],
+    "requires": "price supplied (D37)"
+   },
+   {
+    "template": "{n} day {habit} challenge",
+    "formats": [
+     "pov-vlog"
+    ],
+    "hook_families": [
+     "challenge",
+     "day-counter"
+    ]
+   },
+   {
+    "template": "quit {thing} for {n} days",
+    "formats": [
+     "pov-vlog"
+    ],
+    "hook_families": [
+     "challenge",
+     "confession"
+    ]
+   }
+  ],
+  "selection_rules": [
+   "1. Normalize the product noun phrase from the prompt (singular, lowercase, drop brand unless owned); its last noun is the head noun.",
+   "2. Expand candidates with intent_templates allowed for the script's format and hook family.",
+   "3. Drop candidates that fail guardrails: unsupported superlative claim (D141), price without a supplied price (D37), health/absolute outcomes, competitor names without real footage.",
+   "4. Score demand 0-1: research-DB n-gram frequency in the niche's top reels (7-30 d, views-weighted) 0.5 + human-logged autocomplete or Creator Search Insights/YT Trends hit 0.3 + Google Trends (YouTube Search) non-zero 0.2.",
+   "5. Add +0.1 if flagged as a content gap (TikTok Creator Search Insights or YT 'content gaps for Shorts').",
+   "6. Require that the video actually answers the query (payoff matches intent); otherwise score 0.",
+   "7. Tie-break: fewer words, head noun first, natural fit in the existing spoken hook.",
+   "8. Pick exactly one primary; take the next two non-overlapping candidates as secondary; store all in the bundle (keyword, source, score)."
+  ],
+  "soft_rubric": {
+   "comment_word_equals_head_noun": "warn if the comment-word is not the head noun (TikTok search suggestions draw on comments) [A]"
+  }
+ },
+ "POSTING_GUIDANCE": [
+  {
+   "id": "PG1",
+   "platform": "all",
+   "guidance": "Post shortly before your own audience's active window (TikTok Studio Followers > Most active times; IG app insights; YT 'When your viewers are on YouTube').",
+   "label": "evidence-backed",
+   "grade": "M",
+   "source": "https://buffer.com/resources/when-is-the-best-time-to-post-on-instagram/"
+  },
+  {
+   "id": "PG2",
+   "platform": "all",
+   "guidance": "A universal 'best time to post' (e.g. Sun 9 am) will lift reach.",
+   "label": "myth/weak",
+   "grade": "A",
+   "source": "https://buffer.com/library/best-time-to-post-on-tiktok/"
+  },
+  {
+   "id": "PG3",
+   "platform": "tiktok",
+   "guidance": "2-5 posts/week vs 1 raises views/post ~17% by lifting the top decile; the median post doesn't improve.",
+   "label": "evidence-backed",
+   "grade": "M",
+   "source": "https://buffer.com/resources/how-often-should-you-post-on-tiktok/"
+  },
+  {
+   "id": "PG4",
+   "platform": "instagram",
+   "guidance": "3-5 posts/week roughly doubles follower growth vs 1-2.",
+   "label": "evidence-backed",
+   "grade": "M",
+   "source": "https://socialmediatoday.com/news/study-shows-posting-more-instagram-leads-to-more-reach/757633/"
+  },
+  {
+   "id": "PG5",
+   "platform": "youtube_shorts",
+   "guidance": "No minimum posting cadence is required; ranking follows viewer choice, retention and satisfaction.",
+   "label": "evidence-backed",
+   "grade": "P",
+   "source": "https://support.google.com/youtube/answer/11914225?co=YOUTUBE._YTVideoType%3Dshorts&hl=en"
+  },
+  {
+   "id": "PG6",
+   "platform": "instagram",
+   "guidance": "Test hooks as Trial Reels (MANUAL), read at 24-72 h, graduate the winner.",
+   "label": "evidence-backed",
+   "grade": "P",
+   "source": "https://about.fb.com/news/2024/12/trial-reels-try-content-non-followers-first-see-what-perfoms-best/"
+  },
+  {
+   "id": "PG7",
+   "platform": "all",
+   "guidance": "More hashtags = more reach.",
+   "label": "myth/weak",
+   "grade": "P",
+   "source": "https://www.socialmediatoday.com/news/instagram-implements-new-limits-on-hashtag-use/808309/"
+  },
+  {
+   "id": "PG8",
+   "platform": "tiktok",
+   "guidance": "#fyp / #foryou / #viral tags push videos to the For You feed.",
+   "label": "myth/weak",
+   "grade": "A",
+   "source": "https://newsroom.tiktok.com/en-us/how-tiktok-recommends-videos-for-you"
+  },
+  {
+   "id": "PG9",
+   "platform": "youtube_shorts",
+   "guidance": "#Shorts is required for a video to be a Short.",
+   "label": "myth/weak",
+   "grade": "P",
+   "source": "https://support.google.com/youtube/answer/15424877?hl=en"
+  },
+  {
+   "id": "PG10",
+   "platform": "all",
+   "guidance": "Keyword-rich file names improve ranking.",
+   "label": "myth/weak",
+   "grade": "A",
+   "source": "https://support.google.com/youtube/answer/16090438?hl=en"
+  },
+  {
+   "id": "PG11",
+   "platform": "youtube_shorts",
+   "guidance": "Tags drive discovery.",
+   "label": "myth/weak",
+   "grade": "P",
+   "source": "https://support.google.com/youtube/answer/57407?hl=en"
+  },
+  {
+   "id": "PG12",
+   "platform": "all",
+   "guidance": "Upload a clean, watermark-free master per platform; watermarked or copied content loses recommendation eligibility on Instagram.",
+   "label": "evidence-backed",
+   "grade": "P",
+   "source": "https://creators.instagram.com/recommendations-and-originality?locale=en_US"
+  },
+  {
+   "id": "PG13",
+   "platform": "all",
+   "guidance": "Explicitly asking for shares, tags or likes boosts distribution.",
+   "label": "myth/weak",
+   "grade": "P",
+   "source": "https://transparency.meta.com/features/approach-to-ranking/content-distribution-guidelines/engagement-bait/"
+  },
+  {
+   "id": "PG14",
+   "platform": "tiktok",
+   "guidance": "Track search share of views (Creator Search Insights / traffic source) and refine keywords with Manage Keywords.",
+   "label": "evidence-backed",
+   "grade": "S",
+   "source": "https://www.socialmediatoday.com/news/tiktok-lets-users-add-relevant-keywords-to-metadata/818507/"
+  },
+  {
+   "id": "PG15",
+   "platform": "instagram",
+   "guidance": "Verify every API publish: config_issue=CAPTION_NOT_ATTACHED means the caption (and its keywords) was dropped.",
+   "label": "evidence-backed",
+   "grade": "P",
+   "source": "https://developers.facebook.com/docs/instagram-platform/changelog"
+  }
+ ],
+ "DISCOVERY_CHECKLIST": {
+  "all": [
+   "Choose 1 primary + <=2 secondary keywords (KEYWORD_RULES.selection_rules); record source and score",
+   "Primary keyword spoken by 3.0 s and on screen by 3.0 s (>=1 s, safe box)",
+   "Comment-word = keyword head noun; exactly one CTA destination per platform (D46)",
+   "No bait (D139), invented numbers (D37/D136) or absolute claims (D141) in any caption, title, description, cover or alt-text substitute",
+   "AI presenter: caption disclosure line (D138) + each platform's AI toggle",
+   "Designate a cover frame/image with <=5 words inside x120-888, y420-1248",
+   "Export a clean master per platform (no foreign watermark); attach captions.srt"
+  ],
+  "tiktok": [
+   "Caption line 1 = hook with keyword in first 60 chars, line <=100 chars; total <=2,200 UTF-16 via API",
+   "Add one plain description sentence (alt-text substitute)",
+   "3 hashtags (max 5): primary keyword, niche community, intent/format; none off-topic",
+   "Set video_cover_timestamp_ms to the cover frame",
+   "Set is_aigc / brand_content_toggle / brand_organic_toggle as applicable",
+   "Shop: product link name = keyword + attribute, no promo text/emoji/price",
+   "After publish: pin a comment with keyword + CTA; Manage Keywords suggest/block",
+   "Day 7: check search share in Creator Search Insights; log results"
+  ],
+  "instagram": [
+   "Caption line 1 natural sentence with keyword in first 60 chars (<=125); total <=2,200",
+   "Description sentence as alt-text substitute; <=5 hashtags (3 recommended)",
+   "cover_url JPEG 9:16 with text in the 3:4/1:1-safe box (or thumb_offset)",
+   "is_ai_generated / is_paid_partnership as applicable; collaborators <=3; location only if true",
+   "Hook test: 2-3 Trial Reels (MANUAL), compare skip rate/watch time/shares at 24-72 h, graduate winner",
+   "Check media_publish response: no config_issue CAPTION_NOT_ATTACHED",
+   "Comment-word DMs via Private Replies within 7 days (one per comment)"
+  ],
+  "youtube_shorts": [
+   "Title <=100 chars (target <=60), keyword in first 40 chars, no < >",
+   "Description <=5,000 bytes: keyword sentence, disclosure, 2-3 hashtags; no tag lists",
+   "Tags only for misspellings (<=500 chars)",
+   "Upload captions.srt",
+   "Altered/synthetic = yes for realistic AI persona; paid promotion if applicable",
+   "Custom thumbnail if YPP (desktop), else pick the cover frame",
+   "Related video -> series_plan follow-up; CTA = comment-word or Related video, not a link",
+   "Day 7/28: Shorts analytics 'chose to view' vs swiped away; Trends tab content gaps for next keyword"
+  ]
+ },
+ "GATE_RULES": [
+  {
+   "id": "DISC-01",
+   "name": "keyword_spoken_early",
+   "stage": "gate1",
+   "severity": "error",
+   "check": "primary keyword (exact or all content lemmas) in dialogue whose cue ends <= 3.0 s",
+   "threshold": {
+    "by_s": 3.0,
+    "max_per_30s": 3
+   },
+   "source": "https://ads.tiktok.com/help/article/creative-best-practices ; https://support.google.com/youtube/answer/16090438?hl=en"
+  },
+  {
+   "id": "DISC-02",
+   "name": "keyword_on_screen",
+   "stage": "gate2",
+   "severity": "error",
+   "check": "an on_screen card containing the primary keyword starts <= 3.0 s, lasts >= 1.0 s, <= 4 words, inside x120-888/y288-1248",
+   "threshold": {
+    "by_s": 3.0,
+    "min_s": 1.0
+   },
+   "source": "https://ads.tiktok.com/resources/help/article/search-ads-creative"
+  },
+  {
+   "id": "DISC-03",
+   "name": "caption_first_line",
+   "stage": "gate2",
+   "severity": "error",
+   "check": "primary keyword within the first 60 chars of caption line 1; line 1 <= 100 (TikTok) / 125 (Instagram) chars",
+   "threshold": {
+    "within_chars": 60
+   },
+   "source": "https://about.instagram.com/blog/announcements/break-down-how-instagram-search-works/"
+  },
+  {
+   "id": "DISC-04",
+   "name": "hashtag_budget_relevance",
+   "stage": "gate2",
+   "severity": "error",
+   "check": "count within platform max (TT 5, IG 5, YT 3); exactly one tag = primary keyword; 0 off-topic or filler tags (token overlap with keywords or niche map)",
+   "threshold": {
+    "tiktok_max": 5,
+    "instagram_max": 5,
+    "youtube_max": 3,
+    "off_topic_max": 0
+   },
+   "source": "https://www.socialmediatoday.com/news/instagram-implements-new-limits-on-hashtag-use/808309/ ; https://support.google.com/youtube/answer/6390658?hl=en"
+  },
+  {
+   "id": "DISC-05",
+   "name": "no_keyword_stuffing",
+   "stage": "gate2",
+   "severity": "warn",
+   "check": "primary exact <= 2 in caption; same stem <= 3 across caption+hashtags; YT description has no tag lists or repeated sentences",
+   "threshold": {
+    "caption_exact_max": 2,
+    "stem_max": 3
+   },
+   "source": "https://support.google.com/youtube/answer/6390658?hl=en"
+  },
+  {
+   "id": "DISC-06",
+   "name": "platform_hard_limits",
+   "stage": "export",
+   "severity": "error",
+   "check": "TT caption <= 2,200 UTF-16 units; IG caption <= 2,200 chars, <= 20 mentions; YT title <= 100 chars without < >, description <= 5,000 UTF-8 bytes, tags <= 500 chars",
+   "threshold": {
+    "tt_utf16": 2200,
+    "ig_chars": 2200,
+    "yt_title": 100,
+    "yt_desc_bytes": 5000
+   },
+   "source": "https://developers.tiktok.com/doc/content-posting-api-reference-direct-post ; https://developers.google.com/youtube/v3/docs/videos"
+  },
+  {
+   "id": "DISC-07",
+   "name": "cover_safe",
+   "stage": "gate2",
+   "severity": "error",
+   "check": "cover frame/image designated; cover text <= 5 words, contains head noun, all glyphs inside x120-888/y420-1248",
+   "threshold": {
+    "max_words": 5,
+    "box": {
+     "x": [
+      120,
+      888
+     ],
+     "y": [
+      420,
+      1248
+     ]
+    }
+   },
+   "source": "https://developers.facebook.com/docs/instagram-platform/instagram-graph-api/reference/ig-user/media/"
+  },
+  {
+   "id": "DISC-08",
+   "name": "disclosure_flags",
+   "stage": "export",
+   "severity": "error",
+   "check": "presenter=ai -> TT is_aigc, IG is_ai_generated, YT containsSyntheticMedia all true + caption line (D138); paid -> brand_content_toggle / is_paid_partnership / hasPaidProductPlacement",
+   "threshold": {
+    "missing_allowed": 0
+   },
+   "source": "https://developers.facebook.com/docs/instagram-platform/changelog ; https://developers.google.com/youtube/v3/docs/videos"
+  },
+  {
+   "id": "DISC-09",
+   "name": "compliance_parity",
+   "stage": "gate2",
+   "severity": "error",
+   "check": "D46 one CTA destination, D139 bait lexicon, D37/D136 numbers and D141 absolutes applied to every platform caption, YT title/description, cover text and description sentence; YT CTA is not a URL",
+   "threshold": {
+    "cta_destinations_per_platform": 1,
+    "violations": 0
+   },
+   "source": "https://transparency.meta.com/features/approach-to-ranking/content-distribution-guidelines/engagement-bait/"
+  },
+  {
+   "id": "DISC-10",
+   "name": "clean_master_and_publish_verify",
+   "stage": "publish",
+   "severity": "error",
+   "check": "no foreign-platform watermark in any master; after IG publish, config_issue must be absent (CAPTION_NOT_ATTACHED -> alert)",
+   "threshold": {
+    "watermarks": 0,
+    "config_issue": "none"
+   },
+   "source": "https://creators.instagram.com/recommendations-and-originality?locale=en_US ; https://developers.facebook.com/docs/instagram-platform/changelog"
+  }
+ ],
+ "ENGINE": {
+  "_about": "Engine tables for vsp/discovery.py (WS-DISCOVERY). Everything above ENGINE is transcribed verbatim from the research doc.",
+  "cover": {
+   "safe_box": "x120-888 y420-1248",
+   "box_1080x1920": {
+    "x": [
+     120,
+     888
+    ],
+    "y": [
+     420,
+     1248
+    ]
+   },
+   "max_words": 5,
+   "why": {
+    "payoff": "payoff frame shows the result, so the cover promises what the video pays",
+    "frame0": "no payoff beat: frame 0 carries the product and the hook overlay"
+   },
+   "safe_note": "one text box inside x120-888, y420-1248 of the 1080x1920 frame survives the 3:4 grid, the 1:1 feed crop and the in-feed UI"
+  },
+  "d155": {
+   "hashtags_max": {
+    "tiktok": 5,
+    "instagram": 5,
+    "youtube_shorts": 15
+   },
+   "hashtags_recommended": {
+    "tiktok": 3,
+    "instagram": 3,
+    "youtube_shorts": 2
+   },
+   "yt_title_max_chars": 100,
+   "yt_title_forbidden": [
+    "<",
+    ">"
+   ],
+   "yt_title_keyword_within": 40,
+   "yt_desc_max_bytes": 5000,
+   "caption_first_line_within": 60,
+   "caption_first_line_max": {
+    "tiktok": 100,
+    "instagram": 125
+   },
+   "tt_caption_max_utf16": 2200,
+   "ig_caption_max_chars": 2200,
+   "caption_primary_exact_max": 2,
+   "banned_filler_tags": [
+    "#fyp",
+    "#foryou",
+    "#foryoupage",
+    "#viral",
+    "#trending",
+    "#explorepage",
+    "#shorts"
+   ]
+  },
+  "d158_patterns": [
+   "\\blimited[- ]time\\b",
+   "\\bonly \\d+ left\\b",
+   "\\bonly a few left\\b",
+   "\\b(?:few|\\d+) left in stock\\b",
+   "\\blimited stock\\b",
+   "\\bsale ends\\b",
+   "\\bdeal ends\\b",
+   "\\bends (?:tonight|today|soon|at midnight)\\b",
+   "\\b\\d{1,3}\\s?% off\\b",
+   "\\bpercent off\\b",
+   "\\bwhile (?:supplies|stocks?) lasts?\\b",
+   "\\blast chance\\b",
+   "\\bact (?:now|fast)\\b",
+   "\\bhurry\\b",
+   "\\bselling (?:fast|out)\\b",
+   "\\balmost gone\\b",
+   "\\bgoing fast\\b",
+   "\\btoday only\\b",
+   "\\bflash sale\\b",
+   "\\b(?:discount|promo|coupon) codes?\\b",
+   "\\buse (?:my )?code\\b",
+   "\\bfree shipping\\b",
+   "\\bbuy one,? get one\\b",
+   "\\bbogo\\b",
+   "\\bdon'?t miss out\\b",
+   "\\bbefore it'?s gone\\b",
+   "\\bprice goes up\\b"
+  ],
+  "keyword": {
+   "drop_modifiers": [
+    "electric",
+    "rechargeable",
+    "cordless",
+    "insulated",
+    "premium",
+    "luxury",
+    "upgraded",
+    "new",
+    "cute",
+    "aesthetic",
+    "cheap",
+    "best",
+    "top",
+    "ultimate",
+    "professional",
+    "limited",
+    "edition",
+    "led",
+    "original",
+    "authentic",
+    "genuine",
+    "official",
+    "deluxe",
+    "classic",
+    "viral",
+    "trending",
+    "amazing",
+    "perfect",
+    "handy",
+    "cool",
+    "fancy",
+    "little",
+    "tiny",
+    "super",
+    "matte",
+    "glossy",
+    "shiny",
+    "rated",
+    "top-rated",
+    "seller",
+    "sellers",
+    "bestseller",
+    "bestselling",
+    "selling",
+    "guaranteed",
+    "favorite",
+    "favourite",
+    "must-have",
+    "sale",
+    "discounted"
+   ],
+   "restore_modifiers": [
+    "led",
+    "electric",
+    "cordless",
+    "rechargeable",
+    "insulated",
+    "handheld",
+    "wireless",
+    "portable",
+    "mini",
+    "smart"
+   ],
+   "strip_leading": [
+    "a",
+    "an",
+    "the",
+    "my",
+    "this",
+    "these",
+    "your",
+    "our",
+    "some"
+   ],
+   "pack_tails": [
+    "set",
+    "kit",
+    "pack",
+    "bundle"
+   ],
+   "pair_nouns": [
+    "glasses",
+    "sunglasses",
+    "earbuds",
+    "headphones",
+    "earphones",
+    "eyelashes",
+    "lashes",
+    "scissors",
+    "tongs",
+    "pliers",
+    "leggings",
+    "jeans",
+    "pants",
+    "shorts",
+    "goggles",
+    "binoculars",
+    "clothes",
+    "tweezers",
+    "airpods",
+    "slippers",
+    "socks",
+    "sneakers",
+    "shoes",
+    "gloves",
+    "tights"
+   ],
+   "no_singular": [
+    "glass",
+    "dress",
+    "class",
+    "grass",
+    "gas",
+    "bus",
+    "lens",
+    "canvas",
+    "series",
+    "news",
+    "species",
+    "chassis",
+    "atlas",
+    "cactus",
+    "hummus",
+    "mattress",
+    "bass",
+    "boss",
+    "moss",
+    "floss",
+    "gloss",
+    "fitness",
+    "finds"
+   ],
+   "weak_heads": [
+    "bank",
+    "can",
+    "machine",
+    "device",
+    "unit",
+    "system",
+    "thing",
+    "item",
+    "product",
+    "set",
+    "kit",
+    "pack",
+    "stick",
+    "spray",
+    "bundle",
+    "case",
+    "holder",
+    "maker",
+    "stand",
+    "light",
+    "mount",
+    "cover",
+    "pad",
+    "clip",
+    "guard",
+    "band",
+    "remover"
+   ],
+   "comment_generic_heads": [
+    "machine",
+    "device",
+    "gadget",
+    "tool",
+    "item",
+    "thing",
+    "kit",
+    "set",
+    "system",
+    "unit",
+    "product",
+    "stick",
+    "can",
+    "bank",
+    "pack",
+    "bundle",
+    "spray",
+    "maker",
+    "holder",
+    "piece",
+    "stuff"
+   ],
+   "comment_word_overrides": {
+    "power bank": "POWERBANK"
+   },
+   "frame_words": [
+    "review",
+    "reviews",
+    "test",
+    "tips",
+    "tip",
+    "hacks",
+    "hack",
+    "mistakes",
+    "ideas",
+    "challenge",
+    "detox",
+    "finds",
+    "find",
+    "haul",
+    "guide",
+    "explained",
+    "day",
+    "days",
+    "before",
+    "after",
+    "worth",
+    "vs"
+   ],
+   "min_words": 2,
+   "max_words": 4,
+   "advice_frame": [
+    "why",
+    "how",
+    "what",
+    "no",
+    "one",
+    "nobody",
+    "tells",
+    "told",
+    "talks",
+    "about",
+    "the",
+    "truth",
+    "secret",
+    "secrets",
+    "tip",
+    "tips",
+    "hack",
+    "hacks",
+    "mistake",
+    "mistakes",
+    "sign",
+    "signs",
+    "things",
+    "to",
+    "stop",
+    "avoid",
+    "never",
+    "your",
+    "my",
+    "a",
+    "an",
+    "you",
+    "for",
+    "of",
+    "and",
+    "with",
+    "make",
+    "me",
+    "script",
+    "video",
+    "on",
+    "is",
+    "are",
+    "that",
+    "this",
+    "explained"
+   ],
+   "advice_verbs": [
+    "fail",
+    "fails",
+    "failing",
+    "don't",
+    "dont",
+    "doesn't",
+    "doesnt",
+    "convert",
+    "converts",
+    "work",
+    "works",
+    "matter",
+    "matters",
+    "suck",
+    "sucks",
+    "flop",
+    "flops",
+    "die",
+    "dies",
+    "is",
+    "are",
+    "need",
+    "needs",
+    "get",
+    "gets",
+    "stop",
+    "stops",
+    "keep",
+    "keeps",
+    "hurt",
+    "hurts",
+    "ruin",
+    "ruins",
+    "break",
+    "breaks",
+    "out",
+    "look",
+    "looks",
+    "feel",
+    "feels",
+    "go",
+    "goes",
+    "happen",
+    "happens",
+    "grow",
+    "grows",
+    "fall",
+    "falls",
+    "stay",
+    "stays",
+    "won't",
+    "can't",
+    "never",
+    "always",
+    "still",
+    "really",
+    "actually",
+    "matter",
+    "work",
+    "worked"
+   ]
+  },
+  "keyword_sentence": {
+   "product": {
+    "demo": "{Kw} test, start to finish.",
+    "review": "{Kw} review: the full verdict.",
+    "transformation": "{Kw} before and after.",
+    "talking-head": "{Kw}: what to know before buying.",
+    "pov-vlog": "{Kw} test, start to finish."
+   },
+   "showcase": "{Kw}, one by one.",
+   "challenge": "{Kw}, day by day.",
+   "routine": "{Kw}, step by step.",
+   "advice": "{Kw}, step by step."
+  },
+  "tiktok_line2": {
+   "product": {
+    "demo": "What to check before buying {a_kw}.",
+    "review": "Is {a_kw} worth it? The verdict is in the video.",
+    "transformation": "{Kw} before and after, same framing.",
+    "talking-head": "What to know before buying {a_kw}.",
+    "pov-vlog": "How to use {a_kw}, shown start to finish."
+   },
+   "showcase": "{Kw} that earn their spot, shown in use.",
+   "challenge": "The {kw}, day 1 to day {n}.",
+   "routine": "The {kw}, every step in order.",
+   "advice": "{Kw} you can use today."
+  },
+  "description_line": {
+   "product": {
+    "demo": "{Presenter} {test} {a_kw} up close, from first use to the result.",
+    "review": "{Presenter} {review} {a_kw}, with the test and the verdict on screen.",
+    "transformation": "Before and after with {a_kw}, in matched side-by-side framing.",
+    "talking-head": "{Presenter} talks through {a_kw} and shows it up close.",
+    "pov-vlog": "First-person clips of {a_kw} in use, start to finish."
+   },
+   "showcase": "{Kw} shown one by one, each item in use.",
+   "challenge": "Day-by-day clips of the {kw}, from day 1 to day {n}.",
+   "routine": "The {kw}, filmed step by step.",
+   "advice": "{Presenter} explains {kw} with on-screen examples."
+  },
+  "presenter_words": {
+   "ai": {
+    "Presenter": "An AI persona",
+    "test": "demonstrates",
+    "review": "reviews"
+   },
+   "human": {
+    "Presenter": "A presenter",
+    "test": "tests",
+    "review": "reviews"
+   }
+  },
+  "yt_title": {
+   "product": {
+    "demo": "{Kw} test: what to check before buying",
+    "review": "{Kw} review: is it worth it?",
+    "transformation": "{Kw} before and after",
+    "talking-head": "{Kw}: what to know before buying",
+    "pov-vlog": "{Kw}: how to use it, start to finish"
+   },
+   "showcase": "{Kw} that just make sense",
+   "challenge": "{Kw}: day {n} results",
+   "routine": "{Kw}: every step, day {streak}",
+   "advice": "{Kw}: {hook}"
+  },
+  "yt_desc_line1": {
+   "product": "{Kw}, start to finish.",
+   "showcase": "{Kw}, shown one by one.",
+   "challenge": "The {kw}, day 1 to day {n}.",
+   "routine": "The {kw}, step by step.",
+   "advice": "{Kw}, explained with examples."
+  },
+  "cover_text": {
+   "product": {
+    "demo": "{KW} TEST",
+    "review": "{KW} VERDICT",
+    "transformation": "{KW} BEFORE/AFTER",
+    "talking-head": "{KW} TEST",
+    "pov-vlog": "{KW} TEST"
+   },
+   "showcase": "{KW}",
+   "challenge": "{KW}: DAY {n}",
+   "routine": "{KW}",
+   "advice": "{KW}"
+  },
+  "secondary_topics": [
+   {
+    "match": "\\bpet hair\\b",
+    "phrases": [
+     "pet hair on couch",
+     "lint roller"
+    ]
+   },
+   {
+    "match": "\\bblue light\\b",
+    "phrases": [
+     "screen time",
+     "desk setup"
+    ]
+   },
+   {
+    "match": "\\bfroth",
+    "phrases": [
+     "latte at home",
+     "cold foam"
+    ]
+   },
+   {
+    "match": "\\b(?:coffee|espresso|latte|pour[- ]?over|french press)\\b",
+    "phrases": [
+     "coffee at home",
+     "coffee setup"
+    ]
+   },
+   {
+    "match": "\\bpillowcases?\\b",
+    "phrases": [
+     "night routine",
+     "hair care"
+    ]
+   },
+   {
+    "match": "\\b(?:sunrise|alarm)\\b",
+    "phrases": [
+     "wake up light",
+     "morning routine"
+    ]
+   },
+   {
+    "match": "\\b(?:white noise|noise machine|sleep|eye mask)\\b",
+    "phrases": [
+     "sleep routine",
+     "sleep tips"
+    ]
+   },
+   {
+    "match": "\\bprojectors?\\b",
+    "phrases": [
+     "movie night",
+     "home theater"
+    ]
+   },
+   {
+    "match": "\\b(?:earbuds|headphones|earphones)\\b",
+    "phrases": [
+     "commute essentials",
+     "workout music"
+    ]
+   },
+   {
+    "match": "\\b(?:door lock|travel|luggage)\\b",
+    "phrases": [
+     "travel safety",
+     "hotel room safety"
+    ]
+   },
+   {
+    "match": "\\b(?:hair|scalp|claw clip)\\b",
+    "phrases": [
+     "hair routine",
+     "hairstyle"
+    ]
+   },
+   {
+    "match": "\\b(?:eyelash|eyelashes|lashes|lash)\\b",
+    "phrases": [
+     "lash routine",
+     "makeup routine"
+    ]
+   },
+   {
+    "match": "\\b(?:makeup|mirror)\\b",
+    "phrases": [
+     "makeup routine",
+     "vanity setup"
+    ]
+   },
+   {
+    "match": "\\b(?:serum|skincare|skin|moisturizer|cleanser)\\b",
+    "phrases": [
+     "skincare routine",
+     "skincare tips"
+    ]
+   },
+   {
+    "match": "\\b(?:lunch|meal ?prep|food bags?)\\b",
+    "phrases": [
+     "meal prep",
+     "lunch ideas"
+    ]
+   },
+   {
+    "match": "\\b(?:waffle|air fryer|fryer|toaster|blender|kitchen|knife)\\b",
+    "phrases": [
+     "kitchen gadgets",
+     "easy breakfast"
+    ]
+   },
+   {
+    "match": "\\b(?:trash can|trunk|car)\\b",
+    "phrases": [
+     "car accessories",
+     "car organization"
+    ]
+   },
+   {
+    "match": "\\b(?:tire|jump starter)\\b",
+    "phrases": [
+     "car emergency kit",
+     "road trip essentials"
+    ]
+   },
+   {
+    "match": "\\b(?:bird|feeder)\\b",
+    "phrases": [
+     "bird watching",
+     "backyard birds"
+    ]
+   },
+   {
+    "match": "\\b(?:dog|puppy|leash|lick mat)\\b",
+    "phrases": [
+     "dog enrichment",
+     "dog walk"
+    ]
+   },
+   {
+    "match": "\\b(?:cat|kitten|litter)\\b",
+    "phrases": [
+     "cat care",
+     "cat essentials"
+    ]
+   },
+   {
+    "match": "\\b(?:resistance|bands?|dumbbell|kettlebell)\\b",
+    "phrases": [
+     "home workout",
+     "home gym"
+    ]
+   },
+   {
+    "match": "\\byoga\\b",
+    "phrases": [
+     "home workout",
+     "yoga for beginners"
+    ]
+   },
+   {
+    "match": "\\bposture\\b",
+    "phrases": [
+     "desk posture",
+     "posture check"
+    ]
+   },
+   {
+    "match": "\\b(?:power bank|charger|charging)\\b",
+    "phrases": [
+     "phone charging",
+     "travel essentials"
+    ]
+   },
+   {
+    "match": "\\b(?:camping|lantern|tent|hiking)\\b",
+    "phrases": [
+     "camping gear",
+     "camping essentials"
+    ]
+   },
+   {
+    "match": "\\b(?:office chair|laptop|desk|monitor)\\b",
+    "phrases": [
+     "desk setup",
+     "work from home"
+    ]
+   },
+   {
+    "match": "\\b(?:phone clamp|phone mount|tripod|ring light)\\b",
+    "phrases": [
+     "filming setup",
+     "content setup"
+    ]
+   },
+   {
+    "match": "\\b(?:water bottle|bottle)\\b",
+    "phrases": [
+     "hydration",
+     "daily water intake"
+    ]
+   },
+   {
+    "match": "\\b(?:humidifier|plug|vacuum|steamer|organizer)\\b",
+    "phrases": [
+     "home finds",
+     "apartment essentials"
+    ]
+   }
+  ],
+  "challenge_topics": {
+   "sugar": [
+    "quit sugar",
+    "sugar cravings"
+   ],
+   "caffeine": [
+    "quit coffee",
+    "coffee habit"
+   ],
+   "alcohol": [
+    "sober curious",
+    "dry month"
+   ],
+   "screen": [
+    "digital detox",
+    "screen time"
+   ],
+   "practice": [
+    "habit tracker",
+    "daily habit"
+   ]
+  },
+  "routine_topics": {
+   "morning": [
+    "productive morning",
+    "5am club"
+   ],
+   "night": [
+    "evening routine",
+    "sleep routine"
+   ],
+   "gym": [
+    "workout routine",
+    "gym motivation"
+   ],
+   "default": [
+    "daily routine",
+    "productive day"
+   ]
+  },
+  "showcase_topics": {
+   "kitchen": [
+    "kitchen gadgets",
+    "kitchen organization"
+   ],
+   "car": [
+    "car accessories",
+    "car must haves"
+   ],
+   "bathroom": [
+    "bathroom organization",
+    "bathroom must haves"
+   ],
+   "desk": [
+    "desk setup ideas",
+    "work from home"
+   ],
+   "default": [
+    "{domain} must haves",
+    "{domain} gadgets"
+   ]
+  },
+  "advice_topics": {
+   "creator": [
+    "content creator tips",
+    "short form video"
+   ],
+   "default": [
+    "{topic} mistakes",
+    "{topic} explained"
+   ]
+  }
+ }
+}

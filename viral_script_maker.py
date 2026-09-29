@@ -1090,6 +1090,11 @@ COMMENT_BAIT = [  # deliberate disagreement / fill-in-blank (952-comment example
 # 172–5433 comments) are always niche nouns, never the literal product
 # category. Cycle 11 fired "Comment MACHINE" — a generic tail noun is
 # comment-bait poison. Niche override wins; fallback is category uppercased.
+# WS-DISCOVERY (pipeline v2.1, discovery-seo §2): a PRODUCT's comment word is
+# now its primary keyword's head noun (FROTHER, PILLOWCASE — TikTok search
+# suggestions draw on comments; GLOW/FIND seed nothing). This map is the
+# fallback when the head is a container noun (white noise MACHINE -> SLEEP,
+# car trash CAN -> CAR) and still the showcase word (_cta_word).
 NICHE_COMMENT_WORD = {
  "wellness": "SLEEP", "home": "FIND", "pets": "PET",
  "fitness": "SET", "automotive": "CAR", "beauty": "GLOW",
@@ -1112,20 +1117,29 @@ CTAS = [
  "Save this before you forget. Link in bio.",
 ]
 
+# WS-DISCOVERY (pipeline v2.1, discovery-seo §1): hashtags LABEL content —
+# they never earn reach. #amazonfinds implies an Amazon listing, so it ships
+# only when the prompt names Amazon (_amazon_ok, D37 spirit), never as a
+# niche default; #organization tags organizers only (_PRODUCT_COMMUNITY_TAGS),
+# never a milk frother. build_caption leads with the compact primary-keyword
+# tag (#milkfrother) and adds product-matched community tags (3 total).
 CAPTION_TAGS = {
- "gadgets": ["#gadgets", "#techfinds", "#amazonfinds"],
+ "gadgets": ["#gadgets", "#techfinds"],
  "tech": ["#tech", "#techtok"],
  "pets": ["#petowner", "#furbaby", "#petsoftiktok"],  # D11 (judge loop, cycle 5)
  "wellness": ["#sleeptok", "#wellnesstok", "#selfcare"],  # D14 (judge loop, cycle 6)
  "automotive": ["#cartok", "#carhacks", "#caraccessories"],  # D18 (judge loop, cycle 7)
- "home": ["#homefinds", "#apartmenttherapy", "#amazonfinds"],  # D20 (judge loop, cycle 8)
+ "home": ["#homefinds", "#apartmenttherapy"],  # D20 (judge loop, cycle 8)
  # D91 (judge loop, cycle 22): "things in my kitchen that just make sense"
  # resolved niche=tools (via the "kitchen" keyword) but CAPTION_TAGS had no
  # tools entry — ninth D11-family fall-through, generic #viral #fyp #ugc on
  # a kitchen video against the juliana_claire kitchen class. The tools
  # niche (kitchen/clean/organize/knife/drill) captions on organization +
  # kitchen communities; #amazonfinds is the juliana-class universal.
- "tools": ["#organization", "#kitchentok", "#amazonfinds"],
+ # WS-DISCOVERY: #organization/#amazonfinds were off-topic on a milk
+ # frother (discovery-seo §1) — the niche default is the kitchen community;
+ # organizers and Amazon prompts get theirs from the product match.
+ "tools": ["#kitchentok", "#kitchengadgets"],
  "finance": ["#moneytok", "#personalfinance"],
  "fitness": ["#fitnesstips", "#gymtok"],
  "beauty": ["#beautytok", "#skincare"],
@@ -4846,7 +4860,160 @@ def _scoped_tags_raw(ctx):
         return CAPTION_TAGS[ctx["niche"]]
     return _default_tags(ctx)   # D140 (GEN-B): never generic-only
 
+# WS-DISCOVERY (pipeline v2.1, discovery-seo §1/§8): product-matched caption
+# communities. The niche map is coarse — #organization on a milk frother,
+# #petowner #furbaby on a wild-bird feeder, #homefinds #apartmenttherapy on
+# an office chair — so the product picks its community first (first match
+# on "product category domain prompt"); beauty keeps its D107 sub-category
+# tags; anything unmatched falls back to the niche map (_scoped_tags).
+_PRODUCT_COMMUNITY_TAGS = (
+    (r"\bpet hair\b", ["#petowner", "#cleantok"]),
+    (r"\b(?:cars?|trunk|tires?|dashboard|headrest|jump starter)\b",
+     ["#cartok", "#caraccessories"]),
+    (r"\bfroth|\b(?:espresso|coffee|latte|pour[- ]?over|french press)\b",
+     ["#coffeetok", "#latteathome"]),                     # discovery-seo §7
+    (r"\b(?:birds?|feeders?|birdhouse)\b", ["#birdwatching", "#birdtok"]),
+    (r"\b(?:dogs?|pupp(?:y|ies)|leash)\b", ["#dogsoftiktok", "#doglife"]),
+    (r"\b(?:cats?|kittens?|kitty|litter)\b", ["#catsoftiktok", "#catlife"]),
+    (r"\b(?:makeup|mirror|lipstick|mascara)\b", ["#makeuptok", "#beautytok"]),
+    (r"\bscalp\b", ["#hairtok", "#selfcare"]),
+    (r"\byoga\b", ["#yogatok", "#homeworkout"]),
+    (r"\b(?:dumbbells?|kettlebells?)\b", ["#homegym", "#gymtok"]),
+    (r"\b(?:resistance|bands?)\b", ["#homeworkout", "#fitnesstips"]),
+    (r"\bposture\b", ["#posture", "#fitnesstips"]),
+    (r"\b(?:lunch|meal ?prep|food bags?)\b", ["#mealprep", "#kitchentok"]),
+    (r"\b(?:kitchen|waffle|air fryer|fryer|toaster|blender|knife|kettle|"
+     r"cookware|cutting boards?)\b", ["#kitchentok", "#kitchengadgets"]),
+    (r"\b(?:vacuum|mop|steamer|lint|scrub|cleaning|cleaner)\b",
+     ["#cleantok", "#cleaninghacks"]),
+    (r"\b(?:drills?|screwdrivers?|wrench|toolbox|tool set|tools?)\b",
+     ["#diy", "#toolsoftiktok"]),
+    (r"\b(?:organi[sz]ers?|storage|drawers?|shel(?:f|ves))\b",
+     ["#organization", "#homeorganization"]),
+    (r"\b(?:door lock|travel|luggage|passport)\b",
+     ["#travelhacks", "#travelsafety"]),
+    (r"\b(?:office chair|laptops?|desk|monitor|keyboard|blue light)\b",
+     ["#desksetup", "#wfh"]),
+    (r"\b(?:ring light|tripod|phone mount|phone clamp)\b",
+     ["#creatorsetup", "#contentcreator"]),
+    (r"\b(?:sunrise|alarm)\b", ["#morningroutine", "#gadgets"]),
+    (r"\b(?:eye mask|sleep|white noise|night guard|teeth grinding)\b",
+     ["#sleeptok", "#selfcare"]),
+    (r"\bwater bottles?\b", ["#hydration", "#stayhydrated"]),
+    (r"\bsmart (?:plug|home|bulb)s?\b", ["#smarthome", "#techfinds"]),
+    (r"\b(?:camping|lanterns?|tents?|hiking)\b", ["#campingtok", "#campinggear"]),
+    (r"\bbathroom\b", ["#homefinds", "#apartmenttherapy"]),
+)
+# WS-DISCOVERY: practice-challenge communities by activity (the habit's own
+# community — #booktok on a reading streak); D67's food routing kept.
+_PRACTICE_COMMUNITY_TAGS = {
+    "reading": "#booktok", "walking": "#dailywalk", "running": "#runtok",
+    "journaling": "#journaling", "cooking": "#foodtok",
+    "meditating": "#meditation", "lifting": "#gymtok", "training": "#gymtok",
+    "writing": "#writingcommunity", "studying": "#studytok",
+    "stretching": "#mobility", "cleaning": "#cleantok", "saving": "#moneytok",
+    "swimming": "#swimming", "biking": "#cycling", "dancing": "#dancechallenge",
+}
+# container-head products take the niche noun only where it names what the
+# viewer wants (SLEEP, CAR, PET, CAMP) — never FIND/SET/GLOW (D34, §2)
+_NICHE_NOUN_FALLBACK = ("wellness", "automotive", "pets", "outdoors")
+
+
+def _disc():
+    """vsp.discovery (WS-DISCOVERY keyword engine) or None — without it the
+    caption keeps its v2.0 shape."""
+    try:
+        from vsp import discovery
+        return discovery
+    except Exception:
+        return None
+
+def _primary_kw(ctx):
+    d = _disc()
+    if d is None:
+        return None
+    try:
+        return d.primary_keyword(ctx)
+    except Exception:
+        return None
+
+def _amazon_ok(ctx):
+    """#amazonfinds implies an Amazon listing: only when the prompt says so."""
+    return bool(re.search(r"\bamazon\b", str(ctx.get("prompt_text") or
+                                             ctx.get("_prompt") or ""), re.I))
+
+def _community_tags(ctx):
+    if ctx.get("niche") == "beauty" and _beauty_subcat(ctx):
+        return list(_scoped_tags_raw(ctx))            # D107 sub-category
+    cue = " ".join(str(ctx.get(k) or "") for k in
+                   ("product", "category", "domain", "prompt_text")).lower()
+    for rx, tags in _PRODUCT_COMMUNITY_TAGS:
+        if re.search(rx, cue):
+            return list(tags)
+    return list(_scoped_tags_raw(ctx))
+
+def _routine_tags(ctx):
+    # routine_time defaults to "morning" when the prompt names no time, so
+    # only the label or an AM clock time is evidence of a morning routine
+    label = str(ctx.get("routine_label") or "").lower()
+    t = str(ctx.get("routine_time") or "").lower()
+    hm = re.match(r"(\d{1,2})(am|pm)$", t)
+    morning = "morning" in label or bool(hm and hm.group(2) == "am")
+    if "gym" in label or "workout" in label:
+        return ["#gymtok"] + (["#morningroutine"] if morning else ["#fitnesstips"])
+    if t == "night" or re.search(r"night|evening|wind[- ]?down|bedtime", label):
+        return ["#nightroutine", "#selfcare", "#sleeptok"]
+    if re.search(r"\bday in (?:my|the) life\b", label):
+        return ["#dailyvlog", "#vlog"]
+    if morning:
+        return ["#morningroutine"] + (["#5amclub"] if t == "5am" else []) + ["#selfimprovement"]
+    return ["#selfcare", "#selfimprovement"]
+
+def _caption_tags(ctx, kw, community):
+    """3 tags (cap 5): the compact primary-keyword tag first (#milkfrother),
+    then on-topic community tags; never a MISMATCH tag, never
+    #amazonfinds without an Amazon prompt."""
+    lead = []
+    d = _disc()
+    if kw and d is not None:
+        try:
+            t = d.compact_tag(kw)
+        except Exception:
+            t = None
+        if t:
+            lead.append(t)
+    comm = [t for t in community if t != "#amazonfinds"]
+    if _amazon_ok(ctx):
+        comm[1:1] = ["#amazonfinds"]
+    tags = list(dict.fromkeys(lead + comm))
+    return list(dict.fromkeys(_mismatch_safe(tags, ctx)))[:3]
+
 def _cta_word(ctx):
+    # WS-DISCOVERY (pipeline v2.1, discovery-seo §2): a PRODUCT's comment
+    # word is its primary keyword's head noun — FROTHER, PILLOWCASE, LOCK;
+    # TikTok search suggestions draw on comments, and GLOW/FIND/SET seed
+    # nothing. One token, so the bait beat's word count never grows (D88).
+    # A container head (white noise MACHINE, car trash CAN, waffle MAKER)
+    # takes the niche noun where it names the want (SLEEP, CAR; hair -> HAIR),
+    # else the keyword's own modifier (WAFFLE). Showcase and no-engine runs
+    # keep the D34/D107 words below.
+    if ctx.get("concept") == "product":
+        d = _disc()
+        head = prev = None
+        if d is not None:
+            try:
+                head, prev = d.comment_word_parts(d.primary_keyword(ctx))
+            except Exception:
+                d = None
+        if head:
+            return head
+        if d is not None:
+            if ctx.get("niche") == "beauty" and _beauty_subcat(ctx) == "hair":
+                return _BEAUTY_SUBCAT_TAGS["hair"][1]
+            if ctx.get("niche") in _NICHE_NOUN_FALLBACK:
+                return NICHE_COMMENT_WORD[ctx["niche"]]
+            if prev:
+                return prev
     # D107: beauty comment word is sub-category scoped ("comment HAIR" on hair
     # products, never "comment GLOW").
     if ctx.get("niche") == "beauty":
@@ -4865,11 +5032,28 @@ def _cta_word(ctx):
     return NICHE_COMMENT_WORD.get(ctx.get("niche"), fallback)
 
 def build_caption(ctx, hookline, fmt, presenter):
-    tags = _scoped_tags(ctx)
+    # WS-DISCOVERY (pipeline v2.1, discovery-seo §1/§8): ONE primary search
+    # keyword per video (vsp.discovery.primary_keyword — "milk frother",
+    # "no sugar challenge", "5am morning routine", "kitchen finds", "hook
+    # tips"). Caption line 1 carries it in its first 60 chars (the visible
+    # line, the Google snippet on Instagram): the hook line when it already
+    # says it, else the hook + a natural keyword sentence ("I quit sugar for
+    # 21 days. No sugar challenge, day by day."). Tags lead with the compact
+    # keyword tag. Without the engine: the v2.0 line 1 and tags.
+    kw = _primary_kw(ctx)
+    line1 = hookline
+    if kw:
+        try:
+            line1 = _disc().caption_line1(hookline, kw, ctx, fmt)
+        except Exception:
+            line1 = hookline
     # D10/E8: challenge captions name the method and carry the join-the-count
     # CTA — never a link list, never generic follow-bait.
     if ctx.get("concept") == "challenge":
         niche = ctx.get("niche", "default")
+        # WS-DISCOVERY: the span tag is the challenge's own span —
+        # #21daychallenge on 21 days, never #30daychallenge (discovery-seo §1)
+        span_tag = f"#{ctx.get('span_n') or 30}daychallenge"
         # D121 (judge loop, cycle 31): ABSTINENCE CAPTIONS NEVER INHERIT THE
         # VICE NOUN'S NICHE. "stopped drinking coffee" matched food ("coffee")
         # and the D107 branch shipped #foodtok #recipe on a quit-coffee
@@ -4880,33 +5064,41 @@ def build_caption(ctx, hookline, fmt, presenter):
         # habit community. #digitaldetox stays gated to the screen class it
         # was written for (D106).
         if ctx.get("challenge_type") == "practice":
-            if niche != "default":
-                # D67 (judge loop, cycle 17): practice-food challenges route the
-                # food caption community (#foodtok) — the challenge-only tag set
-                # (#digitaldetox) mis-routes them (D11/D14/D18/D20/D24 class).
-                tags = ["#30daychallenge"] + _scoped_tags(ctx)  # D107
-            else:
-                tags = ["#30daychallenge", "#selfimprovement"]  # D106
+            # D67 (judge loop, cycle 17): practice-food challenges route the
+            # food caption community (#foodtok); WS-DISCOVERY: the activity's
+            # own community first (#booktok on a reading streak).
+            act = (str(ctx.get("challenge_noun") or "").split() or [""])[0]
+            comm = _PRACTICE_COMMUNITY_TAGS.get(act)
+            if not comm:
+                comm = (_scoped_tags(ctx)[0] if niche != "default"
+                        else "#selfimprovement")  # D107 / D106
+        elif (ctx.get("abstinence_class") or "screen") == "screen":
+            comm = "#digitaldetox"   # D106: doomscrolling class only
         else:
-            tags = ["#30daychallenge"]
-            if (ctx.get("abstinence_class") or "screen") == "screen":
-                tags.append("#digitaldetox")  # D106: doomscrolling class only
-            tags.append("#selfimprovement")
+            comm = "#selfimprovement"
+        tags = _caption_tags(ctx, kw, [span_tag, comm])
         method = f"The {ctx['span_n']}-Day {ctx['challenge_noun'].title()} Reset"
-        lines = [hookline, "",
+        # the bait beat hard-codes DAY1 (build_beats) — the caption echoes it
+        # (D59/R14); the keyword lives in line 1 and the tags
+        lines = [line1, "",
                  f"{method} — Day {ctx['span_n']} results.",
                  "", "Comment DAY1 to start your own count. 👇", ""]
-    # D47 (judge loop, cycle 13): routine captions name the method (E8), ask
-    # the wake-time fill-in (identity comment — the comment engine, §17), and
+    # D47 (judge loop, cycle 13): routine captions name the method (E8) and
     # tag the routine community (#morningroutine/#5amclub), never #viral.
+    # WS-DISCOVERY: the caption echoes the bait beat's ROUTINE keyword
+    # (D59/R14 — "What time do you get up?" left every routine run without
+    # the echo); tags follow the routine's time (no #morningroutine on a
+    # night routine, #5amclub only at 5AM).
     elif ctx.get("concept") == "routine":
-        tags = (CAPTION_TAGS["routine"] if ctx.get("niche") == "wellness"
+        comm = (_routine_tags(ctx) if ctx.get("niche") == "wellness"
                 else _scoped_tags(ctx))   # D140 (GEN-B): never the generic default
-        method = (f"The {ctx['routine_time']} Rule" if ctx.get("niche") == "wellness"
+        tags = _caption_tags(ctx, kw, comm)
+        _rt = str(ctx["routine_time"])
+        method = (f"The {_rt[:1].upper() + _rt[1:]} Rule" if ctx.get("niche") == "wellness"
                   else ctx["routine_label"].title())
-        lines = [hookline, "",
+        lines = [line1, "",
                  f"{method} — Day {ctx['streak']} results.",
-                 "", "What time do you get up? 👇", ""]
+                 "", f"Comment ROUTINE for the {ctx['routine_time']} checklist 👇", ""]
     # D13-fix (judge loop, cycle 6): caption content follows the CONCEPT class,
     # not the format — a talking-head product script gets the product caption
     # (was landing in the advice-caption branch: "Follow for the daily
@@ -4921,23 +5113,29 @@ def build_caption(ctx, hookline, fmt, presenter):
         # viral product reel (part of conversion happens at the caption, where
         # the spoken CTA is skimmed). Same keyword as the bait beat, or the
         # funnel splits.
-        cta_word = _cta_word(ctx)  # D107: beauty sub-category scoped
+        cta_word = _cta_word(ctx)  # D107 / WS-DISCOVERY head noun
+        tags = _caption_tags(ctx, kw, _community_tags(ctx))
         # D61 (GEN-B): the POV line names the object ("the trash can"), not
         # the D76 differentiator tail ("the lid that finally delivered").
         pov_noun = (_hook_nouns(ctx)[0][1] if ctx.get("concept") == "product"
                     else ctx["category"])
-        lines = [hookline, "",
+        lines = [line1, "",
                  f"POV: the {pov_noun} that finally delivered.",
                  "", f"Comment {cta_word} for the full link list 👇", ""]
     else:
-        lines = [hookline, "",
+        tags = _caption_tags(ctx, kw, _scoped_tags(ctx))
+        lines = [line1, "",
                  "Follow for the daily breakdown.", ""]
         # D59/R14 (GEN-B): the advice bait's keyword ("comment HOOKS — I'll
         # send you the free 3-second hooks-fix checklist", build_beats) echoes
         # in the caption, like every product caption's keyword line.
+        # WS-DISCOVERY: "3-second" only on creator-craft topics (a skincare
+        # checklist is not a 3-second hook checklist).
         if ctx.get("concept") == "advice":
-            lines[2:2] = [f"Comment {ctx['category'].upper()} for the free "
-                          f"3-second checklist 👇", ""]
+            what = ("free 3-second checklist"
+                    if _CREATOR_TOPIC.search(str(ctx.get("product", "")))
+                    else "free checklist")
+            lines[2:2] = [f"Comment {ctx['category'].upper()} for the {what} 👇", ""]
     if presenter == "ai":
         lines.append("made with an AI persona")
         lines.append("")
