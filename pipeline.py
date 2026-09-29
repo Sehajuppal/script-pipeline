@@ -358,9 +358,16 @@ class Run:
     def stage_generate_select(self):
         a = self.a
         import viral_script_maker as vsm
-        from vsp import rubric, select as vsel
+        from vsp import priors as vpri, rubric, select as vsel
         self.cur = 3
         crash_tb = []
+        # learned state the maker consumes: skipped hook packs / bad priors
+        self.warn("learned", ["hook pack " + w for w in
+                              getattr(vsm, "HOOK_PACK_WARNINGS", None) or []])
+        pinfo = vpri.info()
+        if pinfo["exists"] and not pinfo["valid"] and not pinfo["disabled"]:
+            self.warn("learned", [f"{os.path.basename(pinfo['path'])} is not a valid "
+                                  f"schema-v1 priors file — ignored"])
 
         def gen_fn(seed):
             try:
