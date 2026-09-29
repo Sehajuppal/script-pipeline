@@ -177,6 +177,7 @@ def connect(path=None, create=False, migrate_schema=True):
         os.makedirs(d, exist_ok=True)
     con = sqlite3.connect(p, timeout=30, factory=IngestConnection)
     con.row_factory = sqlite3.Row
+    con.db_path = os.path.abspath(p)
     if migrate_schema:
         try:
             con.migration_actions = tuple(migrate(con))
