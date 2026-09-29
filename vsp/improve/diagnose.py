@@ -566,9 +566,10 @@ def build_tasks(ranked, base_ref):
         if not t:
             continue
         t = dict(t)
+        old = prev.get(t["id"]) or {}
         t.update({"score": o["score"], "evidence": o["evidence"][:6],
-                  "examples": o["examples"][:3], "status": "open",
-                  "first_seen": (prev.get(t["id"]) or {}).get("first_seen") or C.today(),
+                  "examples": o["examples"][:3], "status": old.get("status") or "open",
+                  "first_seen": old.get("first_seen") or C.today(),
                   "acceptance": f"python3 -m vsp.improve verify --base {base_ref} --cand HEAD",
                   "constraints": [
                       "work on a new branch or worktree — never commit to main/master",
@@ -577,6 +578,8 @@ def build_tasks(ranked, base_ref):
                       "never edit evals/golden.jsonl, evals/holdout.jsonl, evals/scorecard.py "
                       "or vsp/rubric.py (the yardstick)",
                       "open a PR with the verify evidence; never merge your own PR"]})
+        if old.get("delegation"):
+            t["delegation"] = old["delegation"]
         tasks.append(t)
     return tasks
 
