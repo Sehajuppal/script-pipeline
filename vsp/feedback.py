@@ -428,6 +428,10 @@ def link(con, media_id, manifest_path, trial=False, now=None, summary=None,
     if (old is not None and how in ("primary", None) and "variant_id" in old.keys()
             and old["variant_id"] and old["script_sha256"] == s["script_sha256"]):
         vid, how = old["variant_id"], "kept"
+    var = dict(hook_variants(sc)).get(vid) if vid else None
+    hook = s.get("hook")          # the script's (= the primary's) VERBAL HOOK ...
+    if var and vid != primary_variant(sc) and _clean_id(var.get("verbal"), 300):
+        hook = _clean_id(var.get("verbal"), 300)       # ... or the alternate's own
     row = {"media_id": mid, "permalink": reel["url"] if reel else None,
            "posted_at": reel["posted_at"] if reel else None,
            "script_sha256": s["script_sha256"], "slug": s.get("slug"),
@@ -436,7 +440,7 @@ def link(con, media_id, manifest_path, trial=False, now=None, summary=None,
            "presenter": s.get("presenter"), "format": s.get("format"),
            "duration_s": s.get("duration_s"), "seed": s.get("seed"),
            "manifest_path": s.get("manifest_path"), "is_trial": 1 if trial else 0,
-           "linked_at": now_ts, "hook": s.get("hook"),
+           "linked_at": now_ts, "hook": hook,
            "candidate_seed": s.get("candidate_seed"), "variant_id": vid}
     row.update(script_creative(sc, vid, s))
     row = {k: v for k, v in row.items() if k in have}     # a legacy posts table
@@ -1103,10 +1107,14 @@ def report(con, now=None, path=None, window=WINDOW):
             L.append(f"| {fam} | {e['n']} | {_pct(mean)} | {_pct(lo)}–{_pct(hi)} | {v} |")
     else:
         L.append("_Nothing yet._")
+    L += _section_lines(section_posteriors(lab))
 
     def line(p):
         who = " / ".join(x for x in (p.get("niche"), p.get("hook_family")) if x) or \
             "unlinked"
+        if p.get("variant_id"):
+            who += f" · variant {p['variant_id']}" + (f" ({p['hook_archetype']})"
+                                                     if p.get("hook_archetype") else "")
         hook = (p.get("hook") or "").strip()
         return (f"- {p.get('url') or p['media_id']} — {who}"
                 + (f" — “{hook[:90]}”" if hook else "")
@@ -1128,23 +1136,101 @@ def report(con, now=None, path=None, window=WINDOW):
                            "r.purge_after IS NULL AND NOT EXISTS (SELECT 1 FROM posts p "
                            "WHERE p.media_id = r.media_id)").fetchone()[0]
     L += ["", "## Pending", "",
-          f"- {unlinked} own reels are not linked to a script (no `#vsp-` tag, or no "
-          f"matching manifest.json) — they count toward the account median only.",
+          f"- {unlinked} own reels are not linked to a script (no `#vsp-` tag or "
+          f"caption-fingerprint match, or no matching manifest.json) — they count "
+          f"toward the account median only.",
           f"- {pend.get('no snapshot >= 24 h', 0)} own reels have no insights snapshot "
           f"at ≥ 24 h yet."]
     L += ["", "## How the loop works", "",
           "1. Post the reel with `#vsp-<first 8 hex of script_sha256>` in the caption "
-          "(manifest.json → script_summary.script_sha256), or link it by hand: "
+          "(manifest.json → script_summary.script_sha256; an alternate opening adds its "
+          "letter, `#vsp-<sha8>B`), or keep the bundle's caption line 1 (`link --auto` "
+          "matches its fingerprint), or link it by hand: "
           "`python3 -m vsp.feedback link --media-id ID --manifest outputs/<slug>/"
-          "manifest.json [--trial]`.",
+          "manifest.json [--trial] [--variant B]`.",
           "2. Hourly: `python3 -m vsp.ingest own && python3 -m vsp.feedback pull` "
           "(snapshots at ~24 h, 48 h, 7 d, 28 d).",
           "3. Daily: `python3 -m vsp.feedback learn && python3 -m vsp.feedback report` "
-          "→ learned/priors.json + this file."]
+          "→ learned/priors.json + this file.",
+          "4. Alternate openings posted as variants (Trial Reels): `python3 -m "
+          "vsp.feedback variants` after each look (24 h / 48 h / 72 h) → "
+          "learned/VARIANTS.md."]
     text = "\n".join(L) + "\n"
     p = path or os.path.join(config.learned_dir(), "PERFORMANCE.md")
     _write_atomic(p, text)
     return p, text
+
+
+SECTION_TITLES = {"archetype": ("Hook archetype", "hook archetype", "**{k}** hooks"),
+                  "visual_type": ("Frame-0 visual type", "frame-0 visual type",
+                                  "a **{k}** frame 0"),
+                  "vibe": ("Vibe", "vibe", "the **{k}** vibe"),
+                  "tone": ("Tone (voice)", "tone", "a **{k}** voice")}
+
+
+def _section_lines(secs):
+    """PERFORMANCE.md: one table per priors v2 section (pooled over niches;
+    wins/n per niche alongside) + a plain-English "What's working" line."""
+    L = ["", "## Creative choices — hook archetype, frame-0 visual, vibe, tone", ""]
+    if not any((secs.get(s) or {}).get("global") for s in SECTIONS):
+        return L + ["_No data yet._ No labelled post is linked to a v2.1 script that "
+                    "records its hook archetype, frame-0 visual type, vibe or tone "
+                    "(older scripts don't carry them). Tag the caption "
+                    "`#vsp-<sha8>[<letter>]` or keep the bundle's caption line 1 so "
+                    "`link --auto` can match its fingerprint."]
+    L.append("Pooled over niches (\"by niche\" = wins/n per niche); only linked posts "
+             "whose script records the choice count. The maker may use these only as a "
+             "tie-break after quality, and only at n ≥ 3.")
+    for sec in SECTIONS:
+        title, noun, phrase = SECTION_TITLES[sec]
+        body = secs.get(sec) or {}
+        glob, by = body.get("global") or {}, body.get("by_niche") or {}
+        L += ["", f"### {title}", ""]
+        if not glob:
+            L.append(f"_No data yet_ for the {noun}: no linked post records one.")
+            continue
+        ranked = sorted(glob.items(), key=lambda kv: (
+            -kv[1]["alpha"] / (kv[1]["alpha"] + kv[1]["beta"]), -kv[1]["n"], kv[0]))
+        L += [f"| {noun} | n | wins | posterior mean | ~90% interval | verdict | by niche |",
+              "|---|---:|---:|---:|---|---|---|"]
+        for key, e in ranked:
+            lo, hi = interval90(e["alpha"], e["beta"])
+            v, mean = _verdict(e)
+            niches = " · ".join(f"{n} {int(t[key]['alpha'] - 1)}/{t[key]['n']}"
+                                for n, t in by.items() if key in t)
+            L.append(f"| {key} | {e['n']} | {int(e['alpha'] - 1)} | {_pct(mean)} | "
+                     f"{_pct(lo)}–{_pct(hi)} | {v} | {niches} |")
+        L += ["", "**What's working:** " + _section_sentence(ranked, noun, phrase)]
+    return L
+
+
+def _section_sentence(ranked, noun, phrase):
+    judged = [(k, e) + _verdict(e) for k, e in ranked]      # (key, entry, verdict, mean)
+    wins = lambda e: int(e["alpha"] - 1)  # noqa: E731
+    good = [j for j in judged if j[2] == "working"]
+    bad = sorted([j for j in judged if j[2] == "not working"], key=lambda j: j[3])
+    parts = []
+    if good:
+        k, e, _, m = good[0]
+        parts.append(f"posts with {phrase.format(k=k)} beat your median {wins(e)} of "
+                     f"{e['n']} times (posterior {_pct(m)}) — keep using it")
+    if bad:
+        k, e, _, m = bad[0]
+        parts.append(f"posts with {phrase.format(k=k)} lag ({wins(e)} of {e['n']} above "
+                     f"your median, posterior {_pct(m)}) — try another {noun}")
+    if parts:
+        s = "; ".join(parts)
+        return s[0].upper() + s[1:] + "."
+    mixed = [j for j in judged if j[2] == "mixed"]
+    if mixed:
+        k, e, _, m = max(mixed, key=lambda j: (j[3], j[1]["n"]))
+        return (f"No clear winner yet — {phrase.format(k=k)} leads ({wins(e)} of {e['n']} "
+                f"above your median, posterior {_pct(m)}), but its ~90% interval still "
+                f"spans a coin flip.")
+    k, e, _, m = judged[0]
+    return (f"Too early to call — the best early signal is {phrase.format(k=k)} "
+            f"({wins(e)} of {e['n']} above your median); post ≥ 3 per {noun} before "
+            f"trusting it (the maker waits for n ≥ 3 too).")
 
 
 def _plain_english(lab, fams, glob):
@@ -1557,9 +1643,11 @@ def _variants_md(res, pol):
 
 
 def status(con, now=None):
+    from vsp.ingest.db import table_columns
     u = _util()
     now_dt = u.parse_ts(now) or u.utcnow()
     one = lambda q, a=(): con.execute(q, a).fetchone()[0]  # noqa: E731
+    cols = set(table_columns(con, "posts"))
     due = 0
     for r in con.execute("SELECT media_id, posted_at FROM reels WHERE is_own = 1 AND "
                          "purge_after IS NULL AND media_id IS NOT NULL"):
@@ -1573,10 +1661,14 @@ def status(con, now=None):
         try:
             with open(pri, encoding="utf-8") as f:
                 obj = json.load(f)
+            secs = obj.get("sections") if isinstance(obj.get("sections"), dict) else {}
             info = {"path": pri, "updated_at": obj.get("updated_at"),
                     "niches": len(obj.get("families") or {}),
                     "global_families": len(obj.get("global") or {}),
-                    "valid": not validate_priors(obj)}
+                    "valid": not validate_priors(obj),
+                    "schema_version": obj.get("schema_version"),
+                    "sections": {s: len((b or {}).get("global") or {})
+                                 for s, b in secs.items() if isinstance(b, dict)}}
         except (OSError, ValueError):
             info = {"path": pri, "valid": False}
     return {"own_reels": one("SELECT COUNT(*) FROM reels WHERE is_own = 1"),
@@ -1594,7 +1686,11 @@ def status(con, now=None):
             "priors": info,
             "performance_md": os.path.join(config.learned_dir(), "PERFORMANCE.md")
             if os.path.isfile(os.path.join(config.learned_dir(), "PERFORMANCE.md"))
-            else None}
+            else None,
+            "variant_linked": one("SELECT COUNT(*) FROM posts WHERE variant_id IS NOT "
+                                  "NULL") if "variant_id" in cols else 0,
+            "variants_md": os.path.join(config.learned_dir(), "VARIANTS.md")
+            if os.path.isfile(os.path.join(config.learned_dir(), "VARIANTS.md")) else None}
 
 
 # --------------------------------------------------------------- selfcheck
@@ -1666,7 +1762,9 @@ def selfcheck_v21():
             if sc:
                 try:
                     for name, fn in (("link", _sc_link), ("learn", _sc_learn),
-                                     ("variants", _sc_variants)):
+                                     ("variants", _sc_variants), ("report", _sc_report),
+                                     ("legacy DB", _sc_legacy),
+                                     ("determinism", _sc_determinism)):
                         C.step(name, fn, C, ctx, sc)
                 finally:
                     sc["con"].close()
@@ -1853,9 +1951,12 @@ def _sc_link(C, ctx, sc):
     got = {k: tuple(rows[mid[k]][c] for c in CREATIVE_COLUMNS) for k in want}
     C.check("link: posts gets variant_id + that variant's archetype / visual_type, "
             "direction vibe + tone.voice, discovery keyword; legacy scripts -> NULL; "
-            "hook_family unchanged",
+            "hook_family unchanged; hook = the opening actually posted",
             got == want and rows[mid["FB"]]["hook_family"] == "curiosity-gap" and
-            rows[mid["PC"]]["niche"] == "beauty", json.dumps(got)[:200])
+            rows[mid["PC"]]["niche"] == "beauty" and
+            rows[mid["FB"]]["hook"] == "Watch this foam hold for sixty seconds." and
+            rows[mid["FA"]]["hook"] == "The frother flaw nobody warns you about.",
+            "" if got == want else json.dumps(got)[:200])
     for k in ("FB", "FC", "LA", "LB"):          # mark the trials (no read-side flag)
         run = next(n for n, x in runs.items() if x["manifest"] == by[mid[k]]["manifest"])
         link(con, mid[k], runs[run]["manifest"], trial=True, now=now)
@@ -1884,7 +1985,8 @@ def _sc_link(C, ctx, sc):
             refused and code == 0 and out.get("variant_id") == "C" and
             out.get("hook_archetype") == "question" and
             out.get("visual_type") == "text-first" and
-            out.get("variant_from") == "explicit", str(out)[:160])
+            out.get("variant_from") == "explicit",
+            "" if out.get("variant_id") == "C" else str(out)[:160])
     con.execute("DELETE FROM posts WHERE media_id=?", (mid["LX"],))   # back to the
     con.execute("UPDATE reels SET script_slug=NULL WHERE media_id=?", (mid["LX"],))
     con.commit()                                                     # scenario
@@ -1942,7 +2044,8 @@ def _sc_learn(C, ctx, sc):
             fam["home"]["curiosity-gap"]["n"] == 3 and
             fam["home"]["negative-command"]["n"] == 2 and
             fam["beauty"]["transformation"] == {"alpha": 4.0, "beta": 1.0, "n": 3} and
-            sum(e["n"] for e in pri["global"].values()) == 10, json.dumps(fam)[:160])
+            sum(e["n"] for e in pri["global"].values()) == 10,
+            f"global n {sum(e['n'] for e in pri['global'].values())}")
     from vsp import priors as P
     lp = P.load_priors(config.priors_path())
     C.check("learn: round-trip through vsp.priors — load_priors v2, mean_for niche "
@@ -1975,6 +2078,146 @@ def _sc_learn(C, ctx, sc):
     C.check("validate_priors v2: missing section and alpha + beta - 2 != n flagged",
             any("exactly" in e for e in errs) and any("calm" in e and "!= n" in e
                                                       for e in errs), "; ".join(errs)[:160])
+
+
+def _sc_report(C, ctx, sc):
+    con, now = sc["con"], sc["now"]
+    path, text = report(con, now=now)
+    heads = ("## Creative choices — hook archetype, frame-0 visual, vibe, tone",
+             "### Hook archetype", "### Frame-0 visual type", "### Vibe", "### Tone (voice)")
+    C.check("report: PERFORMANCE.md gains archetype / frame-0 visual / vibe / tone "
+            "tables (n, wins, posterior mean, ~90% interval, by niche)",
+            path == os.path.join(ctx.learned, "PERFORMANCE.md") and
+            all(h in text for h in heads) and
+            "| clean-aesthetic | 6 | 4 |" in text and "beauty 3/3 · home 1/3" in text and
+            "| hook archetype | n | wins | posterior mean | ~90% interval |" in text and
+            "| home | curiosity-gap | 3 |" in text,
+            ", ".join(h for h in heads if h not in text))
+    C.check("report: a plain-English 'What's working' line per section",
+            text.count("**What's working:** ") == 4 and
+            "Posts with the **clean-aesthetic** vibe beat your median 4 of 6 times" in text
+            and "Posts with a **calm** voice beat your median 3 of 3 times" in text and
+            "Too early to call — the best early signal is **transformation** hooks" in text)
+    C.check("report: best/worst lines name the variant; the loop steps mention the "
+            "variant tag, fingerprints and `variants`",
+            "variant B (proof-first)" in text and "`#vsp-<sha8>B`" in text and
+            "fingerprint" in text and "python3 -m vsp.feedback variants" in text)
+    st = status(con, now=now)
+    C.check("status: variant-linked posts, priors schema + section sizes, VARIANTS.md",
+            st["variant_linked"] == 10 and st["priors"]["schema_version"] == 2 and
+            st["priors"]["valid"] and st["priors"]["sections"]["vibe"] == 2 and
+            st["variants_md"] == os.path.join(ctx.learned, "VARIANTS.md"),
+            json.dumps({k: st[k] for k in ("variant_linked", "priors")}, default=str)[:160])
+
+
+def _sc_legacy(C, ctx, sc):
+    """A v2.0 posts table read through a connection that does not migrate:
+    link / labels / learn / report / variants keep working (v1 output, plain
+    'no data'); connect() then adds the columns and a re-link fills them."""
+    import sqlite3
+    from vsp.ingest import db as idb
+    u = _util()
+    p = os.path.join(ctx.tmp, "v20-nomigrate.db")
+    idb.connect(p, create=True).close()
+    raw = sqlite3.connect(p)
+    raw.execute("DROP TABLE posts")
+    raw.execute(_V20_POSTS_DDL)
+    raw.commit()
+    raw.close()
+    runs, now = sc["runs"], sc["now"]
+    con = idb.connect(p, migrate_schema=False)
+    try:
+        caps = {"17900000000003001": "Desk cable chaos, fixed #vsp-"
+                + runs["cable-organizer"]["sha"][:8],
+                "17900000000003002": "Watch this foam hold for 60 seconds straight."}
+        for i, (mid, cap) in enumerate(sorted(caps.items())):
+            con.execute("INSERT INTO reels(platform, media_id, url, caption, posted_at, "
+                        "is_own, is_trial) VALUES ('instagram', ?, ?, ?, ?, 1, 0)",
+                        (mid, f"https://www.instagram.com/reel/FIXTURElegacy{i}/", cap,
+                         "2026-09-26 10:00:00"))
+            con.execute("INSERT INTO reel_metrics(media_id, captured_at, age_h, views, "
+                        "reach, shares, saves, avg_watch_ms, skip_rate) VALUES "
+                        "(?, ?, 48, ?, ?, ?, ?, ?, ?)",
+                        (mid, "2026-09-28 10:00:00", 1000 + 100 * i, 900, 9 + i, 12 + i,
+                         11000 + 500 * i, 40.0 - i))
+        con.commit()
+        rep = link_auto(con, roots=search_roots(), now=now)
+        lab = labels(con)
+        lp = os.path.join(ctx.tmp, "legacy-learned")
+        lr = learn(con, now=now, path=os.path.join(lp, "priors.json"))
+        with open(os.path.join(lp, "priors.json"), encoding="utf-8") as f:
+            pri = json.load(f)
+        _, text = report(con, now=now, path=os.path.join(lp, "PERFORMANCE.md"))
+        vr = variants(con, now=now, path=os.path.join(lp, "VARIANTS.md"))
+        with open(vr["path"], encoding="utf-8") as f:
+            vmd = f.read()
+        st = status(con, now=now)
+        C.check("legacy posts table, no migration: link --auto (tag + fingerprint), "
+                "labels, learn -> exactly priors v1, report says 'No data yet', "
+                "variants has no test",
+                len(rep["linked"]) == 2 and not set(CREATIVE_COLUMNS) & set(
+                    idb.table_columns(con, "posts")) and
+                all(x["variant_id"] is None for x in lab["posts"]) and
+                lr["schema_version"] == 1 and list(pri) == ["schema_version", "updated_at",
+                                                            "metric", "families", "global"]
+                and not validate_priors(pri) and "_No data yet._ No labelled post" in text
+                and vr["tests"] == [] and "_No script has ≥ 2 posted variants" in vmd and
+                st["variant_linked"] == 0, json.dumps(rep["fingerprint"]))
+    finally:
+        con.close()
+    con = idb.connect(p)                                  # now migrate on connect
+    try:
+        acts = set(con.migration_actions)
+        row = link(con, "17900000000003002", runs["electric-milk-frother"]["manifest"],
+                   now=u.parse_ts(now))
+        C.check("legacy DB: the next connect() adds the v2.1 columns; a re-link fills "
+                "the variant from the caption fingerprint",
+                {f"posts +{c}" for c in CREATIVE_COLUMNS} <= acts and
+                row["variant_id"] == "B" and row["variant_from"] == "fingerprint" and
+                row["hook_archetype"] == "proof-first")
+    finally:
+        con.close()
+
+
+def _sc_determinism(C, ctx, sc):
+    import subprocess
+    con, now = sc["con"], sc["now"]
+    norm = lambda o: json.loads(json.dumps(o, default=str, sort_keys=True))  # noqa: E731
+    r1 = variants(con, now=now)
+    with open(r1["path"], "rb") as f:
+        md1 = f.read()
+    r2 = variants(con, now=now)
+    with open(r2["path"], "rb") as f:
+        md2 = f.read()
+    learn(con, now=now)
+    with open(config.priors_path(), "rb") as f:
+        p1 = f.read()
+    learn(con, now=now)
+    with open(config.priors_path(), "rb") as f:
+        p2 = f.read()
+    t1, t2 = report(con, now=now)[1], report(con, now=now)[1]
+    C.check("determinism: variants (JSON + VARIANTS.md), learn (priors bytes) and "
+            "report are byte-identical on re-run",
+            norm(r1) == norm(r2) and md1 == md2 and p1 == p2 and t1 == t2)
+    outs = []
+    for seed in ("0", "4242"):
+        env = dict(os.environ, PYTHONHASHSEED=seed)
+        r = subprocess.run([sys.executable, "-m", "vsp.feedback", "--json", "variants"],
+                           cwd=config.REPO, env=env, capture_output=True, text=True,
+                           timeout=300)
+        try:
+            outs.append(json.loads(r.stdout))
+        except ValueError:
+            outs.append({"error": (r.stderr or r.stdout)[-300:]})
+    with open(r1["path"], "rb") as f:
+        md3 = f.read()
+    ts = re.compile(rb"Updated \S+ \S+ UTC")
+    same = [norm({k: o.get(k) for k in ("tests", "not_testable", "skip_scale")}) ==
+            norm({k: r1[k] for k in ("tests", "not_testable", "skip_scale")}) for o in outs]
+    C.check("determinism: `python3 -m vsp.feedback --json variants` in fresh processes "
+            "(PYTHONHASHSEED 0 / 4242) gives the in-process numbers and VARIANTS.md",
+            all(same) and ts.sub(b"", md3) == ts.sub(b"", md1),
+            "; ".join(o["error"] for o in outs if "error" in o)[:200])
 
 
 def _p_greater(b, a, steps=4000):
