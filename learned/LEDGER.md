@@ -56,3 +56,14 @@ code to pass, never pushes to main and never merges its own PRs.
 - failed: R9-guard: 1 weakening finding(s): yardstick changed: evals/scorecard.py (automation never edits the yardstick)
 - evidence: `learned/verify/20260929T222042Z-41700907e328-e5c9851543b4/evidence.json`, `learned/verify/20260929T222042Z-41700907e328-e5c9851543b4/evidence.md`
 
+## 2026-09-29 23:00:49Z · verify · 4170090 (41700907e328) → HEAD (9d922e730f1a) · ACCEPT
+
+- budget small (seeds 1), yardstick = base tree
+- golden: e2e 1.0→1.0 (flips +0/−0, p=1) · shippable 1.0→1.0 · rubric 98.9→98.9 Δ +0.00 [+0.00, +0.00] · audit 95.8→95.8 · compliance 0 · hooks changed 0/330 · distinct 0.6333→0.6333 · distinct-2 0.2102→0.2102
+- holdout: e2e 1.0→1.0 (flips +0/−0, p=1) · shippable 1.0→1.0 · rubric 97.9→97.9 Δ +0.00 [+0.00, +0.00] · audit 94.1→94.1 · compliance 0 · hooks changed 0/350 · distinct 0.58→0.58 · distinct-2 0.1948→0.1948
+- golden: hook distinct ratio 0.6333 → 0.6333 (+0.0000) · distinct-2 0.2102 → 0.2102 (+0.0000) · per-cell seed diversity None → None
+- holdout: hook distinct ratio 0.58 → 0.58 (+0.0000) · distinct-2 0.1948 → 0.1948 (+0.0000) · per-cell seed diversity None → None
+- self-test green (3.9.25 rc 0, 3.12.14 rc 0)
+- weakening guard: 0 finding(s); guarded files changed: none; yardstick changed: none
+- evidence: `learned/verify/20260929T225317Z-41700907e328-9d922e730f1a/evidence.json`, `learned/verify/20260929T225317Z-41700907e328-9d922e730f1a/evidence.md`
+
