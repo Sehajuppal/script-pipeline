@@ -51,6 +51,33 @@ def fixture_ok():
     return os.environ.get("VSP_FIXTURE_OK") == "1"
 
 
+def learned_dir():
+    """Where the self-improving loop keeps its state (VSP_LEARNED_DIR):
+      priors.json          performance priors per (niche, hook family)
+                           — written by vsp.feedback, read by the maker
+      hook_packs/*.json    evolved hook templates; the maker loads only
+                           status == "approved" packs — written by vsp.improve
+      LEDGER.md            every accepted/rejected improvement, with evidence
+      DIAGNOSIS.md, TASKS.md, PERFORMANCE.md   agent-facing reports
+    """
+    return os.environ.get("VSP_LEARNED_DIR") or os.path.join(REPO, "learned")
+
+
+def priors_path():
+    return os.path.join(learned_dir(), "priors.json")
+
+
+def hook_packs_dir():
+    return os.path.join(learned_dir(), "hook_packs")
+
+
+def ingest_config_path():
+    """Niche -> hashtags / benchmark handles for vsp.ingest (VSP_INGEST_CONFIG;
+    default <repo>/config/ingest.json, template config/ingest.example.json)."""
+    return os.environ.get("VSP_INGEST_CONFIG") or os.path.join(
+        REPO, "config", "ingest.json")
+
+
 def db_readable(path=None):
     """True only if the DB file exists and is non-empty. Never creates it
     (sqlite3.connect on a missing path would create an empty file)."""
