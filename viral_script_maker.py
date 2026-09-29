@@ -215,6 +215,7 @@ _EDU_NEXT_TEASES = ["the {category} spec that actually matters",
 _DEMO_NEXT_TEASES = ["round two, pushed harder",
                      "the stress test that ends it",
                      "the one detail nobody checks"]
+_DEMO_LATER_RESULTS = ["same result, pushed harder", "still holding up"]
 _CHALLENGE_REHOOK_PINS = ["Day 1 is where it almost fell apart.",
                           "Day {d}: the moment I almost quit.",
                           "Day {d}: the part nobody warns you about.",
@@ -588,7 +589,7 @@ COMPOUND_OBJECT_SLOTS = {
 # for two items.
 REVIEW_REJECT_BEATS = {
  "generic": [
-  "Full disclosure: I tried {n} {category_s} before this one. None lasted a week.",
+  "Full disclosure: I tried {n} {category_s} before this one. Not one lasted a week.",
   "Before this one, I tried {n} {category_s}. Broken, returned, or lying in the listing.",
  ],
  "automotive": [
@@ -1400,15 +1401,15 @@ BEAT_SHORT_FORMS = {
       "Honest start: I doubted {this_category}."],
  "Confession: I fumbled the first try. Left it in.": ["Confession: I fumbled the first try."],
  "Nobody's paying me. The first one I tried was garbage.":
-     ["The first one I tried was garbage.", "Nobody's paying me."],
+     ["The first one I tried was garbage."],
  "Real talk: my last set of bands snapped mid-rep.": ["My last bands snapped mid-rep."],
  "Honest start: my last ones rolled up by day two.": ["My last ones rolled up by day two."],
  "Real talk: my last sound machine died at 3AM. Twice.":
      ["Real talk: my last sound machine died at 3AM.", "My last one died at 3AM."],
  "Honest start: the last one rattled and hissed all night.": ["The last one rattled all night."],
  # REVIEW_REJECT_BEATS / REVIEW_REJECT_BEATS_AI
- "Full disclosure: I tried {n} {category_s} before this one. None lasted a week.":
-     ["I tried {n} {category_s} first. None lasted a week."],
+ "Full disclosure: I tried {n} {category_s} before this one. Not one lasted a week.":
+     ["I tried {n} {category_s} first. Not one lasted a week."],
  "Before this one, I tried {n} {category_s}. Broken, returned, or lying in the listing.":
      ["Before this one, I tried {n} {category_s}."],
  "Full disclosure: I tried {n} {category_s} first. They slid in turns or cooked in the sun.":
@@ -2102,6 +2103,11 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
             # tests only if it numbers at least two; the slot is neutralized
             # when there is a single demo beat.
             demo_t = demo_bank.draw()
+            # D143 (P3 at 45–60s): three of the four demo templates end on
+            # the same {result} sentence, so 2–3 demo beats repeated it
+            # verbatim; later rounds report their own outcome.
+            if i:
+                _dr = _DEMO_LATER_RESULTS[(i - 1) % len(_DEMO_LATER_RESULTS)]
             demo_slots = dict(
                 product=ctx["product"], action=_dt,
                 result=_dr,
@@ -2960,14 +2966,15 @@ def _fix_promises(body):
     next test now promises what follows (_rh_last); a re-hook whose promised
     beat type is gone falls back (_rh_fallback, or nothing)."""
     for i, b in enumerate(body):
-        if b.get("_rh_dropped"):
-            continue
+        # a budget-dropped re-hook is kept in _rh_orig for the restore pass —
+        # fix whichever field holds it
+        f = "_rh_orig" if b.get("_rh_dropped") else "rehook"
         nxt = body[i + 1].get("type") if i + 1 < len(body) else None
         if b.get("_rh_last") and nxt != b.get("type"):
-            b["rehook"] = b.pop("_rh_last")
+            b[f] = b.pop("_rh_last")
         need = b.get("_rh_needs")
         if need and not any(x.get("type") == need for x in body[i + 1:]):
-            b["rehook"] = b.get("_rh_fallback") or ""
+            b[f] = b.get("_rh_fallback") or ""
             b.pop("_rh_needs", None)
     # D111: a lone surviving demo beat numbers nothing ("TEST 1" with no
     # "TEST 2" once the second demo is budgeted out)
@@ -3090,6 +3097,16 @@ def _fit_timeline(hook, body, duration, presenter="ai"):
         _fix_promises(body)
         return True
 
+    def drop_cta():
+        # sub-20s only: PAYOFF+BAIT+CTA cannot fit the 28% post-payoff band
+        # at their floors; the comment bait already carries the follow ask
+        # (playbook: 215/349 viral reels ship no CTA) — the band wins.
+        i = next((j for j, b in enumerate(body) if b.get("type") == "CTA"), None)
+        if i is None or sum(1 for b in body if b.get("type") != "CTA") < 3:
+            return False
+        del body[i]
+        return True
+
     def pre_alt():
         _, _, m, k = regions()
         return any(next_alt(body[i]) for i in sorted(range(k), key=lambda i: -m[i]))
@@ -3104,6 +3121,7 @@ def _fit_timeline(hook, body, duration, presenter="ai"):
             return False
         i = max(c, key=lambda i: (_gate_words(body[i]["rehook"])
                                   / timing.wps(body[i].get("delivery")), i))
+        body[i]["_rh_orig"] = body[i]["rehook"]
         body[i]["rehook"] = ""
         body[i]["_rh_dropped"] = True
         return True
@@ -3136,6 +3154,8 @@ def _fit_timeline(hook, body, duration, presenter="ai"):
                 break
         if post_over and post_alt():
             continue
+        if post_over and D < 20 and drop_cta():
+            continue
         if pre_over:
             if drop(_DROP_OPTIONAL, 10 ** 6) or pre_alt() or drop_rehook() or trim():
                 continue
@@ -3146,7 +3166,37 @@ def _fit_timeline(hook, body, duration, presenter="ai"):
         if band is None:
             break
         lvl += 1
-    # 4. ship only public keys; lay out; re-time the contract (D94)
+
+    # 4. restore: the greedy reductions can over-cut (a short variant taken
+    #    before a re-hook drop made it unnecessary) — give back, in narrative
+    #    order, the longest line / card / re-hook the reached budget allows.
+    def holds():
+        pre, post, _, _ = regions()
+        band = levels[lvl]
+        return pre + post <= B + 1e-6 and (band is None or (
+            post <= (1 - band[0]) * D + 1e-6 and
+            pre <= band[1] * D - start + 1e-6))
+
+    if holds():
+        # with no band reached, a longer post-payoff line only moves the
+        # payoff earlier — restore the pre-payoff beats only
+        scope = body if levels[lvl] is not None else body[:pay_idx()]
+        for field, alts_key in (("dialogue", "_alts"), ("on_screen", "_os_alts")):
+            for b in scope:
+                cur = b.get(field) or ""
+                longer = [a for a in b.get(alts_key) or [] if len(a) > len(cur)
+                          and (field == "on_screen" or _gate_words(a) > _gate_words(cur))]
+                for a in longer:          # longest first
+                    b[field] = a
+                    if holds():
+                        break
+                    b[field] = cur
+        for b in body:
+            if b.get("_rh_orig") and not b.get("rehook"):
+                b["rehook"] = b["_rh_orig"]
+                if not holds():
+                    b["rehook"] = ""
+    # 5. ship only public keys; lay out; re-time the contract (D94)
     body = [{k: v for k, v in b.items() if not k.startswith("_") and
              not (k == "rehook" and not v)} for b in body]
     laid, info = timing.layout(body, D, start=start)
