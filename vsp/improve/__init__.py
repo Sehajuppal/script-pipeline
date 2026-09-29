@@ -24,5 +24,5 @@ VERSION = "1.0"
 def selfcheck(verbose=False):
     """Hermetic self-check (MockProvider, a localhost stub server, synthetic
     scorecards). -> (ok, lines). Never touches the network or the repo."""
-    from vsp.improve.selfcheck import selfcheck as _run
+    from vsp.improve.checks import selfcheck as _run
     return _run(verbose=verbose)

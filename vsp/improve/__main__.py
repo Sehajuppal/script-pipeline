@@ -70,7 +70,7 @@ def cmd_cycle(a):
 
 
 def cmd_selfcheck(a):
-    from vsp.improve.selfcheck import selfcheck
+    from vsp.improve.checks import selfcheck
     ok, lines = selfcheck(verbose=a.verbose)
     print("\n".join(lines))
     return 0 if ok else 1

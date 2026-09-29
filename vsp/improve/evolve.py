@@ -997,7 +997,7 @@ def llm_mutations(hooks, known, thin, failing, reels, n, provider=None):
 # ------------------------------------------------------------------ run
 def _sample_rows(vsm, rows, budget, seed):
     prods = [r for r in rows if r.get("concept", "product") == "product"]
-    k = BUDGETS[budget]["prompts"]
+    k = budget if isinstance(budget, int) else BUDGETS[budget]["prompts"]
     if not k or k >= len(prods):
         return prods
     by = collections.defaultdict(list)
@@ -1131,27 +1131,29 @@ def preview(vsm, rows, hooks, additions, seeds=(1, 2, 3)):
 
 
 def evolve(budget="full", use_llm="auto", seed=0, write=True, log=None, provider=None,
-           rows=None, pack_dir=None):
-    """-> result dict (see render()). write=False: nothing is written."""
+           rows=None, pack_dir=None, limits=None):
+    """-> result dict (see render()). write=False: nothing is written.
+    rows: golden rows to use (default: evals/golden.jsonl); limits: overrides
+    of BUDGETS[budget] (selfcheck runs a tiny search)."""
     if budget not in BUDGETS:
         raise C.ImproveError(f"budget must be one of {tuple(BUDGETS)}")
     say = log or (lambda m: None)
     t0 = time.time()
     record = []
     with holdout_guard(record):
-        res = _evolve(budget, use_llm, seed, write, say, provider, rows, pack_dir)
+        res = _evolve(budget, use_llm, seed, write, say, provider, rows, pack_dir, limits)
     res["holdout_opened"] = list(record)
     res["secs"] = round(time.time() - t0, 2)
     return res
 
 
-def _evolve(budget, use_llm, seed, write, say, provider, rows, pack_dir):
-    B = BUDGETS[budget]
+def _evolve(budget, use_llm, seed, write, say, provider, rows, pack_dir, limits=None):
+    B = dict(BUDGETS[budget], **(limits or {}))
     rng = random.Random(seed)
     vsm = load_maker()
     hooks, known, approved = effective_hooks(vsm)
     rows = rows if rows is not None else golden_rows()
-    sample = _sample_rows(vsm, rows, budget, seed)
+    sample = _sample_rows(vsm, rows, B["prompts"], seed)
     say(f"evolve: {len(sample)} golden product prompts x {len(C.FORMATS)} formats x "
         f"{len(C.PRESENTERS)} presenters; {sum(len(v) for v in hooks.values())} templates "
         f"in the production pool ({len(approved)} approved pack(s))")
@@ -1262,7 +1264,8 @@ def _evolve(budget, use_llm, seed, write, say, provider, rows, pack_dir):
         for fam, child, op, parent in kids:
             consider(fam, child, op, parent)
         if want_llm and llm_info["calls"] < B["llm_calls"]:
-            reels = [m["text"] for m in mined][:12]
+            reels = [m["text"] for m in mined
+                     if not m.get("niche") or m["niche"] in niches][:12]
             props, info = llm_mutations(hooks, known, thin_spots(contexts),
                                         failing_all[-12:], reels, B["llm_n"], provider)
             llm_info["calls"] += 1
