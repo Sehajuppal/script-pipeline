@@ -1,9 +1,20 @@
-"""Gate 1 (script) and gate 2 (brief) — moved verbatim from pipeline.py.
+"""Gate 1 (script) and gate 2 (brief) — the contract every script must pass.
 
-pipeline.py re-exports gate1/gate2 so existing callers keep working. The
-checks and their messages are byte-identical to d8f8759 (the self-test
-matches on message substrings). New registry rules (vsp/rules.py) are
-appended AFTER the legacy checks so legacy message order never changes.
+Layout (pipeline v2):
+  * the LEGACY checks (moved verbatim from pipeline.py d8f8759) live here, one
+    function per check, in their legacy order. Bodies are byte-for-byte the
+    old monolith's blocks; only the function boundaries are new.
+    legacy_gate1()/legacy_gate2() concatenate them exactly as the old
+    gate1()/gate2() did.
+  * vsp/rules.py registers every legacy check as a Rule (same messages, same
+    order) followed by the v2 rules (D136+); gate1()/gate2() below evaluate
+    that REGISTRY, so legacy messages always come first.
+  * gate1(script) / gate2(bundle_text, script) -> list[str] of ERROR
+    messages (the pass/fail contract; warnings never fail a gate).
+    gate1_findings / gate2_findings -> [{rule, severity, message}] incl.
+    warnings, for reports and the repair loop.
+
+The self-test matches on message substrings — never edit a legacy message.
 Never weaken a check here to make a script pass — fix the maker.
 """
 import json
@@ -26,10 +37,6 @@ STAGE_VERBS = ["cut to", "pan to", "b-roll", "on camera,", "on camera.",
 # screen is punctuation-robust on the adverbial forms now; bare "on camera"
 # (no trailing punctuation) stays out — it would false-positive on content
 # ("birds on camera every single morning", the feeder's camera feed).
-# commands (zoom in/out, push in included) are stage directions when spoken,
-# never presenter language — gauntlet cycle 4 fooled the old list with
-# "Watch as I zoom in on the detail"; cycle 5 fooled the zoom-repaired list
-# with "The camera pushes in." (push-in = dolly-in camera move).
 # "hold on [X]" is D58-spec'd but left out: broad-substring matching would
 # false-positive on presenter filler ("Hold on, let me tell you").
 # link-payload phrases grouped by destination — 2+ GROUPS hit = competing CTAs
@@ -38,6 +45,20 @@ LINK_GROUPS = [
     ["link list", "in your dms", "check your dms"],
     ["tap the link"],
 ]
+
+# DELIVERABLE block — canonical copy of make_shotlist.DELIVERABLE (a
+# downstream agent parses it; AGENT-BRIEF non-negotiable #4). Embedded, not
+# imported, on purpose: the gate is an independent witness, so an edit to the
+# shot-list constant makes every bundle fail gate 2 loudly instead of the
+# gate silently following the edit. The self-test asserts the two copies are
+# identical (vsp/selftest_cases.unit_cases "deliverable-block-in-sync").
+DELIVERABLE_BLOCK = (
+    "Render the FULL video as one long uncut master: everything you generated,\n"
+    "no trims, no pre-cutting, no tightening. Deliver that long master as the\n"
+    "deliverable. Marlowe cuts the 2-3 variants from it on the variant stage.\n"
+    "If there is a voiceover, also send words.json (word-level timings).\n"
+    "Captioning and variant cuts are Marlowe's stages \u2014 do not pre-apply them."
+)
 
 
 def words_per_sec(delivery):
@@ -51,13 +72,26 @@ def parse_t(t):
     return (float(m[0]), float(m[1])) if len(m) >= 2 else (None, None)
 
 
-def gate1(script):
+# ------------------------------------------------------ gate 1 legacy checks
+# One function per legacy block, in legacy order. Each returns its messages.
+
+def g1_required_keys(script):
     fails = []
     for k in ("prompt", "hook_stack", "beats", "caption", "niche"):
         if not script.get(k):
             fails.append(f"missing/empty required key: {k}")
+    return fails
+
+
+def g1_min_beats(script):
+    fails = []
     if len(script.get("beats", [])) < 3:
         fails.append("fewer than 3 beats")
+    return fails
+
+
+def g1_d37_price(script):
+    fails = []
     prompt = script.get("prompt", "").lower()
     # D37: no invented prices — D132 (gauntlet cycle 18: caption was unscanned —
     # "$39" in the caption sailed through. Caption ships to the viewer, so a
@@ -66,12 +100,23 @@ def gate1(script):
     scanned = json.dumps(script.get("beats",)) + " " + script.get("caption", "")
     if re.search(r"\$\d+", scanned) and not re.search(r"\$\d+", prompt):
         fails.append("D37: price in beats/caption but none in prompt — price invented")
+    return fails
+
+
+def g1_tag_mismatch(script):
+    fails = []
+    prompt = script.get("prompt", "").lower()
     # hashtag/niche mismatch
     tags = re.findall(r"#(\w+)", script.get("caption", "").lower())
     for tag in tags:
         for wrong, cue in MISMATCH:
             if wrong in tag and cue in prompt:
                 fails.append(f"hashtag/niche mismatch: #{tag} on '{prompt}'")
+    return fails
+
+
+def g1_d43_windows(script):
+    fails = []
     # D43 pre-check on beat windows (missing t is a failure, not a skip)
     for b in script.get("beats", []):
         if not b.get("t"):
@@ -83,6 +128,11 @@ def gate1(script):
             need = len(dlg.split()) / words_per_sec(b.get("delivery", ""))
             if need > (e - s) * 1.15:
                 fails.append(f"D43: {b.get('type')}: ~{need:.1f}s speech in {e-s:.1f}s window")
+    return fails
+
+
+def g1_d44_stage_directions(script):
+    fails = []
     # D44 pre-check: no stage directions in dialogue/rehooks
     for b in script.get("beats", []) + script.get("hook_stack", []):
         txt = (b.get("dialogue", "") + " " + b.get("rehook", "")).lower()
@@ -98,19 +148,35 @@ def gate1(script):
         if pm:
             fails.append(f"D44: parenthetical staging note in spoken line "
                          f"({b.get('type')}): '{pm.group(0)}'")
-    # D55: beat time windows must not overlap — the shot list owns one window
-    # per beat, so an overlap leaves 2.6s of timeline with two owners
+    return fails
+
+
+def _windows(script):
     wins = []
     for b in script.get("beats", []):
         s, e = parse_t(b.get("t", ""))
         if s is not None:
             wins.append((s, e, b.get("type", "?")))
+    return wins
+
+
+def g1_d55_overlap(script):
+    fails = []
+    # D55: beat time windows must not overlap — the shot list owns one window
+    # per beat, so an overlap leaves 2.6s of timeline with two owners
+    wins = _windows(script)
     for i in range(len(wins)):
         for j in range(i + 1, len(wins)):
             ov = min(wins[i][1], wins[j][1]) - max(wins[i][0], wins[j][0])
             if ov > 0.1:
                 fails.append(f"D55: beat windows overlap ({wins[i][2]} and {wins[j][2]} "
                              f"share ~{ov:.1f}s)")
+    return fails
+
+
+def g1_d74_budget(script):
+    fails = []
+    wins = _windows(script)
     # D74: beats must fit the duration budget — the last beat may not end past
     # duration_s. An overrun pushes the payoff past D7's 72–85% placement band
     # and breaks the hook's payoff_contract time (seed 801: hook promised the
@@ -121,6 +187,12 @@ def gate1(script):
         if last_end > dur:
             fails.append(f"D74: beats run to {last_end:.1f}s but duration is {dur}s "
                          f"— timeline exceeds budget")
+    return fails
+
+
+def g1_d78_gaps(script):
+    fails = []
+    wins = _windows(script)
     # D78: beats must tile the spoken timeline — no dead-air gaps. D55 covers
     # overlaps and D74 covers overruns, but a hole between two beats (seed 802:
     # 1.2s of nothing between DEMO 20.4s and PAYOFF 21.6s) leaves timeline with
@@ -134,6 +206,11 @@ def gate1(script):
         if gap > 0.5:
             fails.append(f"D78: dead-air gap (~{gap:.1f}s) between {t1} and {t2} "
                          f"({e1:.1f}s–{s2:.1f}s) — no beat owns that timeline")
+    return fails
+
+
+def g1_d94_contract(script):
+    fails = []
     # D94: the hook's payoff_contract names a delivery time — the PAYOFF beat
     # must actually land there. The D65 de-overlap pass shifts beats forward
     # in time to fix D55 overlaps but never re-times the contract (seed 805:
@@ -157,6 +234,11 @@ def gate1(script):
                                  f"but PAYOFF beat runs {ps:.1f}–{pe:.1f}s "
                                  f"— contract broken")
                 break
+    return fails
+
+
+def g1_d103_onscreen(script):
+    fails = []
     # D103: on_screen is display text, not a notes field — a sentence-length
     # block in on_screen (seed 807: the PAYOFF beat carried a 33-word
     # caption-style sentence) cannot be read in a ≤3s shot and is a caption
@@ -170,6 +252,11 @@ def gate1(script):
         if len(os_txt.split()) > 12:
             fails.append(f"D103: on_screen is a paragraph ({len(os_txt.split())} words, "
                          f"{b.get('type')}): '{os_txt[:60]}...' — display text, not notes")
+    return fails
+
+
+def g1_d111_test_numbering(script):
+    fails = []
     # D111: no dangling test numbering — the demo template prefixes "Test 1"
     # (dialogue and/or on_screen "TEST 1") even for single-test demos. A
     # numbered test with no Test 2 leaves the viewer waiting for a continuation
@@ -189,47 +276,126 @@ def gate1(script):
     return fails
 
 
-def gate2(bundle_text, script):
+LEGACY_GATE1 = (g1_required_keys, g1_min_beats, g1_d37_price,
+                g1_tag_mismatch, g1_d43_windows, g1_d44_stage_directions,
+                g1_d55_overlap, g1_d74_budget, g1_d78_gaps, g1_d94_contract,
+                g1_d103_onscreen, g1_d111_test_numbering)
+
+
+def legacy_gate1(script):
+    """The d8f8759 gate1(), reassembled from its blocks (reference/tests)."""
     fails = []
-    if "Render the FULL video as one long uncut master" not in bundle_text:
+    for fn in LEGACY_GATE1:
+        fails += fn(script)
+    return fails
+
+
+# ------------------------------------------------------ gate 2 legacy checks
+
+def g2_deliverable(bundle_text, script):
+    fails = []
+    # pipeline v2 — STRENGTHENED (the one legacy check deliberately changed):
+    # the old test matched only the first sentence ("Render the FULL video as
+    # one long uncut master"), so an edited tail ("trims allowed", a dropped
+    # words.json line) still passed. The whole DELIVERABLE block must now be
+    # present verbatim (CRLF-normalized). Same message, same position.
+    if DELIVERABLE_BLOCK not in bundle_text.replace("\r\n", "\n"):
         fails.append("DELIVERABLE block missing/altered")
+    return fails
+
+
+def g2_render_spec(bundle_text, script):
+    fails = []
     if "9:16" not in bundle_text:
         fails.append("no 9:16 render spec")
+    return fails
+
+
+def g2_words_json_requested(bundle_text, script):
+    fails = []
     if "words.json" not in bundle_text:
         fails.append("words.json not requested")
+    return fails
+
+
+def g2_do_not(bundle_text, script):
+    fails = []
     if "## Do NOT" not in bundle_text and "no burned" not in bundle_text.lower():
         fails.append("Do-NOT list missing from brief")
+    return fails
+
+
+def g2_words_schema(bundle_text, script):
+    fails = []
     if '"words"' not in bundle_text and "'words'" not in bundle_text:
         fails.append("words.json schema missing")
+    return fails
+
+
+def g2_reference_reels(bundle_text, script):
+    fails = []
     if bundle_text.count("instagram.com/reel/") < 1:
         fails.append("no reference reels — quality bar unanchored")
+    return fails
+
+
+def g2_d43_warnings(bundle_text, script):
+    fails = []
     if "D43 WARNING" in bundle_text:
         fails.append("D43 warnings present in bundle — unperformable dialogue shipped")
+    return fails
+
+
+def g2_d36_same_body(bundle_text, script):
+    fails = []
     prompt = script.get("prompt", "").lower()
     # D36
     if "same body" in bundle_text.lower() and "body" not in prompt:
         fails.append("D36: 'same body' used for a non-body transformation")
+    return fails
+
+
+def g2_b4a_follow_first(bundle_text, script):
+    fails = []
     # B4a: follow before keyword in comment-bait dialogue
     for b in script.get("beats", []):
         if b.get("type") == "COMMENT BAIT":
             d = b.get("dialogue", "").lower()
             if "comment" in d and ("follow" not in d or d.index("follow") > d.index("comment")):
                 fails.append("B4a: comment-bait lacks follow-before-keyword")
+    return fails
+
+
+def g2_d46_link_ctas(bundle_text, script):
+    fails = []
     # D46: competing link CTAs — phrases from 2+ payload groups is a failure
     # ("link list" + "in your DMs" is one payload, not competing)
     low = bundle_text.lower()
     groups_hit = [g for g in LINK_GROUPS if any(p in low for p in g)]
     if len(groups_hit) >= 2:
         fails.append(f"D46: competing link CTAs ({len(groups_hit)} payload destinations)")
-    # duration arithmetic (sub-shot numbering like 4a/4b supported)
-    shot_re = re.compile(r"### Shot (\d+[a-z]?) \((\d+(?:\.\d+)?)[\u2013-](\d+(?:\.\d+)?)s\)")
-    blocks = re.findall(r"### Shot \d+[a-z]? \([^)]+\) \u2014 ([^\n]+)\n((?:- [^\n]+\n?)+)", bundle_text)
-    shots = shot_re.findall(bundle_text)
+    return fails
+
+
+# duration arithmetic (sub-shot numbering like 4a/4b supported)
+_SHOT_RE = re.compile(r"### Shot (\d+[a-z]?) \((\d+(?:\.\d+)?)[\u2013-](\d+(?:\.\d+)?)s\)")
+_BLOCK_RE = re.compile(r"### Shot \d+[a-z]? \([^)]+\) \u2014 ([^\n]+)\n((?:- [^\n]+\n?)+)")
+
+
+def g2_shot_drift(bundle_text, script):
+    fails = []
+    shots = _SHOT_RE.findall(bundle_text)
     if shots:
         total = max(float(e) for _, _, e in shots)
         dur = script.get("duration_s", 30)
         if abs(total - dur) / dur > 0.15:
             fails.append(f"shot timeline ({total:.1f}s) drifts >15% from duration ({dur}s)")
+    return fails
+
+
+def g2_d48_internal_cuts(bundle_text, script):
+    fails = []
+    shots = _SHOT_RE.findall(bundle_text)
     # D48: no long static shots without internal cuts
     MOVE_KW = ("push-in", "push in", "pan", "tilt", "dolly", "handheld", "tracking", "move")
     for num, s, e in shots:
@@ -238,6 +404,12 @@ def gate2(bundle_text, script):
             body = blk.group(1).lower() if blk else ""
             if not any(k in body for k in MOVE_KW):
                 fails.append(f"D48: shot {num} is {float(e)-float(s):.1f}s with no internal cuts/camera move")
+    return fails
+
+
+def g2_d47_shot_scale(bundle_text, script):
+    fails = []
+    blocks = _BLOCK_RE.findall(bundle_text)
     # D47: no 3+ consecutive same-scale talking-head shots
     run = 0
     for beat, body in blocks:
@@ -249,3 +421,51 @@ def gate2(bundle_text, script):
         else:
             run = 0
     return fails
+
+
+LEGACY_GATE2 = (g2_deliverable, g2_render_spec, g2_words_json_requested,
+                g2_do_not, g2_words_schema, g2_reference_reels,
+                g2_d43_warnings, g2_d36_same_body, g2_b4a_follow_first,
+                g2_d46_link_ctas, g2_shot_drift, g2_d48_internal_cuts,
+                g2_d47_shot_scale)
+
+
+def legacy_gate2(bundle_text, script):
+    """The d8f8759 gate2() reassembled (DELIVERABLE check strengthened)."""
+    fails = []
+    for fn in LEGACY_GATE2:
+        fails += fn(bundle_text, script)
+    return fails
+
+
+# ------------------------------------------------------ registry-driven API
+
+def gate1_findings(script):
+    """All gate-1 findings, legacy rules first: [{rule, severity, message}]."""
+    from vsp import rules  # lazy: vsp.rules imports this module
+    return rules.evaluate("script", script)
+
+
+def gate2_findings(bundle_text, script):
+    """All gate-2 findings, legacy rules first: [{rule, severity, message}]."""
+    from vsp import rules
+    return rules.evaluate("bundle", script, bundle_text)
+
+
+def gate1(script):
+    """Gate-1 ERROR messages (legacy order first). Empty list = pass."""
+    return [f["message"] for f in gate1_findings(script)
+            if f["severity"] == "error"]
+
+
+def gate2(bundle_text, script):
+    """Gate-2 ERROR messages (legacy order first). Empty list = pass."""
+    return [f["message"] for f in gate2_findings(bundle_text, script)
+            if f["severity"] == "error"]
+
+
+def __getattr__(name):  # PEP 562: `from vsp.gates import REGISTRY`
+    if name == "REGISTRY":
+        from vsp.rules import REGISTRY
+        return REGISTRY
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
