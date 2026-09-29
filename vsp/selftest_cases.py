@@ -880,6 +880,13 @@ def _unit_creative_eval():
     got = {k: row.get(k) for k in want}
     if got != want:
         probs.append(f"v2.1 row {got} != {want}")
+    # audit: variant A is before-after-split but frame 0 is hook-hands-mid-action
+    swapped = CE.evaluate_files(s, None, _swap(v21_bundle(s), "hook-hands-mid-action · CU",
+                                               "split-before-after · CU"))
+    if row.get("frame0_visual_match") is not False or \
+            swapped.get("frame0_visual_match") is not True:
+        probs.append(f"frame0_visual_match {row.get('frame0_visual_match')} / "
+                     f"{swapped.get('frame0_visual_match')} (want False / True)")
     bundle, _, _ = make_shotlist.build_bundle(good, refs=[UNIT_REEL])
     leg = CE.evaluate_files(good, None, bundle)
     if leg["variant_count"] or leg["keyword_placement_pass"] or \

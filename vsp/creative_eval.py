@@ -26,6 +26,9 @@ Row fields
                         direction.pacing.avg_shot_s; None without a band)
   human_by_3s           >= 1.0 s of face/hands shots by 3.0 s (D157 signal)
   frame0_product_result the frame-0 shot shows product/result/subject
+  frame0_visual_match   audit: the frame-0 shot type realises the primary
+                        variant's visual_type (research SHOT_LIBRARY
+                        visual_types; None for ids outside it)
   loop_ok               loop marker on the last shot (None above 15 s)
   real_footage_marked   presenter=ai: every proof shot (strict: EVIDENCE /
                         PAYOFF / DEMO-result / purpose proof, any purpose)
@@ -49,6 +52,34 @@ import sys
 
 SECTION_NAMES = ("CREATIVE DIRECTION", "ALTERNATE OPENINGS", "SHOOT PLAN",
                  "POSTING & DISCOVERY")
+# research SHOT_LIBRARY (shots-cinematography §5.1): the shot ids that
+# realise each frame-0 visual type — an audit of "the frame-0 shot shows the
+# primary variant's visual" (ids outside the research library -> None)
+VISUAL_TYPE_SHOTS = {
+    "before-after-split": ("split-before-after",),
+    "comparison": ("comparison-side-by-side", "rejection-lineup"),
+    "day-counter": ("day-counter-selfie", "establishing-ws", "mirror-selfie",
+                    "pov-walk-in", "selfie-walk-talk", "timestamp-proof-insert"),
+    "face-reaction": ("face-reaction-product", "reaction-cutaway-3q",
+                      "talking-head-product-in-hand"),
+    "pov-hands": ("over-shoulder-demo", "overhead-hands-demo", "pov-hands-first-use"),
+    "problem-state": ("insert-object-detail", "matched-before", "problem-state-open",
+                      "stress-test-action", "toss-aside-cutaway"),
+    "product-in-action": ("hand-enters-pickup", "hook-hands-mid-action",
+                          "over-shoulder-demo", "overhead-hands-demo",
+                          "pour-dispense-cu", "product-operating-cu",
+                          "slowmo-hero-moment", "speed-ramp-reveal", "step-insert-cu",
+                          "stress-test-action", "turn-in-hand-light"),
+    "result-reveal": ("low-angle-hero-payoff", "match-cut-transform", "matched-after",
+                      "result-first-reveal", "speed-ramp-reveal", "timelapse-process",
+                      "timestamp-proof-insert"),
+    "satisfying-macro": ("macro-texture-ecu", "pour-dispense-cu",
+                         "product-operating-cu", "slowmo-hero-moment"),
+    "text-first": ("comment-typing-insert", "green-screen-explainer",
+                   "screen-insert", "text-card-over-motion"),
+    "unboxing": ("flat-lay-reveal", "unboxing-mid-open"),
+}
+_KNOWN_SHOTS = {i for ids in VISUAL_TYPE_SHOTS.values() for i in ids}
 SHOT_KEYS = ("shot_type", "scale", "move", "purpose", "energy", "ai_risk")
 ALT_HEAD = re.compile(r"^#### Alt opening ([A-Z])\b", re.M)
 GATE2_IDS = ("D157", "D159", "D160")
@@ -152,6 +183,7 @@ def evaluate_files(script, shots, bundle_text):
     else:
         row["cadence_in_band"] = None
     row["human_by_3s"] = row["frame0_product_result"] = False
+    row["frame0_visual_match"] = None
     row["loop_ok"] = None if not (_n(dur) and dur <= 15) else False
     row["real_footage_marked"] = None if not ai else False
     row["high_ai_risk_share"] = None
@@ -160,6 +192,10 @@ def evaluate_files(script, shots, bundle_text):
                     if any(RL.shot_signals(b).values()))
         row["human_by_3s"] = human >= 1.0 - 1e-9
         row["frame0_product_result"] = RL.frame0_shows_subject(blocks[0], s)
+        sid0 = (blocks[0].get("parsed") or {}).get("shot_type")
+        vt = prim.get("visual_type")
+        if sid0 and vt in VISUAL_TYPE_SHOTS and sid0 in _KNOWN_SHOTS:
+            row["frame0_visual_match"] = sid0 in VISUAL_TYPE_SHOTS[vt]
         if row["loop_ok"] is not None:
             last = max(blocks, key=lambda b: (b["e"], b["s"]))
             row["loop_ok"] = RL.has_loop_marker(last, blocks[0])
@@ -251,6 +287,7 @@ def summarize(rows):
            "cadence_in_band": _rate(rows, "cadence_in_band"),
            "human_by_3s": _rate(rows, "human_by_3s"),
            "frame0_product_result": _rate(rows, "frame0_product_result"),
+           "frame0_visual_match": _rate(rows, "frame0_visual_match"),
            "loop_ok": _rate(rows, "loop_ok"),
            "real_footage_marked": _rate(rows, "real_footage_marked"),
            "high_ai_risk_share_mean": _mean(rows, "high_ai_risk_share"),
