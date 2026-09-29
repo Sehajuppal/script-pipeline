@@ -52,39 +52,65 @@ MAKER_TO_PACK_NICHES = {
 # {proof} slot renders '4.9★' / '12,000+ orders' — a D136 violation by
 # construction) and never maps bait/absolute categories (comment-bait,
 # tag-challenge -> D139; superlative -> D141).
+#
+# WS-HOOKS (v2.1): the maker gained the hooks-deep-dive archetypes as HOOKS
+# families (problem-agitate, question, comparison, pov, newness, confession,
+# price-anchor, showcase, day-counter), so the categories that were mapped to
+# the nearest legacy stand-in now map to their own family: problem-solution
+# names the problem first (problem-agitate, not a command), question and
+# day-counter are families, relatability is POV (Motion 2026: Relatability ~
+# POV), unboxing is newness' frame 0, a satisfying process shows the thing
+# working (showcase), a disgust reveal opens on the problem state. fomo stays
+# a curiosity gap: urgency is never a family (D158). A family whose slot
+# needs a prompt input (price-anchor: {price}) still renders only with it
+# (D37) — the maker's slot gates decide, the map only names the preference.
 PACK_FAMILY_TO_HOOKS = {
     "curiosity-gap": "curiosity-gap",
-    "question": "curiosity-gap",
+    "question": "question",
     "payoff-tease": "curiosity-gap",
     "fomo": "curiosity-gap",
-    "unboxing": "curiosity-gap",
-    "day-counter": "curiosity-gap",
+    "unboxing": "newness",
+    "newness": "newness",
+    "new-product": "newness",
+    "day-counter": "day-counter",
     "bold-claim": "bold-claim",
     "transformation": "transformation",
     "before-after": "transformation",
-    "satisfying-process": "transformation",
-    "satisfaction-payoff": "transformation",
-    "disgust-reveal": "transformation",
+    "satisfying-process": "showcase",
+    "satisfaction-payoff": "showcase",
+    "showcase": "showcase",
+    "product-demo": "showcase",
+    "disgust-reveal": "problem-agitate",
     "grwm-hook": "transformation",
     "story-time": "story-time",
-    "pov": "story-time",
-    "relatable": "story-time",
-    "relatable-realness": "story-time",
-    "gym-relatable": "story-time",
+    "pov": "pov",
+    "relatable": "pov",
+    "relatable-realness": "pov",
+    "gym-relatable": "pov",
     "money-origin": "story-time",
     "what-i-eat": "story-time",
+    "confession": "confession",
     "controversy": "contrarian-reframe",
     "loophole-tip": "contrarian-reframe",
-    "problem-solution": "negative-command",
+    "problem-solution": "problem-agitate",
+    "problem-agitate": "problem-agitate",
     "tease-command": "negative-command",
+    "comparison": "comparison",
+    "versus": "comparison",
+    "price-anchor": "price-anchor",
+    "dupe": "price-anchor",
 }
 NEVER_FAMILIES = {"proof-first"}          # need invented receipts (D136)
 # first-person-anecdote families: an AI persona would voice lived experience
-# (D137) — skipped when the caller says presenter="ai"
-AI_UNSAFE_FAMILIES = {"story-time", "identity-reveal"}
+# (D137) — skipped when the caller says presenter="ai". WS-HOOKS: confession
+# (hooks-deep-dive: ai_safe false, every template human_only).
+AI_UNSAFE_FAMILIES = {"story-time", "identity-reveal", "confession"}
 _FALLBACK_HOOK_FAMILIES = ("curiosity-gap", "bold-claim", "negative-command",
                            "proof-first", "transformation", "story-time",
-                           "contrarian-reframe", "identity-reveal")
+                           "contrarian-reframe", "identity-reveal",
+                           "problem-agitate", "question", "comparison", "pov",
+                           "newness", "confession", "price-anchor", "showcase",
+                           "day-counter")
 
 _NULL_LIKE = {"", "none", "null", "nil", "n/a", "na", "unknown", "-", "--",
               "tbd", "?", "(none)", "no hook", "nan"}
