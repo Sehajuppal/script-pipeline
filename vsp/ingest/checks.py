@@ -276,6 +276,8 @@ def _ingest_checks(C, ctx):
 
     # ---------------------------------------------------------- importers
     C.step("importers", _check_importers, C, ctx, con, cfg)
+    # ------------------------------ closed loop: insights -> labels -> priors
+    C.step("insights -> labels -> priors", _check_loop, C, ctx, con, client, now)
     # ---------------------------------------------------------- classify
     C.step("classification", _check_classify, C, con, cfg)
     # --------------------------------------------------------- transcribe
@@ -414,6 +416,29 @@ def _check_importers(C, ctx, con, cfg):
             and snap["views"] == 1700 and snap["reach"] == 1500 and
             snap["source"] == "import:business-suite", str(own["skipped"]))
     con.execute("DELETE FROM reel_metrics WHERE media_id='17900000000001008'")
+    con.commit()
+
+
+def _check_loop(C, ctx, con, client, now):
+    """The ingest side of the closed loop (vsp.feedback has the full check):
+    own reels -> link via #vsp- tags -> insight snapshots -> priors.json."""
+    from vsp import config
+    from vsp import feedback as F
+    for tag8, niche, fam, dur, _ in FB_RUNS[:2]:
+        _manifest(os.path.join(ctx.outputs, f"run-{tag8}"), tag8 + "ef" * 28, niche,
+                  fam, dur)
+    rep = F.pull(con, client, now=now)
+    C.check("loop: pull links tagged own reels, then snapshots due checkpoints",
+            len(rep["link"]["linked"]) == 2 and rep["snapshots"] >= 8 and
+            rep["vanished"] == ["17900000000001012"], f"{rep['snapshots']} snapshots")
+    F.learn(con, now=now)
+    with open(config.priors_path(), encoding="utf-8") as f:
+        pri = json.load(f)
+    C.check("loop: learned/priors.json (VSP_LEARNED_DIR) passes the README v1 schema",
+            config.priors_path().startswith(ctx.learned) and not F.validate_priors(pri)
+            and pri["families"].get("beauty", {}).get("transformation", {}).get("n") == 2,
+            json.dumps(pri["families"])[:100])
+    con.execute("UPDATE reels SET purge_after=NULL WHERE media_id='17900000000001012'")
     con.commit()
 
 
@@ -836,6 +861,23 @@ def _feedback_checks(C, ctx):
         "SELECT 1 FROM posts WHERE media_id='17900000000000401'").fetchone())
     C.check("link --auto is idempotent", F.link_auto(con, roots=F.search_roots())[
         "linked"] == [])
+    # own renders next to a linked manifest -> optional transcription
+    from vsp.ingest import transcribe as T
+    with open(os.path.join(ctx.outputs, "run-11111111", "render.mp4"), "wb") as f:
+        f.write(b"\x00\x00\x00\x18ftypmp42FIXTURE")
+    on = {"transcribe": {"enabled": True}}
+    n0 = len(tr.calls)
+    r = jobs.run_transcribe(con, on, own_renders=True, env={}, transport=tr,
+                            runner=_fake_ffmpeg([]), ffmpeg="/bin/true")
+    C.check("transcribe own render: no-op without a key", r["candidates"] == 1 and
+            r["transcribed"] == 0 and len(tr.calls) == n0)
+    r = jobs.run_transcribe(con, on, own_renders=True, env={"VSP_ASR_API_KEY": "k"},
+                            transport=tr, runner=_fake_ffmpeg([]), ffmpeg="/bin/true")
+    row = con.execute("SELECT hook_source, transcript FROM reels WHERE "
+                      "media_id='17900000000001001'").fetchone()
+    C.check("transcribe own render: text kept, hook_source own_render",
+            r["transcribed"] == 1 and row["hook_source"] == "own_render" and
+            bool(row["transcript"]))
 
     # --------------------------------------------------------------- pull
     p = F.pull(con, client, now=now, link_first=False)

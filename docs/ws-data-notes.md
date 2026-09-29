@@ -171,7 +171,7 @@ An exit code of 3 just means "resume next tick". An exit code of 2 needs a human
 
 ## 7. Verified offline vs. needs a real token
 
-**Verified offline.** `python3.9|3.12 -m vsp.ingest selfcheck` (77 checks) and `-m vsp.feedback selfcheck` (26 checks) use canned `tests/fixtures/ig/*.json` over an injectable transport, a temp DB, temp learned dir and temp pack, with the network disabled. They cover:
+**Verified offline.** `python3.9|3.12 -m vsp.ingest selfcheck` (79 checks) and `-m vsp.feedback selfcheck` (28 checks) use canned `tests/fixtures/ig/*.json` over an injectable transport, a temp DB, temp learned dir and temp pack, with the network disabled. They cover:
 - migration and idempotency
 - pagination limits and dedupe
 - budget refusal before any call, the placeholder sync and the 7-day window
@@ -184,7 +184,7 @@ An exit code of 3 just means "resume next tick". An exit code of 2 needs a human
 - transcription (no-op without key/ffmpeg, multipart shape, audio deleted)
 - pack refresh (ranking, `top_reels`, vendor exclusion, keep-last-good, repo pack untouched)
 - purge, doctor (offline and online via the transport), CLI
-- link (summary and `script.json` fallback, `--auto`, `--trial`), checkpointed pull, unsupported-metric retry, vanished media
+- the closed loop in both: link (summary and `script.json` fallback, `--auto`, `--trial`), checkpointed pull, unsupported-metric retry, vanished media, own-render transcription
 - labels, the priors schema (and `vsp.priors` when present), and the report
 - `make_shotlist.niche_references` on the migrated DB
 
