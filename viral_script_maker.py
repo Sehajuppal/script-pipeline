@@ -1509,7 +1509,9 @@ def _render_hook_line(ctx, rng, line, auth):
         "category": ctx["category"], "ndays": ctx.get("ndays") or rng.choice([3, 7, 14, 30]),
         # D36: price may be None — guard the int() (belts-and-braces behind
         # D26's named-competitor gate; the {expensive} hook dies above anyway).
-        "expensive": (f"my ${int(ctx['price'])*8} {ctx['category']}"
+        # pipeline v2 crash fix: int("12.99") raised ValueError on every
+        # decimal-price prompt (baseline: 30/990 runs crashed) — float first.
+        "expensive": (f"my ${round(float(ctx['price'])*8)} {ctx['category']}"
                       if ctx.get("price") else f"a premium {ctx['category']}"),
         "flaw": f"the {ctx['category']} flaw everyone ignores",
         "moment": "3AM test", "proof": f"{rng.choice(['4.9★','12,000+ orders','sold out twice'])}",
@@ -1537,8 +1539,11 @@ def _render_hook_line(ctx, rng, line, auth):
     }
     if auth:
         slots.setdefault("authority", auth)
-    return line.format(**{k: v for k, v in slots.items()
-                          if '{'+k+'}' in line or True}).format(**slots)
+    # pipeline v2 crash fix: the old double .format() re-parsed rendered text,
+    # so a literal "{...}" in the prompt raised KeyError (baseline: 30/990
+    # runs). generate() strips braces from the prompt (D31); a single pass
+    # with the full slot dict renders every template.
+    return line.format(**slots)
 
 def _screen_pin(rendered):
     # D73 (judge loop, cycle 18): the D47/D67 pinned hooks bypass the
@@ -1892,7 +1897,7 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
                 result2=_dr,
                 # D36: price may be None (int(None) crashes); the {expensive}
                 # demo template is gated on named_competitor (D26) anyway.
-                expensive=(f"the ${int(ctx['price'])*8} name-brand one"
+                expensive=(f"the ${round(float(ctx['price'])*8)} name-brand one"
                            if ctx.get("price") else "the premium name-brand one"),
                 comparison="same job, a fraction of the price",
                 # D117 (judge loop, cycle 29): the flaw hook ("Nobody mentions
@@ -2038,10 +2043,14 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
             # the 3.9s payoff window) names the purpose fulfilled — desire
             # needs voice. The who-for + durability subversion ride the
             # on-screen VERDICT card — information rides text (85% muted).
-            payoff = (f"Verdict: BUY — {ctx['purpose_proof']}.")
-            payoff_on_screen = (f"VERDICT: BUY — for {ctx['who_for']} · "
-                                f"expected {ctx['expected_flop']}, "
-                                f"but {ctx['surprise']}")
+            # pipeline v2 crash fix: challenge/showcase/routine/advice ctx has
+            # no purpose_proof/who_for (KeyError on every review × non-product
+            # run, baseline 36/990) — concept-safe fallbacks.
+            payoff = (f"Verdict: BUY — "
+                      f"{ctx.get('purpose_proof') or ctx.get('measured_short') or 'it did the job'}.")
+            payoff_on_screen = (f"VERDICT: BUY — for {ctx.get('who_for') or DEFAULT_WHO} · "
+                                f"expected {ctx.get('expected_flop') or 'it to flop'}, "
+                                f"but {ctx.get('surprise') or 'it held up'}")
         elif fmt == "transformation":
             # D40 (judge loop, cycle 12): TRANSFORMATION PAYOFF = TRANSFORMATION
             # RESULT. Cycle 12's payoff delivered durability A7-subversion
@@ -2515,11 +2524,16 @@ def research_notes(ctx, presenter, fmt, fam):
     if _PACK and not _NO_RESEARCH:
         top3 = ", ".join(h["category"] for h in _PACK.get("top_hooks", [])[:3])
         pat3 = ", ".join(p["pattern"] for p in _PACK.get("top_patterns", [])[:3])
-        notes.append(f"LIVE RESEARCH (pack {_PACK["generated_at"][:10]}, {_PACK.get("reels_total",0)} reels): "
+        # py3.9 compatibility (pipeline v2): same-quote nested f-strings are
+        # PEP 701 (3.12+) syntax — they made the whole pipeline a SyntaxError
+        # on 3.9-3.11. Single-quoted keys; .get() so a partial pack can't raise.
+        notes.append(f"LIVE RESEARCH (pack {str(_PACK.get('generated_at', ''))[:10]}, "
+                     f"{_PACK.get('reels_total', 0)} reels): "
                      f"top hook families now: {top3}; top patterns: {pat3}.")
         fresh = _PACK.get("fresh_hook_lines", [])[:3]
-        for f in fresh:
-            notes.append(f"Fresh from the DB ({f["account"]}, {f["niche"]}): \"{f["hook"]}\"")
+        for fr in fresh:
+            notes.append(f"Fresh from the DB ({fr.get('account')}, {fr.get('niche')}): "
+                         f"\"{fr.get('hook')}\"")
     notes += [
       f"Hook family '{fam}': curiosity-gap + bold-claim = ~41% of viral hooks (hooks playbook §2).",
       "3-layer hook stack: visual 0–0.5s / verbal ≤8 words 0.5–1.5s / lock by 3.0s (playbook §1).",
@@ -2576,7 +2590,10 @@ def generate(prompt, presenter="ai", fmt="demo", duration=30, seed=None, use_res
     global _NO_RESEARCH
     _NO_RESEARCH = not use_research or _PACK is None
     rng = random.Random(seed)
-    ctx = parse_prompt(prompt)
+    # D31 + pipeline v2 crash fix: template braces in the prompt ("a {limited}
+    # edition bottle") are never product text — strip them before parsing so
+    # no raw {slot} can reach a template or the viewer.
+    ctx = parse_prompt(re.sub(r"\s+", " ", re.sub(r"[{}]", "", prompt)).strip())
     fam, beats = build_beats(ctx, duration, rng, fmt, presenter)
     # D63: spoken-voice pass over every spoken string before the script ships —
     # gates below measure the final spoken words, not the raw templates.

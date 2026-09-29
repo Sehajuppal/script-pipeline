@@ -20,17 +20,16 @@ import json, os, re, sqlite3, sys
 from datetime import datetime, timezone
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-PACK_PATH = os.path.join(HERE, "research_pack.json")
-DB_PATH = os.path.expanduser("~/workspace/viral-research/viral.db")
-DOSSIERS = {
-    "ugc": os.path.expanduser("~/workspace/goals/neuro-ad-research-program/files/ugc-persuasion-dossier.md"),
-    "persona": os.path.expanduser("~/workspace/goals/neuro-ad-research-program/files/ai-persona-persuasion-dossier.md"),
-}
+sys.path.insert(0, HERE)
+from vsp import config  # noqa: E402  (VSP_VIRAL_DB / VSP_RESEARCH_PACK / VSP_DOSSIER_DIR)
+
+PACK_PATH = config.research_pack_path()
+DB_PATH = config.viral_db_path()
+DOSSIERS = config.dossier_paths()
 
 def db_connect():
-    if not os.path.exists(DB_PATH):
-        return None
-    return sqlite3.connect(DB_PATH)
+    # read-only; a missing or 0-byte DB is "absent" (never created here)
+    return config.connect_ro(DB_PATH)
 
 def hook_rankings(con, niche=None, limit=8):
     q = ("SELECT hook_category, SUM(times_seen) s FROM hooks "
@@ -105,25 +104,37 @@ def build_pack():
         pack["sources"][f"dossier_{key}"] = path
     return pack
 
-def refresh():
+def refresh(force=False):
     pack = build_pack()
-    with open(PACK_PATH, "w") as f:
+    # pipeline v2: a host without the DB used to overwrite the last good pack
+    # with an empty one (reels_total 0, no rankings) — the maker then ran on
+    # nothing. Keep the last good pack unless --force.
+    if not pack.get("reels_total") and os.path.exists(PACK_PATH) and not force:
+        print(f"refresh skipped: research DB unavailable at {DB_PATH}; kept "
+              f"{PACK_PATH} (use --force to overwrite with an empty pack)",
+              file=sys.stderr)
+        return 1
+    tmp = PACK_PATH + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:   # atomic write
         json.dump(pack, f, indent=1)
+    os.replace(tmp, PACK_PATH)
     print(f"pack written: {PACK_PATH} "
           f"({pack.get('reels_total', 0)} reels, "
           f"{len(pack['verified_rules'])} verified rules)")
+    return 0
 
 def load_pack():
     if os.path.exists(PACK_PATH):
         try:
-            return json.load(open(PACK_PATH))
+            with open(PACK_PATH, encoding="utf-8") as f:
+                return json.load(f)
         except Exception:
             return None
     return None
 
 if __name__ == "__main__":
     if "--refresh" in sys.argv:
-        refresh()
+        sys.exit(refresh(force="--force" in sys.argv))
     elif "--json" in sys.argv:
         print(json.dumps(load_pack() or build_pack(), indent=1))
     else:

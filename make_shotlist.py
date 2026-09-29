@@ -15,6 +15,9 @@ standing template (DELIVERABLE block verbatim).
 """
 import json, re, sys, os
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from vsp import config  # noqa: E402  (VSP_VIRAL_DB, read-only DB access)
+
 BEAT_SHOT_DIRECTION = {
     "VISUAL TRIGGER": "Frame-0 composition, static or micro push-in. High contrast, readable with sound off.",
     "VERBAL HOOK + LOCK": "Medium close-up, direct to camera, eye-level. Brisk and confident.",
@@ -124,41 +127,43 @@ def shot_visual_prompt(sh, identity, product_desc, setting, light):
     return (f"{identity}. {detail}. Setting: {setting}. Light: {light}. {camera} "
             f"Photorealistic, 9:16 vertical. Any on-screen text is bold sans, high contrast.")
 
-def niche_references(niche, k=3):
-    """Top-k reels by likes in this niche: url + one-line why. Anchors the quality bar."""
+def niche_references(niche, k=3, db_path=None):
+    """Top-k reels by likes in this niche: url + one-line why. Anchors the quality bar.
+
+    Read-only (VSP_VIRAL_DB or ~/workspace/viral-research/viral.db): a missing
+    DB returns [] and is never created as an empty file (pre-2.0 the bare
+    sqlite3.connect() could create a 0-byte viral.db that then crashed
+    research_bridge --refresh)."""
+    db = None
     try:
-        import sqlite3
-        db = sqlite3.connect(os.path.expanduser("~/workspace/viral-research/viral.db"))
+        db = config.connect_ro(db_path)
+        if db is None:
+            return []
         rows = db.execute(
             "SELECT url, username, like_count, substr(notes,1,110) FROM reels "
             "WHERE niche LIKE ? AND url IS NOT NULL AND url != '' "
             "ORDER BY like_count DESC LIMIT ?", ("%"+niche+"%", k)).fetchall()
-        db.close()
-        out = []
-        for url, user, likes, notes in rows:
-            out.append(f"- {url} (@{user}, {likes or 0:,} likes) — {(notes or '').strip()}")
-        if not out:
+        if not rows:
             # fallback: niche absent from the DB (e.g. gadgets) — anchor on the
             # top reels overall rather than shipping unanchored
-            db = sqlite3.connect(os.path.expanduser("~/workspace/viral-research/viral.db"))
             rows = db.execute(
                 "SELECT url, username, like_count, substr(notes,1,110) FROM reels "
                 "WHERE url IS NOT NULL AND url != '' "
                 "ORDER BY like_count DESC LIMIT ?", (k,)).fetchall()
-            db.close()
-            for url, user, likes, notes in rows:
-                out.append(f"- {url} (@{user}, {likes or 0:,} likes) — {(notes or '').strip()}")
-        return out
+        return [f"- {url} (@{user}, {likes or 0:,} likes) \u2014 {(notes or '').strip()}"
+                for url, user, likes, notes in rows]
     except Exception:
         return []
+    finally:
+        if db is not None:
+            db.close()
 
 def parse_t(t):
     m = re.findall(r"(\d+(?:\.\d+)?)", t or "")
     return (float(m[0]), float(m[1])) if len(m) >= 2 else (0.0, 0.0)
 
-def main():
-    src = sys.argv[1]
-    d = json.load(open(src))
+def build_shots(d):
+    """Script dict -> (shots, vo_lines). Pure: no I/O."""
     items = []
     for h in d.get("hook_stack", []) or []:
         items.append(("HOOK", h.get("type", ""), h))
@@ -235,10 +240,12 @@ def main():
             final_shots.append(sh)
     shots = final_shots
 
-    slug = re.sub(r"[^a-z0-9]+", "-", d.get("prompt", "script").lower()).strip("-")
-    out = sys.argv[2] if len(sys.argv) > 2 else f"outputs/{slug}-bundle.md"
-    os.makedirs(os.path.dirname(out) or ".", exist_ok=True)
+    return shots, vo_lines
 
+
+def render_bundle(d, shots, vo_lines, refs=None):
+    """Script + shots -> bundle markdown (shot list + Antigravity brief).
+    `refs` defaults to niche_references(d["niche"]). DELIVERABLE verbatim."""
     # D64: model-followable brief assets — computed once, reused verbatim.
     # Persona-loop x pipeline (2026-09-28): the script's locked persona identity
     # wins over the per-niche map — ONE face across every video (Q2/F10: drift
@@ -360,7 +367,8 @@ def main():
     L.append("## Reference reels (human review — the quality bar)")
     L.append("The style notes above are distilled from these; the URLs are for human review, "
              "not for the model.")
-    refs = niche_references(d.get("niche", ""))
+    if refs is None:
+        refs = niche_references(d.get("niche", ""))
     L.extend(refs if refs else ["- (no references found for this niche)"])
     L.append("")
     L.append("## Render spec")
@@ -389,8 +397,37 @@ def main():
     L.append("")
     L.append("## Caption + hashtags (post as-is)")
     L.append(d.get("caption", ""))
-    bundle = "\n".join(L)
-    open(out, "w").write(bundle)
+    return "\n".join(L)
+
+
+def build_bundle(d, refs=None):
+    """Script dict -> (bundle_text, shots, vo_lines)."""
+    shots, vo_lines = build_shots(d)
+    return render_bundle(d, shots, vo_lines, refs), shots, vo_lines
+
+
+def main():
+    args = [x for x in sys.argv[1:]]
+    out = None
+    if "--out" in args:                      # documented form: --out bundle.md
+        i = args.index("--out")
+        out = args[i + 1] if i + 1 < len(args) else None
+        del args[i:i + 2]
+    if not args:
+        print("usage: make_shotlist.py script.json [bundle.md | --out bundle.md]",
+              file=sys.stderr)
+        sys.exit(2)
+    src = args[0]
+    if out is None and len(args) > 1:
+        out = args[1]
+    with open(src, encoding="utf-8") as f:
+        d = json.load(f)
+    bundle, shots, _ = build_bundle(d)
+    slug = re.sub(r"[^a-z0-9]+", "-", d.get("prompt", "script").lower()).strip("-")
+    out = out or os.path.join(config.outputs_dir(), f"{slug}-bundle.md")
+    os.makedirs(os.path.dirname(out) or ".", exist_ok=True)
+    with open(out, "w", encoding="utf-8") as f:
+        f.write(bundle)
     print(f"wrote {out} ({len(shots)} shots)")
     print("=" * 60)
     print(bundle)

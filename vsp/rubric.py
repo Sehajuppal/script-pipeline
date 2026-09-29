@@ -18,71 +18,17 @@ score(script) -> {"score", "selection_score", "audit_score", "checks",
 """
 import re
 
-WORD_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9'’.-]*")
+from vsp.lexicon import (ABSOLUTE, AI_FIRST_PERSON, FALLBACK_HOOK,  # noqa: F401
+                         GENERIC_BAIT, GENERIC_TAGS, LABEL_WORDS, LINK_GROUPS,
+                         MAX_HASHTAGS, META_LEAK, PRICE, SLOP, SOCIAL_PROOF,
+                         VAGUE_HOOK, WORD_RE, overlay_is_clean)
+
 T_RE = re.compile(r"(\d+(?:\.\d+)?)")
 
 STOP = set("""a an the for with my of and in on to that just make sense things
 thing days day every why your you how i stopped quit deleted ditched dropped
 gave up tried did unfollowed this these it its is are be was were buying
 make me script about video reel under best new mini portable set""".split())
-
-GENERIC_TAGS = {"fyp", "foryou", "foryoupage", "viral", "ugc", "trending",
-                "explore", "reels", "tiktok", "fy", "xyzbca"}
-
-LINK_GROUPS = [["link in bio"],
-               ["link list", "in your dms", "check your dms"],
-               ["tap the link"]]
-
-FALLBACK_HOOK = re.compile(
-    r"^nobody mentions (the [\w\s'-]+ flaw|it|no [\w\s'-]+)\.?$", re.I)
-VAGUE_HOOK = re.compile(
-    r"you won'?t believe|wait for it|this is crazy|watch this|must see", re.I)
-
-SOCIAL_PROOF = [
-    re.compile(r"\d(?:\.\d)?\s?(?:★|stars?\b)", re.I),
-    re.compile(r"\b\d[\d,.]*\s?[kKmM]?\+?\s*(?:orders|reviews|sold|customers|"
-               r"buyers|people bought|five-star)\b", re.I),
-    re.compile(r"\bsold out\b", re.I),
-    re.compile(r"\bbest[- ]?seller\b", re.I),
-]
-PRICE = re.compile(r"(?:[$€£]\s?\d[\d,]*(?:\.\d+)?|\b\d[\d,]*(?:\.\d+)?\s?"
-                   r"(?:dollars|bucks|usd|euros?|pounds)\b)", re.I)
-
-AI_FIRST_PERSON = [
-    re.compile(r"\bI (?:woke|slept|tried|used|bought|ordered|wore|felt|"
-               r"noticed|lost|gained|returned|switched to|swear by|"
-               r"can'?t live without|was skeptical)\b", re.I),
-    re.compile(r"\bI'?ve (?:been using|used|tried|had|worn|bought|owned|"
-               r"been wearing)\b", re.I),
-    re.compile(r"\bI (?:use|wear|love) (?:it|this|mine)\b", re.I),
-    re.compile(r"\bmy (?:skin|hair|face|back|neck|body|sleep|lashes|legs|"
-               r"feet|mornings?|knees|shoulders)\b", re.I),
-    re.compile(r"\b(?:changed|saved) my (?:life|mornings?|sleep|skin|back)\b",
-               re.I),
-]
-
-GENERIC_BAIT = re.compile(
-    r"\b(?:like if|tag a friend|tag someone|comment yes|type yes|"
-    r"share this with|double tap|smash that|like and subscribe|"
-    r"drop a (?:like|heart|🔥))\b", re.I)
-
-ABSOLUTE = re.compile(
-    r"(?:\bguarantee(?:d|s)?\b|\bcures?\b|\bmiracle\b|#1\b|\bnumber one\b|"
-    r"\bcheapest\b|\blowest price\b|\bbest\s+(?:\w+\s+)?ever\b|"
-    r"\b100% (?:effective|proven|safe|natural)\b|\brisk[- ]free\b|"
-    r"\bclinically proven\b)", re.I)
-
-SLOP = re.compile(
-    r"\b(?:game[- ]changer|you won'?t believe|wait for it|hey guys|"
-    r"in today'?s video|let'?s dive in|life[- ]changing|must[- ]have|"
-    r"trust me)\b", re.I)
-
-META_LEAK = re.compile(
-    r"(?:\bD\d{1,3}[a-c]?\b|\bplaybook\b|\bF\d{2,3}\b|\(split-screen|"
-    r"\b85%|sound-off|safe zone|timestamped\)|\bgate \d\b)", re.I)
-
-LABEL_WORDS = {"before", "after", "day", "test", "verdict", "wait", "volume",
-               "list", "full", "vs", "today", "turn", "your", "up", "result"}
 
 
 def _items(s):
@@ -268,17 +214,8 @@ def _c_frame0(s, ctx):
     ov = frame0_overlay(s).strip()
     if not ov:
         return False, "no frame-0 overlay"
-    w = _norm(ov).split()
-    if not 1 <= len(w) <= 3:
-        return False, f"{len(w)} words: {ov!r}"
-    if "|" in ov or ":" in ov or set(w) <= LABEL_WORDS | {"1", "7", "14",
-                                                           "21", "30"}:
-        return True, "label form"
-    hook = _norm(hook_line(s)).split()
-    for i in range(len(hook) - len(w) + 1):
-        if hook[i:i + len(w)] == w:
-            return True, "contiguous hook phrase"
-    return False, f"fragment (not a contiguous hook phrase): {ov!r}"
+    ok, why = overlay_is_clean(ov, hook_line(s))
+    return ok, f"{why}: {ov!r}"
 
 
 def _c_onscreen(s, ctx):
@@ -332,7 +269,7 @@ def _c_speech_rate(s, ctx):
 
 def _c_hashtags(s, ctx):
     tags = [t.lower() for t in re.findall(r"#(\w+)", s.get("caption") or "")]
-    if not 2 <= len(tags) <= 5:
+    if not 1 <= len(tags) <= MAX_HASHTAGS:
         return False, f"{len(tags)} hashtags"
     if all(t in GENERIC_TAGS for t in tags):
         return False, f"generic-only tags {tags}"
@@ -404,7 +341,7 @@ CHECKS = [
     ("R10", "re-hooks present and never repeated", "I", 2, False, _c_rehooks),
     ("R11", "one link destination", "I", 2, False, _c_single_cta),
     ("R12", "speech rate 120-198 wpm", "O", 1, True, _c_speech_rate),
-    ("R13", "2-5 hashtags, not generic-only", "I", 2, False, _c_hashtags),
+    ("R13", "1-5 hashtags, not generic-only", "I", 2, False, _c_hashtags),
     ("R14", "caption echoes the comment keyword", "O", 1, False, _c_keyword_echo),
     ("R15", "product/concept named in hook or overlay", "I", 2, True, _c_product_early),
     ("R16", "AI disclosure (label + caption line)", "E", 3, False, _c_ai_disclosure),

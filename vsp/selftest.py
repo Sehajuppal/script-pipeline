@@ -1,0 +1,105 @@
+"""Hermetic self-test: the gates must pass the good fixture and fail every bad
+fixture loudly — without touching the repo.
+
+pre-2.0 the self-test wrote into git-tracked outputs/test-product*/ and
+outputs/x/, and gate 2 needed the private ~/workspace viral.db, so it could
+only be green on one machine. Now every child run gets:
+  VSP_OUTPUTS   -> <tmp>/outputs        (outputs never land in the repo)
+  VSP_VIRAL_DB  -> <tmp>/fixture viral.db (vsp/fixtures.py)
+  VSP_FIXTURE_OK=1                       (FIXTURE reels allowed, D151)
+and the runner asserts the repo's outputs/ tree is byte-for-byte unchanged.
+"""
+import hashlib
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+
+from vsp import config
+from vsp.fixtures import build_fixture_db
+from vsp.selftest_cases import all_cases
+
+
+def _tree_digest(root):
+    h = hashlib.sha256()
+    if not os.path.isdir(root):
+        return "absent"
+    for dp, dns, fns in sorted(os.walk(root)):
+        dns.sort()
+        for fn in sorted(fns):
+            p = os.path.join(dp, fn)
+            h.update(os.path.relpath(p, root).encode())
+            with open(p, "rb") as f:
+                h.update(hashlib.sha256(f.read()).digest())
+        h.update(b"dir:" + os.path.relpath(dp, root).encode())
+    return h.hexdigest()
+
+
+def _run(cmd, env):
+    return subprocess.run(cmd, capture_output=True, text=True, timeout=300,
+                          env=env)
+
+
+def run(pipeline_path, keep=False):
+    tmp = tempfile.mkdtemp(prefix="pipe_selftest_")
+    repo_outputs = os.path.join(config.REPO, "outputs")
+    before_tree = _tree_digest(repo_outputs)
+    env = dict(os.environ,
+               VSP_OUTPUTS=os.path.join(tmp, "outputs"),
+               VSP_VIRAL_DB=build_fixture_db(os.path.join(tmp, "viral.db")),
+               VSP_FIXTURE_OK="1", PYTHONDONTWRITEBYTECODE="1",
+               PYTHONIOENCODING="utf-8")
+    good, cases = all_cases()
+    fails = []
+    for name, script, want_pass, want_msgs in cases:
+        p = os.path.join(tmp, name + ".json")
+        with open(p, "w", encoding="utf-8") as f:
+            json.dump(script, f)
+        r = _run([sys.executable, pipeline_path,
+                  script.get("prompt", "x"), "--script-json", p], env)
+        ok = (r.returncode == 0) == want_pass
+        if not want_pass:
+            ok = ok and all(m in r.stdout for m in want_msgs)
+        if not ok:
+            fails.append(f"{name}: expected "
+                         f"{'pass' if want_pass else 'fail(' + ','.join(want_msgs) + ')'}, "
+                         f"got exit {r.returncode}\n{r.stdout[:400]}{r.stderr[-400:]}")
+    # D79: --script-json must never rewrite the input file, even when the
+    # input lives under outputs/<prompt-slug>/ (cycle-3 incident that
+    # overwrote outputs/hair-wax-stick/script.json). Now inside the tmp
+    # outputs root, never the repo's.
+    noclob_dir = os.path.join(env["VSP_OUTPUTS"], "test-product")
+    os.makedirs(noclob_dir, exist_ok=True)
+    noclob = os.path.join(noclob_dir, "script.json")
+    with open(noclob, "w", encoding="utf-8") as f:
+        json.dump(good, f)
+    with open(noclob, "rb") as f:
+        before = f.read()
+    # gauntlet cycle 4: --script-json without a positional prompt must not
+    # crash — the prompt is re-derived from the JSON, so omit the arg here.
+    r = _run([sys.executable, pipeline_path, "--script-json", noclob], env)
+    with open(noclob, "rb") as f:
+        if f.read() != before:
+            fails.append("no-clobber: --script-json rewrote the input file")
+    if r.returncode != 0:
+        fails.append(f"no-clobber: good fixture should still pass, got exit "
+                     f"{r.returncode}\n{r.stdout[:400]}{r.stderr[-400:]}")
+    # --out-dir pointing at the input's own directory must be refused (D79)
+    r = _run([sys.executable, pipeline_path, "--script-json", noclob,
+              "--out-dir", noclob_dir], env)
+    with open(noclob, "rb") as f:
+        if f.read() != before:
+            fails.append("no-clobber: --out-dir onto the input rewrote it")
+    # hermeticity: the repo's outputs/ tree must be untouched
+    if _tree_digest(repo_outputs) != before_tree:
+        fails.append("hermeticity: self-test modified the repo's outputs/")
+    if not keep:
+        shutil.rmtree(tmp, ignore_errors=True)
+    if fails:
+        print("SELF-TEST FAILED:\n" + "\n".join(fails))
+        return 1
+    print(f"self-test: all {len(cases)} gate cases + no-clobber behave "
+          f"correctly (hermetic: repo outputs/ untouched)")
+    return 0
