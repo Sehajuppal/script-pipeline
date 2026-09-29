@@ -938,14 +938,38 @@ def _join(lines):
     return "\n".join(ln for ln in lines if ln)
 
 
+def _platform_tags(tags, kw, script):
+    """The caption's tags minus filler/generic ones (#fyp, #viral: myths,
+    KEYWORD_RULES.density), led by the compact keyword tag unless the gate's
+    MISMATCH rule would flag it. Identity for maker captions."""
+    from vsp import gates as G
+    from vsp import lexicon as L
+    banned = set(_eng()["d155"]["banned_filler_tags"]) | {"#" + t for t in L.GENERIC_TAGS}
+    out = []
+    for t in tags:
+        if t.lower() not in banned and t.lower() not in [x.lower() for x in out]:
+            out.append(t)
+    pt = compact_tag(kw)
+    prompt = str(script.get("prompt") or "").lower()
+    if pt and pt.lower() not in [x.lower() for x in out] and not any(
+            w in pt and c in prompt for w, c in G.MISMATCH):
+        out.insert(0, pt)
+    return out
+
+
 def _platforms(script, ctx, kw, secondary, parts, cover, cw):
     e = _eng()
     fmt = str(script.get("format") or "demo")
     c = ctx.get("concept") or "product"
     ai = str(script.get("presenter") or "").lower() == "ai"
     opening, cta, ai_line, tags = parts
+    if opening:
+        # idempotent for maker captions (their line 1 already carries the
+        # keyword); a legacy/--script-json caption gets the keyword sentence
+        opening = caption_line1(opening[0], kw, ctx, fmt).split("\n") + opening[1:]
     if ai and not ai_line:
         ai_line = "made with an AI persona"
+    tags = _platform_tags(tags, kw, script)
     v = _fmt_vars(kw, ctx)
     pw = e["presenter_words"]["ai" if ai else "human"]
     tt_tags = tags[:e["d155"]["hashtags_max"]["tiktok"]]
