@@ -1,0 +1,496 @@
+{
+ "schema_version": 1,
+ "id": "2026-09-29-evolve-01",
+ "status": "approved",
+ "families": {
+  "bold-claim": [
+   "Day {ndays} with the {category}. Zero failures.",
+   "Most {category_pl} fail. Not this one."
+  ],
+  "curiosity-gap": [
+   "The {category}. Worth it?",
+   "I lived with the {category} for {ndays} days.",
+   "{product}: the honest verdict."
+  ],
+  "transformation": [
+   "{product}. Here's the after.",
+   "{product} after {ndays} days. Worth it?",
+   "This is the after with {product}."
+  ]
+ },
+ "provenance": {
+  "created": "2026-09-29T05:41:06+00:00",
+  "source": "evolve",
+  "engine": "vsp.improve evolve v1",
+  "git_sha": "b867500",
+  "budget": "small",
+  "seed": 60929,
+  "evidence": {
+   "fitness": {
+    "Day {ndays} with the {category}. Zero failures.": {
+     "family": "bold-claim",
+     "template": "Day {ndays} with the {category}. Zero failures.",
+     "fitness": 0.11063,
+     "quality": 1.0,
+     "gain": 0.11645,
+     "novelty": 0.875,
+     "reach": 0.26,
+     "joins": 26,
+     "dominates": 0,
+     "eligible": 100,
+     "contexts": 100,
+     "gate_risk": 0,
+     "cell": [
+      "bold-claim",
+      "number",
+      "long"
+     ],
+     "operator": "slot_swap",
+     "parent": "Day {ndays} with {product}. Zero failures.",
+     "marginal": 0.11062,
+     "samples": [
+      {
+       "ctx": "bands|demo|human",
+       "line": "Day 7 with the resistance bands. Zero failures.",
+       "overlay": "RESISTANCE BANDS",
+       "pool": 2
+      },
+      {
+       "ctx": "bands|demo|ai",
+       "line": "Day 7 with the resistance bands. Zero failures.",
+       "overlay": "RESISTANCE BANDS",
+       "pool": 2
+      },
+      {
+       "ctx": "bands|talking-head|human",
+       "line": "Day 7 with the resistance bands. Zero failures.",
+       "overlay": "RESISTANCE BANDS",
+       "pool": 2
+      }
+     ],
+     "soft_fail": {}
+    },
+    "The {category}. Worth it?": {
+     "family": "curiosity-gap",
+     "template": "The {category}. Worth it?",
+     "fitness": 0.10537,
+     "quality": 1.0,
+     "gain": 0.10537,
+     "novelty": 1.0,
+     "reach": 0.12,
+     "joins": 12,
+     "dominates": 0,
+     "eligible": 20,
+     "contexts": 100,
+     "gate_risk": 0,
+     "cell": [
+      "curiosity-gap",
+      "question",
+      "short"
+     ],
+     "operator": "slot_swap",
+     "parent": "{product}. Worth it?",
+     "marginal": 0.10537,
+     "samples": [
+      {
+       "ctx": "braces-prompt|review|human",
+       "line": "The water bottle. Worth it?",
+       "overlay": "WATER BOTTLE",
+       "pool": 1
+      },
+      {
+       "ctx": "braces-prompt|review|ai",
+       "line": "The water bottle. Worth it?",
+       "overlay": "WATER BOTTLE",
+       "pool": 1
+      },
+      {
+       "ctx": "lantern|review|human",
+       "line": "The camping lantern. Worth it?",
+       "overlay": "CAMPING LANTERN",
+       "pool": 1
+      }
+     ],
+     "soft_fail": {}
+    },
+    "I lived with the {category} for {ndays} days.": {
+     "family": "curiosity-gap",
+     "template": "I lived with the {category} for {ndays} days.",
+     "fitness": 0.05878,
+     "quality": 1.0,
+     "gain": 0.06451,
+     "novelty": 0.7778,
+     "reach": 0.21,
+     "joins": 21,
+     "dominates": 0,
+     "eligible": 45,
+     "contexts": 100,
+     "gate_risk": 0,
+     "cell": [
+      "curiosity-gap",
+      "first-person",
+      "long"
+     ],
+     "operator": "slot_swap",
+     "parent": "I lived with {product} for {ndays} days.",
+     "marginal": 0.0583,
+     "samples": [
+      {
+       "ctx": "braces-prompt|demo|human",
+       "line": "I lived with the bottle for 7 days.",
+       "overlay": "BOTTLE",
+       "pool": 6
+      },
+      {
+       "ctx": "braces-prompt|talking-head|human",
+       "line": "I lived with the bottle for 7 days.",
+       "overlay": "BOTTLE",
+       "pool": 6
+      },
+      {
+       "ctx": "braces-prompt|pov-vlog|human",
+       "line": "I lived with the bottle for 7 days.",
+       "overlay": "BOTTLE",
+       "pool": 6
+      }
+     ],
+     "soft_fail": {}
+    },
+    "{product}. Here's the after.": {
+     "family": "transformation",
+     "template": "{product}. Here's the after.",
+     "fitness": 0.05277,
+     "quality": 1.0,
+     "gain": 0.05863,
+     "novelty": 0.75,
+     "reach": 0.15,
+     "joins": 15,
+     "dominates": 0,
+     "eligible": 100,
+     "contexts": 100,
+     "gate_risk": 0,
+     "cell": [
+      "transformation",
+      "object-first",
+      "mid"
+     ],
+     "operator": "tail_swap",
+     "parent": "{product}. This is the after.",
+     "marginal": 0.05266,
+     "samples": [
+      {
+       "ctx": "bird-feeder|demo|human",
+       "line": "The smart bird feeder. Here's the after.",
+       "overlay": "SMART BIRD FEEDER",
+       "pool": 2
+      },
+      {
+       "ctx": "bird-feeder|demo|ai",
+       "line": "The smart bird feeder. Here's the after.",
+       "overlay": "SMART BIRD FEEDER",
+       "pool": 2
+      },
+      {
+       "ctx": "bird-feeder|talking-head|human",
+       "line": "The smart bird feeder. Here's the after.",
+       "overlay": "SMART BIRD FEEDER",
+       "pool": 2
+      }
+     ],
+     "soft_fail": {}
+    },
+    "{product}: the honest verdict.": {
+     "family": "curiosity-gap",
+     "template": "{product}: the honest verdict.",
+     "fitness": 0.10537,
+     "quality": 1.0,
+     "gain": 0.10537,
+     "novelty": 1.0,
+     "reach": 0.12,
+     "joins": 12,
+     "dominates": 0,
+     "eligible": 20,
+     "contexts": 100,
+     "gate_risk": 0,
+     "cell": [
+      "curiosity-gap",
+      "object-first",
+      "mid"
+     ],
+     "operator": "tail_swap",
+     "parent": "{product}: buy or skip?",
+     "marginal": 0.05155,
+     "samples": [
+      {
+       "ctx": "braces-prompt|review|human",
+       "line": "The limited edition water bottle: the honest verdict.",
+       "overlay": "WATER BOTTLE",
+       "pool": 1
+      },
+      {
+       "ctx": "braces-prompt|review|ai",
+       "line": "The limited edition water bottle: the honest verdict.",
+       "overlay": "WATER BOTTLE",
+       "pool": 1
+      },
+      {
+       "ctx": "lantern|review|human",
+       "line": "The rechargeable camping lantern: the honest verdict.",
+       "overlay": "RECHARGEABLE CAMPING LANTERN",
+       "pool": 1
+      }
+     ],
+     "soft_fail": {}
+    },
+    "{product} after {ndays} days. Worth it?": {
+     "family": "transformation",
+     "template": "{product} after {ndays} days. Worth it?",
+     "fitness": 0.04018,
+     "quality": 1.0,
+     "gain": 0.04537,
+     "novelty": 0.7143,
+     "reach": 0.06,
+     "joins": 6,
+     "dominates": 0,
+     "eligible": 20,
+     "contexts": 100,
+     "gate_risk": 0,
+     "cell": [
+      "transformation",
+      "question",
+      "long"
+     ],
+     "operator": "tail_swap",
+     "parent": "{product} after {ndays} days: buy or skip?",
+     "marginal": 0.0375,
+     "samples": [
+      {
+       "ctx": "bird-feeder|review|human",
+       "line": "The bird feeder after 7 days. Worth it?",
+       "overlay": "BIRD FEEDER",
+       "pool": 1
+      },
+      {
+       "ctx": "bird-feeder|review|ai",
+       "line": "The bird feeder after 7 days. Worth it?",
+       "overlay": "BIRD FEEDER",
+       "pool": 1
+      },
+      {
+       "ctx": "office-chair|review|human",
+       "line": "The office chair after 7 days. Worth it?",
+       "overlay": "OFFICE CHAIR",
+       "pool": 3
+      }
+     ],
+     "soft_fail": {}
+    },
+    "Most {category_pl} fail. Not this one.": {
+     "family": "bold-claim",
+     "template": "Most {category_pl} fail. Not this one.",
+     "fitness": 0.0539,
+     "quality": 0.975,
+     "gain": 0.05863,
+     "novelty": 0.8571,
+     "reach": 0.15,
+     "joins": 15,
+     "dominates": 0,
+     "eligible": 100,
+     "contexts": 100,
+     "gate_risk": 0,
+     "cell": [
+      "bold-claim",
+      "claim",
+      "mid"
+     ],
+     "operator": "tail_swap",
+     "parent": "Most {category_pl} fail. This one didn't.",
+     "marginal": 0.0302,
+     "samples": [
+      {
+       "ctx": "bands|demo|human",
+       "line": "Most resistance bands fail. Not this one.",
+       "overlay": "MOST RESISTANCE BANDS",
+       "pool": 2
+      },
+      {
+       "ctx": "bands|demo|ai",
+       "line": "Most resistance bands fail. Not this one.",
+       "overlay": "MOST RESISTANCE BANDS",
+       "pool": 2
+      },
+      {
+       "ctx": "bands|talking-head|human",
+       "line": "Most resistance bands fail. Not this one.",
+       "overlay": "MOST RESISTANCE BANDS",
+       "pool": 2
+      }
+     ],
+     "soft_fail": {
+      "CARD": 10
+     }
+    },
+    "This is the after with {product}.": {
+     "family": "transformation",
+     "template": "This is the after with {product}.",
+     "fitness": 0.04925,
+     "quality": 1.0,
+     "gain": 0.05863,
+     "novelty": 0.6,
+     "reach": 0.15,
+     "joins": 15,
+     "dominates": 0,
+     "eligible": 100,
+     "contexts": 100,
+     "gate_risk": 0,
+     "cell": [
+      "transformation",
+      "reveal",
+      "long"
+     ],
+     "operator": "opener_swap",
+     "parent": "Here's the after with {product}.",
+     "marginal": 0.02752,
+     "samples": [
+      {
+       "ctx": "bird-feeder|demo|human",
+       "line": "This is the after with the bird feeder.",
+       "overlay": "BIRD FEEDER",
+       "pool": 2
+      },
+      {
+       "ctx": "bird-feeder|demo|ai",
+       "line": "This is the after with the bird feeder.",
+       "overlay": "BIRD FEEDER",
+       "pool": 2
+      },
+      {
+       "ctx": "bird-feeder|talking-head|human",
+       "line": "This is the after with the bird feeder.",
+       "overlay": "BIRD FEEDER",
+       "pool": 2
+      }
+     ],
+     "soft_fail": {}
+    }
+   },
+   "baseline": {
+    "contexts": 100,
+    "singleton_pools": 27,
+    "empty_pools": 0,
+    "mean_pool": 3.0,
+    "expected_distinct_per_ctx": 1.8126
+   },
+   "preview": {
+    "runs": 300,
+    "seeds": [
+     1,
+     2,
+     3
+    ],
+    "changed": 110,
+    "distinct_base": 0.28,
+    "distinct_cand": 0.33,
+    "distinct2_base": 0.0811,
+    "distinct2_cand": 0.0921,
+    "gate1_fail_base": 0,
+    "gate1_fail_cand": 0,
+    "rubric_base": 100.0,
+    "rubric_cand": 100.0,
+    "rubric_min_cand": 100.0,
+    "new_lines_top": [
+     [
+      "The smart bird feeder. This is the after.",
+      10
+     ],
+     [
+      "Most resistance bands fail. Not this one.",
+      8
+     ],
+     [
+      "The silk pillowcase. Here's the after.",
+      8
+     ],
+     [
+      "Day 7 with the resistance bands. Zero failures.",
+      6
+     ],
+     [
+      "Day 7 with the noise machine. Zero failures.",
+      6
+     ]
+    ],
+    "templates": 8
+   },
+   "golden_prompts": [
+    "bands",
+    "bird-feeder",
+    "braces-prompt",
+    "lantern",
+    "lunch-bag",
+    "office-chair",
+    "projector-decimal",
+    "silk-pillowcase",
+    "trunk",
+    "white-noise"
+   ],
+   "holdout_read": false,
+   "llm": {
+    "used": false,
+    "calls": 0,
+    "returned": 0,
+    "accepted": 0
+   },
+   "archive_cells": 23,
+   "promote": {
+    "verdict": "ACCEPT",
+    "at": "2026-09-29T05:41:47+00:00",
+    "budget": "small",
+    "headline": [
+     "golden: e2e 1.0→1.0 (flips +0/−0, p=1) · shippable 1.0→1.0 · rubric 99.9→99.9 Δ +0.00 [+0.00, +0.00] · audit 100.0→100.0 · compliance 0 · hooks changed 95/330 · distinct 0.4455→0.4758 · distinct-2 0.1648→0.1641",
+     "holdout: e2e 1.0→1.0 (flips +0/−0, p=1) · shippable 1.0→1.0 · rubric 99.9→99.9 Δ +0.00 [+0.00, +0.00] · audit 100.0→100.0 · compliance 0 · hooks changed 83/350 · distinct 0.4857→0.5086 · distinct-2 0.1583→0.1667"
+    ],
+    "diversity": {
+     "golden": {
+      "distinct_ratio": [
+       0.4455,
+       0.4758
+      ],
+      "distinct2": [
+       0.1648,
+       0.1641
+      ],
+      "per_cell_seed_diversity": [
+       null,
+       null
+      ],
+      "fallback_rate": [
+       0.0,
+       0.0
+      ]
+     },
+     "holdout": {
+      "distinct_ratio": [
+       0.4857,
+       0.5086
+      ],
+      "distinct2": [
+       0.1583,
+       0.1667
+      ],
+      "per_cell_seed_diversity": [
+       null,
+       null
+      ],
+      "fallback_rate": [
+       0.0,
+       0.0
+      ]
+     }
+    },
+    "failed": [],
+    "evidence": "learned/promote/2026-09-29-evolve-01/evidence.json"
+   }
+  }
+ }
+}

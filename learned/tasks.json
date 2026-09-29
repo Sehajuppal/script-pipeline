@@ -1,38 +1,7 @@
 {
- "created": "2026-09-29T04:46:22+00:00",
- "base_ref": "333f695",
+ "created": "2026-09-29T05:40:59+00:00",
+ "base_ref": "b867500",
  "tasks": [
-  {
-   "id": "T-DRIFT-FAMILIES",
-   "title": "Follow the live hook-family ranking (D148)",
-   "kind": "drift",
-   "rationale": "pick_hook should prefer vsp.research.live_hook_family(pack, niche, presenter) (whole ranked list, mapped research niches) over the static NICHE_HOOK map.",
-   "files": [
-    "viral_script_maker.py (pick_hook, NICHE_HOOK)",
-    "vsp/research.py"
-   ],
-   "done_when": "golden family mismatch vs live ranking < 50% per cell with verify ACCEPT",
-   "self_serve": null,
-   "score": 22.4,
-   "evidence": [
-    "gadgets/ai: live negative-command (ugc-ads:problem-solution) vs used {'curiosity-gap': 24, 'transformation': 4, 'bold-claim': 2} (mismatch 100%, n=30)",
-    "gadgets/human: live negative-command (ugc-ads:problem-solution) vs used {'curiosity-gap': 30} (mismatch 100%, n=30)",
-    "fitness/ai: live curiosity-gap (fitness:day-counter) vs used {'bold-claim': 15} (mismatch 100%, n=15)",
-    "fitness/human: live story-time (fitness:gym-relatable) vs used {'bold-claim': 15} (mismatch 100%, n=15)",
-    "home/human: live negative-command (ugc-ads:problem-solution) vs used {'story-time': 6, 'transformation': 4} (mismatch 100%, n=10)",
-    "pets/ai: live negative-command (ugc-ads:problem-solution) vs used {'transformation': 10} (mismatch 100%, n=10)"
-   ],
-   "examples": [],
-   "status": "open",
-   "first_seen": "2026-09-29",
-   "acceptance": "python3 -m vsp.improve verify --base 333f695 --cand HEAD",
-   "constraints": [
-    "work on a new branch or worktree — never commit to main/master",
-    "never edit vsp/gates.py, vsp/rules.py, vsp/lexicon.py to make a check pass: fix the maker / shot list",
-    "never edit evals/golden.jsonl, evals/holdout.jsonl, evals/scorecard.py or vsp/rubric.py (the yardstick)",
-    "open a PR with the verify evidence; never merge your own PR"
-   ]
-  },
   {
    "id": "T-HOOK-DIVERSITY",
    "title": "Grow the hook template pool where it is thinnest",
@@ -51,7 +20,38 @@
    "examples": [],
    "status": "open",
    "first_seen": "2026-09-29",
-   "acceptance": "python3 -m vsp.improve verify --base 333f695 --cand HEAD",
+   "acceptance": "python3 -m vsp.improve verify --base b867500 --cand HEAD",
+   "constraints": [
+    "work on a new branch or worktree — never commit to main/master",
+    "never edit vsp/gates.py, vsp/rules.py, vsp/lexicon.py to make a check pass: fix the maker / shot list",
+    "never edit evals/golden.jsonl, evals/holdout.jsonl, evals/scorecard.py or vsp/rubric.py (the yardstick)",
+    "open a PR with the verify evidence; never merge your own PR"
+   ]
+  },
+  {
+   "id": "T-DRIFT-FAMILIES",
+   "title": "Follow the live hook-family ranking (D148)",
+   "kind": "drift",
+   "rationale": "pick_hook should prefer vsp.research.live_hook_family(pack, niche, presenter) (whole ranked list, mapped research niches) over the static NICHE_HOOK map.",
+   "files": [
+    "viral_script_maker.py (pick_hook, NICHE_HOOK)",
+    "vsp/research.py"
+   ],
+   "done_when": "golden family mismatch vs live ranking < 50% per cell with verify ACCEPT",
+   "self_serve": null,
+   "score": 13.9,
+   "evidence": [
+    "fitness/ai: live curiosity-gap (fitness:day-counter, seen 10) vs used {'bold-claim': 15} (mismatch 100%, n=15)",
+    "fitness/human: live story-time (fitness:gym-relatable, seen 13) vs used {'bold-claim': 15} (mismatch 100%, n=15)",
+    "gadgets/ai: live negative-command (ugc-ads:problem-solution, seen 4, thin) vs used {'curiosity-gap': 24, 'transformation': 4, 'bold-claim': 2} (mismatch 100%, n=30)",
+    "gadgets/human: live negative-command (ugc-ads:problem-solution, seen 4, thin) vs used {'curiosity-gap': 30} (mismatch 100%, n=30)",
+    "home/human: live negative-command (ugc-ads:problem-solution, seen 4, thin) vs used {'story-time': 6, 'transformation': 4} (mismatch 100%, n=10)",
+    "pets/ai: live negative-command (ugc-ads:problem-solution, seen 4, thin) vs used {'transformation': 10} (mismatch 100%, n=10)"
+   ],
+   "examples": [],
+   "status": "open",
+   "first_seen": "2026-09-29",
+   "acceptance": "python3 -m vsp.improve verify --base b867500 --cand HEAD",
    "constraints": [
     "work on a new branch or worktree — never commit to main/master",
     "never edit vsp/gates.py, vsp/rules.py, vsp/lexicon.py to make a check pass: fix the maker / shot list",
@@ -81,7 +81,7 @@
    ],
    "status": "open",
    "first_seen": "2026-09-29",
-   "acceptance": "python3 -m vsp.improve verify --base 333f695 --cand HEAD",
+   "acceptance": "python3 -m vsp.improve verify --base b867500 --cand HEAD",
    "constraints": [
     "work on a new branch or worktree — never commit to main/master",
     "never edit vsp/gates.py, vsp/rules.py, vsp/lexicon.py to make a check pass: fix the maker / shot list",
@@ -108,7 +108,7 @@
    "examples": [],
    "status": "open",
    "first_seen": "2026-09-29",
-   "acceptance": "python3 -m vsp.improve verify --base 333f695 --cand HEAD",
+   "acceptance": "python3 -m vsp.improve verify --base b867500 --cand HEAD",
    "constraints": [
     "work on a new branch or worktree — never commit to main/master",
     "never edit vsp/gates.py, vsp/rules.py, vsp/lexicon.py to make a check pass: fix the maker / shot list",
@@ -135,7 +135,7 @@
    "examples": [],
    "status": "open",
    "first_seen": "2026-09-29",
-   "acceptance": "python3 -m vsp.improve verify --base 333f695 --cand HEAD",
+   "acceptance": "python3 -m vsp.improve verify --base b867500 --cand HEAD",
    "constraints": [
     "work on a new branch or worktree — never commit to main/master",
     "never edit vsp/gates.py, vsp/rules.py, vsp/lexicon.py to make a check pass: fix the maker / shot list",
@@ -162,7 +162,7 @@
    "examples": [],
    "status": "open",
    "first_seen": "2026-09-29",
-   "acceptance": "python3 -m vsp.improve verify --base 333f695 --cand HEAD",
+   "acceptance": "python3 -m vsp.improve verify --base b867500 --cand HEAD",
    "constraints": [
     "work on a new branch or worktree — never commit to main/master",
     "never edit vsp/gates.py, vsp/rules.py, vsp/lexicon.py to make a check pass: fix the maker / shot list",
@@ -189,7 +189,7 @@
    "examples": [],
    "status": "open",
    "first_seen": "2026-09-29",
-   "acceptance": "python3 -m vsp.improve verify --base 333f695 --cand HEAD",
+   "acceptance": "python3 -m vsp.improve verify --base b867500 --cand HEAD",
    "constraints": [
     "work on a new branch or worktree — never commit to main/master",
     "never edit vsp/gates.py, vsp/rules.py, vsp/lexicon.py to make a check pass: fix the maker / shot list",
@@ -216,7 +216,7 @@
    "examples": [],
    "status": "open",
    "first_seen": "2026-09-29",
-   "acceptance": "python3 -m vsp.improve verify --base 333f695 --cand HEAD",
+   "acceptance": "python3 -m vsp.improve verify --base b867500 --cand HEAD",
    "constraints": [
     "work on a new branch or worktree — never commit to main/master",
     "never edit vsp/gates.py, vsp/rules.py, vsp/lexicon.py to make a check pass: fix the maker / shot list",
@@ -243,7 +243,7 @@
    "examples": [],
    "status": "open",
    "first_seen": "2026-09-29",
-   "acceptance": "python3 -m vsp.improve verify --base 333f695 --cand HEAD",
+   "acceptance": "python3 -m vsp.improve verify --base b867500 --cand HEAD",
    "constraints": [
     "work on a new branch or worktree — never commit to main/master",
     "never edit vsp/gates.py, vsp/rules.py, vsp/lexicon.py to make a check pass: fix the maker / shot list",
@@ -270,7 +270,7 @@
    "examples": [],
    "status": "open",
    "first_seen": "2026-09-29",
-   "acceptance": "python3 -m vsp.improve verify --base 333f695 --cand HEAD",
+   "acceptance": "python3 -m vsp.improve verify --base b867500 --cand HEAD",
    "constraints": [
     "work on a new branch or worktree — never commit to main/master",
     "never edit vsp/gates.py, vsp/rules.py, vsp/lexicon.py to make a check pass: fix the maker / shot list",
@@ -297,7 +297,7 @@
    "examples": [],
    "status": "open",
    "first_seen": "2026-09-29",
-   "acceptance": "python3 -m vsp.improve verify --base 333f695 --cand HEAD",
+   "acceptance": "python3 -m vsp.improve verify --base b867500 --cand HEAD",
    "constraints": [
     "work on a new branch or worktree — never commit to main/master",
     "never edit vsp/gates.py, vsp/rules.py, vsp/lexicon.py to make a check pass: fix the maker / shot list",
@@ -324,7 +324,7 @@
    "examples": [],
    "status": "open",
    "first_seen": "2026-09-29",
-   "acceptance": "python3 -m vsp.improve verify --base 333f695 --cand HEAD",
+   "acceptance": "python3 -m vsp.improve verify --base b867500 --cand HEAD",
    "constraints": [
     "work on a new branch or worktree — never commit to main/master",
     "never edit vsp/gates.py, vsp/rules.py, vsp/lexicon.py to make a check pass: fix the maker / shot list",
@@ -351,7 +351,7 @@
    "examples": [],
    "status": "open",
    "first_seen": "2026-09-29",
-   "acceptance": "python3 -m vsp.improve verify --base 333f695 --cand HEAD",
+   "acceptance": "python3 -m vsp.improve verify --base b867500 --cand HEAD",
    "constraints": [
     "work on a new branch or worktree — never commit to main/master",
     "never edit vsp/gates.py, vsp/rules.py, vsp/lexicon.py to make a check pass: fix the maker / shot list",
@@ -378,7 +378,7 @@
    "examples": [],
    "status": "open",
    "first_seen": "2026-09-29",
-   "acceptance": "python3 -m vsp.improve verify --base 333f695 --cand HEAD",
+   "acceptance": "python3 -m vsp.improve verify --base b867500 --cand HEAD",
    "constraints": [
     "work on a new branch or worktree — never commit to main/master",
     "never edit vsp/gates.py, vsp/rules.py, vsp/lexicon.py to make a check pass: fix the maker / shot list",
@@ -405,7 +405,7 @@
    "examples": [],
    "status": "open",
    "first_seen": "2026-09-29",
-   "acceptance": "python3 -m vsp.improve verify --base 333f695 --cand HEAD",
+   "acceptance": "python3 -m vsp.improve verify --base b867500 --cand HEAD",
    "constraints": [
     "work on a new branch or worktree — never commit to main/master",
     "never edit vsp/gates.py, vsp/rules.py, vsp/lexicon.py to make a check pass: fix the maker / shot list",

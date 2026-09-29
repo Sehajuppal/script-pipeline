@@ -155,7 +155,7 @@ def render_md(out, lines):
          f"`python3 -m vsp.improve cycle --budget {out['budget']}` · {out['started']} → "
          f"{out.get('finished')} · git `{out['health']['git']['sha']}` on "
          f"`{out['health']['git']['branch']}`", ""]
-    L += [f"- {x}" for x in lines]
+    L += [f"  - {x.strip()}" if x.startswith("  ") else f"- {x}" for x in lines]
     if out.get("evolve_pack"):
         L += ["", "## Evolved pack", "", "| fitness | gain | quality | novelty | family | "
               "template | operator |", "|---|---|---|---|---|---|---|"]

@@ -1,16 +1,16 @@
 {
- "created": "2026-09-29T04:46:06+00:00",
- "stamp": "20260929T044606Z",
+ "created": "2026-09-29T05:40:38+00:00",
+ "stamp": "20260929T054038Z",
  "tree": "/projects/wt/improve",
- "git_sha": "333f695",
- "dirty": true,
+ "git_sha": "b867500",
+ "dirty": false,
  "budget": "small",
  "seeds": "1",
  "python": "/usr/bin/python3.9",
  "python_version": "3.9.25",
  "suites": {
   "golden": {
-   "raw": "learned/evals/results/20260929T044606Z-golden.json",
+   "raw": "learned/evals/results/20260929T054038Z-golden.json",
    "file": "evals/golden.jsonl",
    "headline": {
     "runs": 330,
@@ -27,11 +27,11 @@
     "seed_diversity": null,
     "fallback_rate": 0.0,
     "runtime_mean_s": 0.167,
-    "wall_s": 7.6
+    "wall_s": 7.7
    }
   },
   "holdout": {
-   "raw": "learned/evals/results/20260929T044606Z-holdout.json",
+   "raw": "learned/evals/results/20260929T054038Z-holdout.json",
    "file": "evals/holdout.jsonl",
    "headline": {
     "runs": 350,
@@ -47,8 +47,29 @@
     "hook_distinct2": 0.1583,
     "seed_diversity": null,
     "fallback_rate": 0.0,
+    "runtime_mean_s": 0.164,
+    "wall_s": 7.9
+   }
+  },
+  "capability": {
+   "raw": "learned/evals/results/20260929T054038Z-capability.json",
+   "file": "evals/capability.jsonl",
+   "headline": {
+    "runs": 220,
+    "crash": 0.0,
+    "gate1_pass": 1.0,
+    "e2e_pass": 1.0,
+    "shippable": 1.0,
+    "rubric_mean": 100.0,
+    "selection_mean": 100.0,
+    "audit_mean": 100.0,
+    "compliance_flags": 0,
+    "hook_distinct": 0.5818,
+    "hook_distinct2": 0.1745,
+    "seed_diversity": null,
+    "fallback_rate": 0.0,
     "runtime_mean_s": 0.169,
-    "wall_s": 8.1
+    "wall_s": 5.1
    }
   }
  }
