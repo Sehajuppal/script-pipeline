@@ -2198,6 +2198,27 @@ def selfcheck():
                     if syn_fail <= 6:
                         fail(f"synthetic[{mode}] {s2.get('prompt')}|{s2.get('format')}|"
                              f"{s2.get('presenter')}: gate2={errs[:2]} own={probs[:4]}")
+        # frame 0 follows hook variant A's visual_type, for every VISUAL_TYPES id
+        from vsp import creative_vocab as V
+        vt_n, vt_fail = 0, 0
+        vt_scripts = [x for k, x in scripts if k.endswith("|demo|human|30") or k.endswith("|demo|ai|30")][:4]
+        vt_scripts += [x for k, x in scripts if "|pov-vlog|" in k and k.endswith("|30")
+                       and ms._concept(x.get("prompt") or "") != "product"][:2]
+        for s in vt_scripts:
+            for vt in V.VISUAL_TYPES:
+                s2 = copy.deepcopy(s)
+                _, hv, _ = _synthetic(s2)
+                hv[0]["visual_type"] = vt
+                s2["hook_variants"] = hv
+                b, shots, _ = ms.build_bundle(s2)
+                vt_n += 1
+                errs = gates.gate2(b, s2) + check_bundle(s2, shots, b)
+                if errs:
+                    vt_fail += 1
+                    if vt_fail <= 4:
+                        fail(f"variant A visual_type {vt} on {s2.get('prompt')}|{s2.get('presenter')}: {errs[:3]}")
+        lines.append(f"frame 0 x hook variant A visual_type: {vt_n - vt_fail}/{vt_n} bundles honour it "
+                     f"(or its AI-lane fallback) and pass gate 2")
         lines.append(f"synthetic contracts: {2 * len(picks) - syn_fail}/{2 * len(picks)} bundles render "
                      f"CREATIVE DIRECTION / ALTERNATE OPENINGS / SHOOT PLAN / POSTING & DISCOVERY per contract"
                      + (f" (real modules: {', '.join(sorted(real))})" if real else " (stub modules)"))
