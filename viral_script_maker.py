@@ -34,6 +34,20 @@ except Exception:
 # ---------------------------------------------------------------- hook banks
 # curiosity-gap and bold-claim together = ~41% of all viral hooks in the DB.
 # Default to those two families unless the niche has a native family.
+# D61/D73 (GEN-B, pipeline v2): SHORT FORMS. Every legacy template below
+# overflowed the 8-word budget as soon as the product had 2+ words ("I tested
+# the LED sunrise alarm lamp for 7 days. The result surprised me." = 12), so
+# 58.8% of baseline runs shipped the fallback. pick_hook now renders each
+# template at the most specific product phrase that fits (full name -> core
+# name -> compound noun -> head noun: "the LED sunrise alarm lamp" -> "the
+# alarm lamp" -> "the lamp") and each family gained templates that fit
+# with a 2-word noun. Contracts are unchanged (D35/D5): flaw/test hooks are
+# paid by the TEST card ("expected <flaw>, but it never did — seven days,
+# <zeroed>" / "the <cat> test nobody ever shows"), verdict hooks only in
+# review (payoff "Verdict: BUY", D27), day-count hooks by the DAY 1 vs DAY N
+# transformation payoff (D40). {category} renders the hook noun (plural via
+# {category_pl}); {ndays} is the transformation day-count, else 7 — the
+# "seven days" the product test card names.
 HOOKS = {
  "curiosity-gap": [
    'Nobody is talking about {flaw}.',
@@ -42,16 +56,29 @@ HOOKS = {
    'I almost didn\'t post this about {product}.',
    'The {category} industry doesn\'t want you to know this.',
    'Wait until you see what {product} does at the {moment}.',
+   # GEN-B short forms (D61/D73)
+   'Nobody is talking about the {category} flaw.',
+   'I tested {product} for {ndays} days.',
+   'One detail on {product} nobody mentions.',
+   'Here\'s what nobody shows about {product}.',
+   'Nobody ever shows this {category} test.',
+   '{product}: buy or skip?',                          # review (D27)
  ],
  "bold-claim": [
    '{product} is the best {category} under ${price}.',
    'I replaced my {expensive} with {product}. No regrets.',
    '{product} just made every other {category} obsolete.',
    'Ninety seconds. That\'s all {product} needed to convince me.',
+   # GEN-B short forms (D61/D73) — paid by the A7 subversion card
+   'Most {category_pl} fail. This one didn\'t.',
+   '{ndays} days with {product}. Zero failures.',
+   'Most {category_pl} aren\'t worth it. This one?',  # review (D27)
  ],
  "negative-command": [
    'Stop {mistake}.',
-   'Stop buying {category} until you see this.',
+   # D69-class agreement (GEN-B): was "Stop buying {category}" — "Stop
+   # buying lamp until you see this"; the plural slot reads right.
+   'Stop buying {category_pl} until you see this.',
    'You\'re using {product} wrong.',
  ],
  "proof-first": [
@@ -62,10 +89,22 @@ HOOKS = {
  "transformation": [
    'This is the after. Here\'s what it took.',
    '{before} → {after}. Same {timespan}.',
+   # GEN-B short forms (D61/D73): the before/after names the product and the
+   # day-count the D40 transformation payoff delivers ("DAY 1 vs DAY N").
+   # The "day 1 vs day N" forms render only in the transformation format,
+   # whose frame-0 IS the DAY 1 | DAY N split-screen (D25/D135); the other
+   # formats get the after-framed forms (paid by the TEST result).
+   '{product}, day 1 vs day {ndays}.',
+   'Day 1 vs day {ndays} with {product}.',
+   '{product} after {ndays} days: buy or skip?',     # review (D27)
+   'Here\'s the after with {product}.',
+   '{product}. This is the after.',
  ],
  "story-time": [
    'Story time: the {moment} {product} saved my {thing}.',
    'So I\'m {situation} when {product} does this —',
+   'Story time: why I kept {product}.',              # GEN-B short forms
+   'So I almost returned {product}.',
  ],
  "contrarian-reframe": [
    'Everyone does {common}. Here\'s why that\'s wrong.',
@@ -74,6 +113,7 @@ HOOKS = {
  "identity-reveal": [
    'I\'m a {identity}, and I was wrong about {product}.',
    'Full disclosure: I\'m {persona_note}. Here\'s my honest take.',
+   'I was wrong about {product}.',                   # GEN-B short form
  ],
 }
 NICHE_KEYWORDS = {
@@ -89,29 +129,57 @@ NICHE_KEYWORDS = {
           # fall-through, ninth occurrence) — "bird"/"feeder" matched nothing.
           # Birding/wildlife products belong to the pets caption community.
           r"\bbird\b", r"\bbirds\b", r"\bfeeder\b", r"\bbirdhouse\b"],
+ # D11 (GEN-B, pipeline v2): every niche loop matches through _kw_hit —
+ # plain entries match at a WORD START ("lamp" never matches "clamp",
+ # "hair" never "chair", "tent" never "content"), regex entries are
+ # re.search'ed. Entries whose word-start form still over-matches
+ # ("led"->"ledger", "fan"->"fancy", "light"->"lightweight") are whole-word
+ # regexes; compounds the word-start rule would lose ("headphones") are
+ # listed explicitly.
  "gadgets": ["gadget","tech","lamp","alarm","charger","earbud","speaker","keyboard",
-             "mouse","light","led","projector","drone","smartwatch","phone","desk","cable","fan",
+             "mouse",r"\blights?\b|\blighting\b",r"\bled\b","projector","drone",
+             "smartwatch","phone","headphone","earphone","smartphone","microphone",
+             "iphone","ipad","tablet","camera","headset","webcam","doorbell",
+             "desk","cable",r"\bfans?\b",
              "laptop"],  # D110: +laptop (D11 class)
- "tools": ["tool","kitchen","clean","organize","organizer","knife","drill",
+ # D11 (GEN-B): "clean" whole-word forms only — the word-start stem also
+ # claimed "cleanser" (a skincare product).
+ "tools": ["tool","kitchen",r"\bclean(?:s|ing|er|ers)?\b","organize","organizer",
+          "knife","drill",
           "waffle","fryer","toaster","kettle","blender","cookware",
-          "lunch", "mealprep"],  # D98, D110: +lunch/+mealprep (D11 class)
+          "lunch", "mealprep",  # D98, D110: +lunch/+mealprep (D11 class)
+          # D11 (GEN-B): "electric milk frother" fell to niche=default
+          # (#viral #fyp #ugc); the router's lexicon + research voters both
+          # route it tools (kitchen appliance class). Cleaning/kitchen
+          # objects from the router's tools vocabulary join.
+          "frother","mop","vacuum",r"\btrash\b",r"\bcutting boards?\b"],
  "finance": ["finance","money","budget","invest","debt","credit","bank"],
- "fitness": ["fitness","workout","gym","protein","posture","exercise","yoga","run",
+ "fitness": ["fitness","workout","gym","protein","posture","exercise","yoga",
+          # D11 (GEN-B): "run" as a raw substring claimed "brunch"/"prune"/
+          # "trunk"; whole-word run/runs/running/runner(s) only.
+          r"\brun(?:s|ning|ners?)?\b",
           # D24 (judge loop, cycle 9): "resistance bands set" fell to
           # niche=default → #viral #fyp #ugc (the D11/D14/D18/D20
           # fall-through bug, fifth occurrence). Equipment keywords now route.
-          "resistance","band","dumbbell","kettlebell","treadmill",
+          # D11 (GEN-B): band/bands whole-word — never "bandana"/"bandage".
+          "resistance",r"\bbands?\b","dumbbell","kettlebell","treadmill",
           "pull-up","pullup","chin-up",
           # D38 (judge loop, cycle 12): "walking pad" fell to gadgets via
           # "desk" (seventh fall-through) — the compound is caught by the
           # D37 pre-check above; bare "walking"/"cardio"/"steps" route here.
           "walking","cardio","steps"],
- "beauty": ["beauty","skincare","makeup","serum","cream","hair",
+ # D11 (GEN-B): "cream" never claims "ice cream" (food); +cleanser.
+ "beauty": ["beauty","skincare","makeup","serum",r"(?<!ice )\bcreams?\b","hair",
+            "cleanser",
              # D72 (judge loop, cycle 18): "magnetic eyelashes" fell to
              # niche=default -> #viral #fyp #ugc (the D11-family fall-through,
              # eighth occurrence). Lash products are beauty's core review
              # community (#beautytok #lashreview).
-             "lash","lashes","eyelash","lipstick","moisturizer"],  # D107: +lipstick/+moisturizer (D11 class)
+             "lash","lashes","eyelash","lipstick","moisturizer",  # D107: +lipstick/+moisturizer (D11 class)
+             # D11 (GEN-B): "silk pillowcase" fell to niche=default; silk
+             # sleep goods sell to the hair/skin community (router lexicon +
+             # research voters: beauty). Beauty precedes home in this loop.
+             "silk"],
  # D14 (judge loop, cycle 6): ingestible/wellness products ("sleep gummies")
  # fell through to niche=default → generic #viral #fyp #ugc. Wellness is a
  # real caption community (#sleeptok #wellnesstok) and a trust-sensitive class.
@@ -121,7 +189,7 @@ NICHE_KEYWORDS = {
  "wellness": ["sleep","gumm","melatonin","magnesium","supplement","vitamin",
               "hydrat","wellness","selfcare","self-care","relax",
               "anxiety","stress","meditat","cbd","probiotic",
-              "noise","snore","lullab"],
+              "noise","snore","snoring","lullab"],
  # D18 (judge loop, cycle 7): "car headrest hook" fell through to
  # niche=default → #viral #fyp #ugc. Automotive is a real caption community
  # (anatomy-automotive notes). Short tokens use word-boundary regexes like
@@ -140,22 +208,82 @@ NICHE_KEYWORDS = {
  # niche detection entirely). Room-tour/listicle content is a real caption
  # community (#homefinds #apartmenttherapy). Placed last in the loop so
  # gadget/tool keywords win on mixed prompts ("LED desk lamp" stays gadgets).
+ # D11 (GEN-B): these regexes sat inside the plain `kw in low` substring
+ # loop, which can never match "\b...", so NO product prompt could ever
+ # reach home ("portable door lock" -> default). _kw_hit re-searches them.
+ # Furniture/door/bedding nouns join (router lexicon + research voters
+ # route "door lock" / "office chair" home); "desk" stays gadgets (earlier
+ # in the loop), mirroring the router's tie-break order.
  "home": [r"\bhome\b", r"\bapartment\b", r"\bbedroom\b", r"\bliving ?room\b",
-          r"\bcloset\b", r"\bbathroom\b", r"\bdecor\b"],
- "food": ["food","recipe","cook","snack","coffee","meal"],
- "education": ["learn","course","study","language","exam"],
- "commentary": ["news","politics","drama","tea"],
+          r"\bcloset\b", r"\bbathroom\b", r"\bdecor\b",
+          r"\bchairs?\b", r"\bdoors?\b", r"\bsofas?\b", r"\bcouch(?:es)?\b",
+          r"\bpillows?\b", r"\bpillowcases?\b", r"\bblankets?\b",
+          r"\bcurtains?\b", r"\brugs?\b", r"\bshel(?:f|ves)\b",
+          r"\bfurniture\b", r"\bbedding\b"],
+ # D11 (GEN-B): +sugar — "I quit sugar for 21 days" routes food like the
+ # coffee challenge (router lexicon + research voters agree). +tea/matcha/
+ # ice cream: the drink/dessert sense ("matcha tea set" was commentary via
+ # "tea"); "spill THE tea" stays commentary's.
+ "food": ["food","recipe","cook","snack","coffee","meal","sugar",
+          r"(?<!the )\btea\b","matcha",r"\bice cream\b"],
+ # D11 (GEN-B): "exam" whole-word ("example" is not a study topic).
+ "education": ["learn","course","study","language",r"\bexams?\b"],
+ # D11 (GEN-B): "tea" whole-word — the raw substring claimed "steamer",
+ # "team", "instead".
+ "commentary": ["news","politics","drama",r"\btea\b"],
  # D134 (judge loop, cycle 35): OUTDOORS niche — "portable camping lantern"
  # fell through to niche=default → generic #viral #fyp #ugc (the
  # D11-family fall-through, fourteenth occurrence; "light"/"lamp" gadgets
  # keywords never match "lantern"/"camping"). Outdoor gear is a real
  # caption community (#campingtok). Placed LAST so gadget/tool keywords win
  # on mixed prompts ("LED camping lantern" stays gadgets via "led", per
- # the D20 ordering philosophy). Plain-substring-safe tokens (no
- # word-boundary regexes in this loop — see line ~789).
+ # the D20 ordering philosophy). Word-start tokens (GEN-B: _kw_hit — "tent"
+ # no longer claims "content"; "flashlight"/"headlamp" now reach outdoors
+ # instead of gadgets' "light"/"lamp" substrings).
  "outdoors": ["camp","camping","tent","outdoor","hik","lantern","flashlight",
               "headlamp","backpack","firewood"],
 }
+
+# D11 (GEN-B, pipeline v2): ONE keyword matcher for every niche loop. The old
+# loops used `kw in low` (raw substring): "ergonomic office chair" routed to
+# beauty via "hair", "phone clamp" matched "lamp", and the regex entries
+# (pets/automotive/home) could never match inside those loops. Regex entries
+# (anything with a regex metacharacter) are re.search'ed; plain entries match
+# at a word start so stems keep working ("hik" -> hiking, "gumm" -> gummies).
+_KW_RX_META = re.compile(r"[\\()\[\]?|+*^$]")
+
+def _kw_hit(kw, text):
+    if _KW_RX_META.search(kw):
+        return re.search(kw, text) is not None
+    return re.search(r"(?<![a-z0-9])" + re.escape(kw), text) is not None
+
+def _niche_for(low, skip=()):
+    """D11 (GEN-B): first NICHE_KEYWORDS niche (dict order) with a keyword
+    hit in `low`, skipping `skip`; "default" when nothing matches."""
+    for nk, kws in NICHE_KEYWORDS.items():
+        if nk in skip:
+            continue
+        if any(_kw_hit(kw, low) for kw in kws):
+            return nk
+    return "default"
+
+# D11 (GEN-B): category-map keys (CATEGORY_MECHANISM_FAIL / _WHO /
+# _PURPOSE_PROOF / _DEMO_TEST) were matched as raw substrings of the
+# category — "clamp" pulled the lamp's bulb mechanism, "bracelet" the brace's
+# straps. A key now matches a whole word of the category plus an inflection
+# (s/es/ies/y: "gumm" -> gummies, "band" -> bands); the one compound the maps
+# rely on ("eyelashes" -> "lash") keeps its "eye" head.
+def _key_hit(key, text):
+    return re.search(r"(?<![a-z0-9])(?:eye)?" + re.escape(key) +
+                     r"(?:s|es|ies|y)?(?![a-z0-9])", text.lower()) is not None
+
+# D11/D140 (GEN-B): creator-craft vocabulary — routes ADVICE topics to
+# education (parse_prompt) and scopes their caption to the creator community
+# (_scoped_tags). Only ever applied to advice topics: on a product, "hooks"
+# are wall hooks.
+_CREATOR_TOPIC = re.compile(
+    r"\b(hooks?|views|followers|algorithm|content|creators?|reels?|captions?|"
+    r"thumbnails?|engagement|audience|videos?)\b", re.I)
 NICHE_HOOK = {  # from the playbook's niche mapping
  "gadgets": "curiosity-gap", "tech": "curiosity-gap", "tools": "curiosity-gap",
  "pets": "transformation",  # D11: pet products demo a visible before/after
@@ -688,6 +816,17 @@ CAPTION_TAGS = {
  # D134 (judge loop, cycle 35): outdoors caption community — the camping-gear
  # class captions on #campingtok, not #viral.
  "outdoors": ["#campingtok", "#outdoors", "#campinggear"],
+ # D140 (GEN-B, pipeline v2): education and commentary are routable niches
+ # (NICHE_KEYWORDS) with no caption community — both fell to the generic
+ # default. Creator-craft advice ("why your hooks fail") is sub-scoped in
+ # _scoped_tags to the creator community.
+ "education": ["#learnontiktok", "#studytok", "#studytips"],
+ "education-creator": ["#contentcreator", "#creatortips", "#socialmediatips"],
+ "commentary": ["#commentary", "#newstok"],
+ # D140 (GEN-B): generic-only tags carry no niche signal (Instagram/TikTok
+ # recommendation) and fail gate 1. Kept only as the last-resort shape;
+ # build_caption derives a category tag for the default niche instead
+ # (_default_tags: "#waterbottle #productreview").
  "default": ["#viral", "#fyp", "#ugc"],
 }
 
@@ -705,7 +844,15 @@ HUMAN_NOTE = (
 UTILITARIAN_HINTS = {"gadget","tech","tool","software","lamp","charger","app","earbud",
   "speaker","keyboard","mouse","projector","cable","fan","humidifier","vacuum","mop",
   "kitchen","clean","organize","sleep","alarm","led","phone","desk","car","home",
-  "waffle","fryer","toaster","kettle","blender","cookware"}  # D98 appliance nouns
+  "waffle","fryer","toaster","kettle","blender","cookware",  # D98 appliance nouns
+  # D11 (GEN-B): hints now match whole words (+plural) via _key_hit, so the
+  # inflected forms the substring test used to catch are listed, plus the
+  # functional objects the router's fit voter (vsp/router._UTIL) counts.
+  "cleaning","cleaner","organizer","headphone","stand","clamp","lock",
+  "inflator","lantern","flashlight","frother","lunch","trash","feeder",
+  "corrector","chair","ergonomic","bank","headlamp"}
+# D11 (GEN-B): whole-word matched (_key_hit) — "spa" no longer fires on
+# "space"/"spatula", "dress" on "address", "wine" on "swine".
 HEDONIC_HINTS = {"perfume","luxury","makeup","fashion","dress","watch","jewelry",
   "resort","spa","wine","experience","romantic"}
 
@@ -739,6 +886,14 @@ def possessive(noun):
     return n + "'" if n.endswith("s") else n + "'s"
 
 def parse_prompt(prompt):
+    # GEN-B (D140/TAG-MISMATCH): every concept's ctx also carries the prompt
+    # text it was parsed from (added key) — the caption's tag screen checks
+    # the same prompt the gate-1 hashtag/niche MISMATCH rule reads.
+    ctx = _parse_prompt_core(prompt)
+    ctx.setdefault("prompt_text", str(prompt).strip())
+    return ctx
+
+def _parse_prompt_core(prompt):
     p = prompt.strip()
     m = re.search(r'\$(\d+(?:\.\d+)?)', p)
     # D37 (judge loop, cycle 12): PRICE IS NULLABLE. The old default "20"
@@ -811,7 +966,14 @@ def parse_prompt(prompt):
     # ("Thirty days with no the habit"). Challenge now needs a SECOND
     # signal: the verb regex, "N days", or "no X for". Bare "things in my X"
     # is a SHOWCASE (product-roundup listicle) — the julianna_claire class.
-    things_in_my = re.search(r"\bthings in my\s+([a-z ]+?)(?:\s+that\s|\s+which\s|\s*$)", low0)
+    # D84/D141 (GEN-B): a price clause inside the listicle title ("things in
+    # my kitchen under $30 that just make sense") broke the [a-z ] domain
+    # match and fell to PRODUCT grammar (category="sense"); the clause is
+    # skipped here — the price itself is already in its own slot.
+    things_in_my = re.search(
+        r"\bthings in my\s+([a-z ]+?)"
+        r"(?:\s+(?:under|below|for under|for less than)\s+\$?\d+(?:\.\d+)?)?"
+        r"(?:\s+that\s|\s+which\s|\s*$)", low0)
     is_challenge = (bool(ch) or act_behav or bool(vice) or
         (bool(things_in_my) and not bool(ch) and not act_behav and
          bool(re.search(r"\b\d+\s*days?\b|\bno\s+\w+(?:\s+\w+)?\s+for\b", low0))))
@@ -904,11 +1066,12 @@ def parse_prompt(prompt):
                 "verdict_card": verdict_card,
                 "surprise": surprise}
         low = ctx0["product"].lower()
-        niche = "default"
-        for nk, kws in NICHE_KEYWORDS.items():
-            if any(kw in low for kw in kws):
-                niche = nk; break
-        ctx0["niche"] = niche
+        # D11 (GEN-B): word-start/regex matching (_niche_for) — the raw
+        # substring loop could never match the regex entries. "home" is
+        # skipped here: in a challenge "at home" is where the streak happens
+        # ("cooking every meal at home" stays food, D67), not the home-decor
+        # caption community.
+        ctx0["niche"] = _niche_for(low, skip=("home",))
         return ctx0
     # D22 (judge loop, cycle 8): SHOWCASE/LISTICLE CONCEPT CLASS. "Things in
     # my apartment that just make sense" is a product-roundup, not a challenge
@@ -939,8 +1102,12 @@ def parse_prompt(prompt):
                 # D37-class fabrication: cheapest relative to what? The
                 # no-price surprise names the overlooked item instead — the
                 # same underdog angle, with no price order to defend.
-                "surprise": ((f"the cheapest item — under ${price} — is the one "
-                              "everyone keeps asking about") if price
+                # D141 (GEN-B, pipeline v2): with a price, "the cheapest item"
+                # is still an absolute ranking claim (lexicon.ABSOLUTE bans
+                # "cheapest") — the prompt's price anchors the find instead,
+                # no ranking.
+                "surprise": ((f"the under-${price} find is the one everyone "
+                              "keeps asking about") if price
                              else ("the one I almost skipped is the one "
                                    "everyone keeps asking about"))}
         # D20 (judge loop, cycle 8): regex pre-check for the home niche — its
@@ -964,11 +1131,8 @@ def parse_prompt(prompt):
                                    for rx in NICHE_KEYWORDS["home"])
                      else "default")
         if niche == "default":
-            for nk, kws in NICHE_KEYWORDS.items():
-                if nk in ("pets", "automotive", "home"):
-                    continue
-                if any(kw in low for kw in kws):
-                    niche = nk; break
+            # D11 (GEN-B): word-start/regex matching (_niche_for).
+            niche = _niche_for(low, skip=("pets", "automotive", "home"))
         ctx1["niche"] = niche
         return ctx1
     # D47 (judge loop, cycle 13): ROUTINE/DAILY-VLOG CONCEPT CLASS. "my 5AM
@@ -1020,23 +1184,41 @@ def parse_prompt(prompt):
         topic = re.sub(r"^(make (me )?a (script|video) (about|for|on)\s*)", "",
                        p.strip(), flags=re.I).strip()
         low = topic.lower()
-        niche = "default"
-        for nk, kws in NICHE_KEYWORDS.items():
-            if any(kw in low for kw in kws):
-                niche = nk; break
+        # D11 (GEN-B): creator-craft advice ("why your hooks fail") fell to
+        # niche=default (#viral #fyp #ugc); the router's lexicon + research
+        # voters route it education. Creator terms only count on the ADVICE
+        # branch — on a product, "hooks" is a wall hook, not a lesson.
+        if _CREATOR_TOPIC.search(low):
+            niche = "education"
+        else:
+            niche = _niche_for(low)  # D11 (GEN-B): word-start/regex matching
         toks = [t for t in re.findall(r"[a-zA-Z]+", low)
                 if t not in {"a","an","the","my","for","with","and","of","to","your","about","why","how"}]
         # D15 note: advice "category" is the topic's HEAD noun (first keyword),
         # not the tail — "why your hooks fail" → HOOKS, not "fail".
+        # D15 (GEN-B): framing words and verbs are never the head — "the
+        # truth about protein" was category "truth" ("Comment TRUTH", "this
+        # truth mistake"), "how to fix your posture" was "fix", "tips for
+        # better sleep" was "tips"; the head is the first remaining noun.
+        head = next((t for t in toks if t not in _ADVICE_FRAME
+                     and not t.endswith("ing")), None)
         return {"concept": "advice", "product": topic, "price": price,
                 "niche": niche, "fit": "neutral",
-                "category": toks[0] if toks else "videos"}
+                "category": head or (toks[0] if toks else "videos")}
     # D77 (judge loop, cycle 19): the preposition strip needs word boundaries —
     # "birdhouse with motion camera" matched the "on" inside "motion" and
     # parsed product="camera" (the cycle-4/13 (about|for|on) bug class, new
     # variant: preposition-as-substring). "before work" and "motion" are not
     # prepositions.
-    m2 = re.search(r'(?:\babout\b|\bfor\b|\bon\b)\s+(?:a|an|the|my)?\s*(.+)', p, re.I)
+    # D11/D77 (GEN-B, pipeline v2): the about/for/on strip is a REQUEST-
+    # framing strip ("make a script about a $12 lamp", "a video on X") — it
+    # also fired on the product's own use-context and parsed "phone clamp for
+    # desk" as product="desk" (hooks and payoff about a desk). It now needs a
+    # request noun right before the preposition, or the preposition opening
+    # the prompt.
+    m2 = re.search(r'(?:^|\b(?:script|video|reel|post|tiktok|ad|clip|content|'
+                   r'caption|short)s?\s+)(?:about|for|on)\s+(?:a|an|the|my)?\s*(.+)',
+                   p, re.I)
     product = (m2.group(1).strip().rstrip('.') if m2 else p).strip()
     product = re.sub(r'^(make (me )?a (script|video) (about|for|on)\s*)', '', product, flags=re.I)
     product = re.sub(r'^(a|an|the|my)\s+', '', product, flags=re.I)
@@ -1068,13 +1250,13 @@ def parse_prompt(prompt):
     elif re.search(r"\b(power bank|battery bank|power station)\b", low):
         niche = "gadgets"
     else:
-        for nk, kws in NICHE_KEYWORDS.items():
-            if nk in ("pets", "automotive"):
-                continue
-            if any(kw in low for kw in kws):
-                niche = nk; break
-    fit = "utilitarian" if any(h in low for h in UTILITARIAN_HINTS) else \
-          "hedonic" if any(h in low for h in HEDONIC_HINTS) else "neutral"
+        # D11 (GEN-B): word-start/regex matching — "chair" no longer routes
+        # beauty via "hair", and the home regexes can finally match.
+        niche = _niche_for(low, skip=("pets", "automotive"))
+    # D11 (GEN-B): fit hints match whole words (+ plural) — the substring test
+    # read "car" in "scarf", "app" in "happy", "led" in "curled".
+    fit = "utilitarian" if any(_key_hit(h, low) for h in UTILITARIAN_HINTS) else \
+          "hedonic" if any(_key_hit(h, low) for h in HEDONIC_HINTS) else "neutral"
     # category = content noun of the product name ("sunrise alarm lamp" -> "lamp")
     # D30 (judge loop, cycle 11): when the tail token is a generic container
     # noun ("machine"/"device"/"gadget"/"tool"/"item"/"kit"/"set"), keep the
@@ -1083,7 +1265,13 @@ def parse_prompt(prompt):
     # industry"), a meaningless comment word ("Comment MACHINE"), and weak
     # templates downstream. Up to 3 trailing tokens.
     stop = {"a","an","the","my","for","with","and","of","12","20","30"}
-    toks = [t for t in re.findall(r"[a-zA-Z]+", product.lower()) if t not in stop]
+    # D11 (GEN-B): the category is the OBJECT's noun, never the use-context
+    # tail — "phone clamp for desk" derived category="desk" ("the desk
+    # doing its real job"). A trailing "for ..." phrase names where/who it is
+    # for and is cut before the tail pick; "with ..." stays (D76: the
+    # reviewed differentiator — "car trash can with lid" -> "lid").
+    cat_src = re.split(r"\s+for\s+", product, maxsplit=1, flags=re.I)[0] or product
+    toks = [t for t in re.findall(r"[a-zA-Z]+", cat_src.lower()) if t not in stop]
     GENERIC_TAIL = {"machine","device","gadget","tool","item","thing","kit",
                     "set","system","unit","product"}
     if len(toks) >= 2 and toks[-1] in GENERIC_TAIL:
@@ -1104,8 +1292,10 @@ def parse_prompt(prompt):
     # code formatted only tuple index 0 — index 1 kept a raw {category}
     # placeholder that rendered LITERALLY in the payoff ("fail the way cheap
     # {category_s} always fail"). Every element is formatted now.
+    # D11 (GEN-B): map keys match whole category words (_key_hit) — "clamp"
+    # no longer inherits the lamp's bulb, "bracelet" the brace's straps.
     mech = next(
-        (v for k, v in CATEGORY_MECHANISM_FAIL.items() if k in category),
+        (v for k, v in CATEGORY_MECHANISM_FAIL.items() if _key_hit(k, category)),
         tuple(e.format(category=category, category_s=plural(category))
               for e in DEFAULT_MECHANISM_FAIL))
     part, fail_verb, zeroed = mech
@@ -1121,7 +1311,7 @@ def parse_prompt(prompt):
     # {category} test, up close" — see _demo_test_for. Event-shaped
     # positive-proof fallback instead (D25/D95 family).
     _dt_pair = next(
-        (v for k, v in CATEGORY_DEMO_TEST.items() if k in category),
+        (v for k, v in CATEGORY_DEMO_TEST.items() if _key_hit(k, category)),  # D11 (GEN-B)
         # D58-repair (gauntlet, cycle 12): was "doing its real job, on camera"
         # — same spoken-slot violation as _demo_test_for's fallback (D44 on
         # seed 811). Event-shaped, no camera direction.
@@ -1130,6 +1320,10 @@ def parse_prompt(prompt):
          "visible before-and-after proof"))
     return {"concept": "product", "product": product, "price": price, "niche": niche,
             "fit": fit, "category": category, "named_competitor": None,
+            # D136 (GEN-B): social proof the PROMPT supplied ("4.9★",
+            # "10,000 sold") — the only proof a hook may render; None keeps
+            # every proof-first template out of the draw.
+            "proof": _prompt_proof(p),
             # A7 + D5 (judge loop cycle 2): payoff must subvert a NAMED expectation
             # and the contract must name the same MEASURABLE in hook and payoff.
             # "the one thing Xs are supposed to do" is banned as contract language.
@@ -1148,7 +1342,8 @@ def parse_prompt(prompt):
             "who_for": (compound_slots["who_for"]
                         if compound_slots and "who_for" in compound_slots
                         else next(
-                            (v for k, v in CATEGORY_WHO.items() if k in category),
+                            (v for k, v in CATEGORY_WHO.items()
+                             if _key_hit(k, category)),  # D11 (GEN-B)
                             DEFAULT_WHO.format(category=category,
                                              category_s=plural(category)))),
             # D56 (judge loop, cycle 15): positive-proof clause for review
@@ -1160,7 +1355,7 @@ def parse_prompt(prompt):
                               if compound_slots and "purpose_proof" in compound_slots
                               else next(
                                   (v for k, v in CATEGORY_PURPOSE_PROOF.items()
-                                   if k in category),
+                                   if _key_hit(k, category)),  # D11 (GEN-B)
                                   DEFAULT_PURPOSE_PROOF)),
             # D11 (judge loop, cycle 5): the two hardcoded rehook {action} slots
             # ("I dim the room" / "I flip it over") defeated D2's event-specific
@@ -1218,51 +1413,181 @@ def parse_prompt(prompt):
                                   else _dt_pair[0])),
             "demo_test": _dt_pair}
 
+# D144 (GEN-B, pipeline v2): FRAME-0 OVERLAY = A CONTIGUOUS PHRASE OF THE
+# HOOK'S FIRST SENTENCE. The D17/D17b/D109 stack (strip a leading "I tested",
+# trim a dangling function word, then refill from the sentence TAIL) stitched
+# non-adjacent words together — "Nobody mentions the lamp flaw" rendered
+# "NOBODY MENTIONS FLAW" (582/990 baseline runs), "I quit buying coffee for 30
+# days" rendered "BUYING COFFEE DAYS", "Things in my kitchen that just make
+# sense" rendered "THINGS SENSE". The overlay is now always a run of ADJACENT
+# words (case/punctuation-insensitive, the lexicon.norm view the gate uses):
+#   * content runs = maximal stretches of non-function words inside one
+#     clause (",", ":", "—", "$" price break a run); a run never ends on a
+#     function word or a dangling quantifier ("every", "no", "one"), so the
+#     D17b "NOBODY MENTIONS THE" class cannot recur;
+#   * pure durations ("30 days", "Day 14") and trailing frequency tails
+#     ("every day") yield to a content run — D17/D47/D109's payoff-noun
+#     intent: "I tested car headrest hook for 7 days" -> "CAR HEADREST HOOK",
+#     "Day 14 of my 5AM routine" -> "5AM ROUTINE", "Nobody mentions the lamp
+#     flaw" -> "LAMP FLAW", "I quit sugar for 21 days" -> "QUIT SUGAR";
+#   * the longest run wins (ties: the later run — the object/payoff-noun
+#     slot); an over-long run keeps its LAST words ("white noise machine
+#     flaw" -> "NOISE MACHINE FLAW");
+#   * label forms stay labels: "day 1 vs day 7" -> "DAY 1 | DAY 7" and
+#     "before and after" -> "BEFORE | AFTER" (D25/D135 split-screen), a
+#     leading "POV:" keeps its label ("POV: YOUR KITCHEN"), a leading
+#     "Story time:" prefix is skipped.
+# Prices never reach the overlay (a "$12.99" hook split at its decimal would
+# otherwise print a "$12" fragment; D37-safe).
+_OV_FUNC = frozenset("""a an the of to for on in at by with without from into
+onto about over than then and or but nor so if as vs versus via per until till
+unless while because since i me my mine we us our you your yours he him his she
+her it its they them their this that these those here there is are was were be
+been being am do does did has have had could will would shall should may
+might must it's that's here's there's what's who's i'm i've i'd i'll you're
+you've we're they're he's she's let's don't doesn't didn't isn't aren't wasn't
+weren't won't can't couldn't wouldn't shouldn't haven't hasn't not what which
+who whom whose when where why how under below above behind near off out up down
+through across around against between among upon within inside outside like
+after before
+""".split())
+# D144/D109 (GEN-B): template verbs/adverbs that carry no payoff noun — a run
+# made only of these ("NOBODY MENTIONS", "BUY", "SKIP") loses to any run that
+# names something ("LAMP FLAW"); trailing manner adverbs drop ("LAMP WRONG"
+# -> "LAMP").
+_OV_WEAK = frozenset("""nobody mentions mention talking talks shows show ever
+almost post kept keep tested tried stop stopped buying buy skip see using use
+wrong alone honest honestly verdict worth zero failures fail fails failed one
+thing things detail just make makes sense quit making posting killing needs
+need held won changed really actually even still never always again first
+better best most every least everyone everything nothing something someone
+anyone look looks looking got get gets watch wait happened happens instead
+done doing asleep tell tells told know knows explained""".split())
+_OV_TRAIL = frozenset("""wrong alone anyway again honestly instead yet already
+too first today now daily""".split())
+_OV_STARTERS = frozenset("no every one zero all most each any".split())
+_OV_TIME = frozenset("""day days week weeks night nights hour hours minute minutes
+second seconds month months year years""".split())
+_OV_NUMWORDS = frozenset("""one two three four five six seven eight nine ten
+eleven twelve fourteen fifteen twenty thirty sixty ninety hundred first last
+next""".split())
+_OV_WORD = re.compile(r"[A-Za-z0-9][A-Za-z0-9'\u2019.\-]*")
+_OV_BREAK = re.compile(r"[,:;!?()\[\]\"\u201c\u201d|\u2014\u2013\u2192]|\s-\s")
+_OV_LABEL_PREFIX = re.compile(r"^\s*(?:story ?time|psa|update|reminder|"
+                              r"confession|hot take|unpopular opinion|"
+                              r"full disclosure)\s*:\s*", re.I)
+
+def _ov_is_num(w):
+    return w.replace(".", "").replace(",", "").isdigit() or w in _OV_NUMWORDS
+
+def _ov_duration(run):
+    ws = [t["low"] for t in run]
+    return (any(w in _OV_TIME for w in ws) and any(_ov_is_num(w) for w in ws)
+            and all(w in _OV_TIME or _ov_is_num(w) for w in ws))
+
 def overlay_truncate(s, max_words=3):
     # hook playbook §4: frame-0 on-screen text ≤3 words, works muted
-    # D17 (judge loop, cycle 7): naive words[:3] sliced mid-phrase — "I tested
-    # car headrest hook for 7 days" rendered "I TESTED CAR". Strip leading
-    # pronoun-verb boilerplate ("I tested"/"I tried"/"I stopped"...) so the
-    # truncation lands on a phrase boundary and names the product/concept.
-    # D47 (judge loop, cycle 13): day-counter hooks open with "Day N of my X"
-    # ("Day 14 of my 5AM routine" truncated to "DAY 14 OF") — strip the
-    # day-counter prefix too so the overlay names the concept ("5AM ROUTINE").
-    words = s.strip().split()
-    stripped = re.sub(
-        r"^(i|we|you)\s+(tested|tried|stopped|quit|started|bought|built|"
-        r"fixed|used|using|reviewed|review|gave\s+up)\s+"
-        r"(the|a|an|my|this|these|that)?\s*"
-        r"|^(this|these|here'?s)\s+(is|are)\s+(the|a|an|my)?\s*"
-        r"|^(day|week|month)\s+\d+\s+(of\s+)?(the|a|an|my|this)?\s*",
-        "", s.strip(), flags=re.I)
-    if stripped.strip():
-        words = stripped.strip().split()
-    # D17b (judge loop, cycle 15): leading-strip fixed the front, but
-    # truncation can dangle a function word at the END — "Nobody mentions the
-    # lid flaw" rendered "NOBODY MENTIONS THE". Strip trailing articles /
-    # prepositions / conjunctions so the overlay never ends mid-phrase.
-    out = words[:max_words]
-    while len(out) > 1 and out[-1].lower() in (
-            "the", "a", "an", "of", "to", "for", "on", "in", "at", "by",
-            "with", "and", "or", "but", "my", "your", "his", "her", "its",
-            "their", "this", "that", "these", "those", "is", "are", "as"):
-        out = out[:-1]
-    # D109 (judge loop, cycle 27): the truncation can land mid-phrase and the
-    # D17b trailing strip then drops the hook's payoff noun — "Nobody mentions
-    # the box flaw" (seed 934) rendered "NOBODY MENTIONS", an overlay naming
-    # nothing. When the strip freed slots, refill from the sentence TAIL: the
-    # final content word sits in the payoff-noun position in flaw/bold-claim
-    # hooks ("... the box flaw" -> "NOBODY MENTIONS FLAW").
-    func_words = ("the", "a", "an", "of", "to", "for", "on", "in", "at", "by",
-                  "with", "and", "or", "but", "my", "your", "his", "her",
-                  "its", "their", "this", "that", "these", "those", "is",
-                  "are", "as")
-    if len(out) < max_words and len(out) < len(words[:max_words]):
-        tail = next((w for w in reversed(words)
-                     if w.lower() not in func_words), None)
-        if tail and tail.lower() not in (w.lower() for w in out):
-            out = out + [tail]
-    return " ".join(out).upper()
+    text = (s or "").strip()
+    cut = re.search(r"[.!?](?:\s|$)", text)   # first sentence only (D144)
+    if cut:
+        text = text[:cut.start()]
+    lp = re.search(r"\bday\s+(\d+)\s+(?:vs\.?|versus|to|\u2192|->)\s+day\s+(\d+)\b",
+                   text, re.I)
+    if lp:
+        return f"DAY {lp.group(1)} | DAY {lp.group(2)}"
+    if re.search(r"\bbefore\s+(?:and|vs\.?|versus|&|/|\u2192|->)\s+after\b", text, re.I):
+        return "BEFORE | AFTER"
+    toks, last = [], 0
+    body = text
+    if re.match(r"\s*pov\s*:", body, re.I):
+        # D22 listicle grammar: the POV label is part of the card
+        ws = _OV_WORD.findall(body)[:max_words]
+        ws = [w.strip(".'\u2019") for w in ws]
+        while len(ws) > 1 and ws[-1].lower() in _OV_FUNC:
+            ws = ws[:-1]
+        return ("POV: " + " ".join(ws[1:])).strip().upper() if len(ws) > 1 else "POV"
+    body = _OV_LABEL_PREFIX.sub("", body) or body
+    for m in _OV_WORD.finditer(body):
+        gap = body[last:m.start()]
+        w = m.group(0).strip(".'\u2019")
+        last = m.end()
+        if not w:
+            continue
+        toks.append({"w": w, "low": w.lower(),
+                     "brk": bool(_OV_BREAK.search(gap)),
+                     "price": "$" in gap})
+    # the caller splits the hook on "." — a first "sentence" ending in a
+    # digit was cut inside a decimal ("4.9", "12.99"): that fragment is not
+    # a word of the hook, so it never reaches the card
+    if toks and re.search(r"\d$", body.rstrip()):
+        toks[-1]["price"] = True
+    runs, cur = [], []
+    for i, t in enumerate(toks):
+        if t["brk"] and cur:
+            runs.append(cur); cur = []
+        if t["price"] or t["low"] in _OV_FUNC:
+            # idiom: "worth it" keeps its object ("IS IT WORTH IT" class)
+            if t["low"] == "it" and cur and cur[-1]["low"] == "worth":
+                cur.append(t)
+                continue
+            if cur:
+                runs.append(cur); cur = []
+            continue
+        cur.append(t)
+    if cur:
+        runs.append(cur)
+    clean = []
+    for r in runs:
+        r = list(r)
+        # trailing frequency tail: "... every day" / "... each night" / "daily"
+        if (len(r) > 2 and r[-2]["low"] in ("every", "each")
+                and r[-1]["low"] in _OV_TIME):
+            r = r[:-2]
+        elif len(r) > 1 and r[-1]["low"] == "daily":
+            r = r[:-1]
+        while r and r[-1]["low"] in _OV_STARTERS:
+            r = r[:-1]
+        if r:
+            clean.append(r)
+    if not clean:
+        # nothing but function words ("This is the after"): the label word
+        # the sentence carries, else the legacy head
+        lab = [t["w"] for t in toks if t["low"] in ("after", "before", "today")]
+        if lab:
+            return lab[-1].upper()
+        ws = [t["w"] for t in toks if not t["price"]][:max_words]
+        while len(ws) > 1 and ws[-1].lower() in _OV_FUNC:
+            ws = ws[:-1]
+        return " ".join(ws).upper()
+    pool = [r for r in clean if not _ov_duration(r)] or clean
+    def _strong(r):
+        return any(t["low"] not in _OV_WEAK and not _ov_is_num(t["low"]) for t in r)
+    for r in pool:
+        while len(r) > 1 and _strong(r[:-1]) and r[-1]["low"] in _OV_TRAIL:
+            r.pop()
+    best = max(range(len(pool)), key=lambda i: (_strong(pool[i]),
+                                                min(len(pool[i]), max_words), i))
+    run = list(pool[best])
+    # an over-long run sheds its weak edges before the tail cut, so the cut
+    # never beheads the noun ("trash can nobody mentions" -> "TRASH CAN",
+    # not "CAN NOBODY MENTIONS"); a still-long NAME keeps its compound head
+    # ("limited edition water bottle" -> "WATER BOTTLE", not "EDITION WATER
+    # BOTTLE"), a leading quantifier yields first ("no social media apps"
+    # -> "SOCIAL MEDIA APPS")
+    if len(run) > max_words:
+        while run[-1]["low"] in _OV_WEAK and _strong(run[:-1]):
+            run.pop()
+        while (len(run) > max_words and run[0]["low"] in _OV_WEAK
+               and run[0]["low"] not in _OV_STARTERS and _strong(run[1:])):
+            run.pop(0)
+        if len(run) > max_words and run[0]["low"] in _OV_STARTERS:
+            run = run[1:]
+        if len(run) > max_words:
+            run = run[-(max_words - 1):] if max_words > 1 else run[-1:]
+    run = run[-max_words:]
+    while len(run) > 1 and run[0]["low"] in _OV_FUNC:
+        run = run[1:]
+    return " ".join(t["w"] for t in run).upper()
 
 def word_truncate(s, n=30):
     s = s.strip()
@@ -1568,7 +1893,12 @@ AI_EVENT_REWRITES = {
 }
 CHALLENGE_HOOKS = [  # ≤8-word first sentence enforced at pick_hook
  "I stopped {noun} for {span}. Here's what actually happened.",
- "Thirty days with no {noun}. The quiet won.",
+ # D35 (GEN-B): was "Thirty days with no {noun}. The quiet won." — a
+ # hard-coded "Thirty" on the 14- and 21-day challenges (seed runs: "I
+ # deleted Instagram for 14 days" hooked "Thirty days" while the payoff
+ # verdicted Day 14). The span is the prompt's; "the quiet won" is the
+ # screen-class payoff (pick_hook keeps it off other noun classes).
+ "{span} with no {noun}. The quiet won.",
  "My screen time was {before} a day. Then I quit {noun}.",
  # D113 (judge loop, cycle 28): D73's total-word filter (correct) starved the
  # challenge branch — all three templates above exceed 8 TOTAL words for any
@@ -1578,6 +1908,13 @@ CHALLENGE_HOOKS = [  # ≤8-word first sentence enforced at pick_hook
  # violation. This candidate names the abstinence + span in ≤8 words total
  # for nouns up to 2 words ("I quit 500 accounts for 30 days." = 7).
  "I quit {noun} for {span}.",
+ # D137 (GEN-B): demonstrative day-count forms — no first person, so an AI
+ # presenter can voice them (the log is shown, never claimed as lived);
+ # the day-count is the same one the payoff verdicts (D35). "with no"
+ # needs a plain noun ("with no sugar"); gerund nouns take "without"
+ # ("30 days without buying coffee") — pick_hook enforces the split.
+ "{span} with no {noun}.",
+ "{span} without {noun}.",
 ]
 
 # D67 (judge loop, cycle 17): PRACTICE-CHALLENGE journey grammar. The D8
@@ -1645,12 +1982,43 @@ ROUTINE_HOOKS = [
  "I stopped sleeping in. It rewired everything.",
 ]
 ROUTINE_HOOK_PINNED = "Day {streak} of my {time} routine. Here's what changed."
+# D137 (GEN-B): the AI presenter's pin is demonstrative ("the" routine) —
+# same day-counter contract (D47/D35), no claim that the routine is its own.
+ROUTINE_HOOK_PINNED_AI = "Day {streak} of the {time} routine. Here's what changed."
 
 SHOWCASE_HOOKS = [
  "Things in my {domain} that just make sense.",
  "POV: your {domain} is missing these.",
  "Every {domain} needs at least one of these.",
+ # D144/D137 (GEN-B): a two-beat form whose first sentence IS the frame-0
+ # card ("KITCHEN FINDS") and carries no "my" (AI-safe); the price variant
+ # only renders when the prompt named the price (D37).
+ "{Domain} finds. They just make sense.",
+ "{Domain} finds under ${price}.",
 ]
+
+# D13/D145 (GEN-B): ADVICE hooks. Advice topics ("why your hooks fail") drew
+# product families ("Stop buying hooks on looks alone", or the fallback
+# "Nobody mentions the hooks flaw." on every run). The advice payoff is the
+# fix ("fix the first 3 seconds — visual trigger, one-line hook, payoff
+# contract"), so these promise the fix / name the mistake the teaching
+# beats cover. (family, template, requirement): "why" = the topic is a
+# why/how question; "creator" = the topic is creator craft (niche education).
+ADVICE_HOOKS = [
+ ("curiosity-gap", "{Topic}? It's the first 3 seconds.", ("why", "creator")),
+ ("curiosity-gap", "{Topic}? Here's the fix.", ("why",)),
+ ("curiosity-gap", "One {category_sg} mistake is killing your views.", ("creator",)),
+ ("negative-command", "Stop making this {category_sg} mistake.", ()),
+ ("negative-command", "Stop posting {category_pl} that fail.", ("creator",)),
+ ("curiosity-gap", "{Topic}, explained.", ()),
+]
+# advice framing words: never the topic's head noun (parse_prompt's advice
+# category) — "the truth about protein" is about protein, "tips for better
+# sleep" about sleep
+_ADVICE_FRAME = frozenset("""truth secret secrets tip tips hack hacks mistake
+mistakes sign signs thing things way ways reason reasons rule rules lesson
+lessons fix fixes stop avoid never make makes get gets fail fails failed better
+best good bad real actually no one nobody everyone""".split())
 
 # D42 (judge loop, cycle 12): DETERMINER RULE helper — spoken dialogue never
 # uses a bare product noun. "the" (neutral) beats "this" (avoids "this about
@@ -1661,51 +2029,193 @@ _DET_OPENERS = ("the ", "a ", "an ", "this ", "that ", "these ", "those ",
 def _det(noun):
     return noun if noun.lower().startswith(_DET_OPENERS) else f"the {noun}"
 
-def _render_hook_line(ctx, rng, line, auth):
-    slots = {
+# D137 (GEN-B): first-person pronouns. An AI presenter's hook never carries
+# them — "I tested…", "my routine…" claim a life the persona never lived
+# (FTC 16 CFR 465.2); the curator / demonstrative forms ("this lamp", "the
+# 5AM routine") carry the same contract.
+_HOOK_FIRST_PERSON = re.compile(
+    r"\bI(?:'m|'ve|'d|'ll|’m|’ve|’d|’ll)?\b|"
+    r"\b(?:[Mm]e|[Mm]y|[Mm]ine|[Mm]yself|[Ww]e|[Oo]ur|[Uu]s)\b")
+# research.AI_UNSAFE_FAMILIES: first-person-anecdote families (D137)
+_AI_UNSAFE_HOOK_FAMILIES = ("story-time", "identity-reveal")
+# lamp/morning-specific legacy slots ("{before} → {after}" = "6 hours → wake
+# up calm", "the 3AM test", "half asleep at 6AM") and the persona note ("I'm
+# an AI, so I test everything twice" — a lived-testing claim for an AI and
+# false for a human) never render (D2/D15-class category-blind copy).
+_HOOK_DEAD_SLOTS = {"moment", "before", "after", "timespan", "situation",
+                    "thing", "persona_note"}
+_HOOK_ADJ = frozenset("""mini smart portable electric magnetic insulated
+rechargeable cordless ergonomic wireless cancelling canceling limited heated
+solar automatic adjustable foldable waterproof premium compact digital manual
+new best cheap small large big tiny giant ultra super extra""".split())
+# head nouns that name nothing alone ("the bank", "the can", "the stick")
+_HOOK_WEAK_HEADS = frozenset("""bank can machine device unit system thing item
+product set kit pack stick spray bundle case holder""".split())
+_HOOK_STOP = frozenset("""a an the for with my of and in on to that just make
+sense things thing days day every why your you how i stopped quit deleted
+ditched dropped gave up tried did unfollowed this these it its is are be was
+were buying make me script about video reel under best new mini portable set
+stopping""".split())
+_PROPER_NOUNS = {"instagram": "Instagram", "tiktok": "TikTok",
+                 "youtube": "YouTube", "netflix": "Netflix",
+                 "facebook": "Facebook", "twitter": "Twitter",
+                 "snapchat": "Snapchat", "reddit": "Reddit"}
+_SLOT_RE = re.compile(r"\{(\w+)")
+
+def _hook_lexicon():
+    # the gates' own lexicon (vsp/lexicon.py) screens every candidate, so the
+    # maker can never draft a hook the gate would reject; optional so the
+    # maker still runs standalone
+    try:
+        from vsp import lexicon
+        return lexicon
+    except Exception:
+        return None
+
+def _prompt_proof(p):
+    """D136 (GEN-B): the social-proof phrase the prompt itself supplies (the
+    gate's own SOCIAL_PROOF patterns), else None."""
+    lex = _hook_lexicon()
+    if lex is None:
+        return None
+    m = lex.first_match(lex.SOCIAL_PROOF, p or "")
+    return m.group(0).strip() if m else None
+
+def _adj_like(w):
+    lw = w.lower()
+    return lw in _HOOK_ADJ or (len(lw) >= 6 and bool(re.search(
+        r"(?:ic|ical|able|ible|less|ive|ous|ful|ized|ised|ated|eted)$", lw)))
+
+def _cap1(s):
+    return s[:1].upper() + s[1:] if s else s
+
+def _proper(noun):
+    return " ".join(_PROPER_NOUNS.get(w.lower(), w) for w in str(noun).split())
+
+def _hook_stem(w):
+    # vsp/rubric._stem: the R02/R15 anchor view of a word
+    w = w.lower().strip(".'’")
+    for suf in ("es", "s"):
+        if len(w) > 4 and w.endswith(suf):
+            return w[: -len(suf)]
+    return w
+
+def _hook_focus(ctx):
+    """Stems of the concept's content words: what the hook and the frame-0
+    card must name (R02 anchor, R15 product-early, D109 payoff noun)."""
+    c = ctx.get("concept", "product")
+    src = ([ctx.get("challenge_noun", "")] if c == "challenge" else
+           [ctx.get("domain", "")] if c == "showcase" else
+           [ctx.get("routine_label", ""), ctx.get("routine_time", "")]
+           if c == "routine" else
+           [str(ctx.get("product", "")), str(ctx.get("category", ""))])
+    toks = re.findall(r"[A-Za-z0-9][A-Za-z0-9'’.-]*", " ".join(map(str, src)))
+    return {_hook_stem(t) for t in toks
+            if len(t) >= 3 and t.lower() not in _HOOK_STOP
+            and not t.replace(".", "").isdigit()}
+
+def _hook_nouns(ctx):
+    """D61/D73 (GEN-B): [(product phrase, hook noun)], most specific first —
+    the full product name, its core (no "with/for ..." tail, no pack tail),
+    the compound noun, the head noun: "car trash can with lid" -> "car trash
+    can" -> "trash can"; "LED sunrise alarm lamp" -> "alarm lamp" -> "lamp".
+    Adjective modifiers never make a compound ("mini projector" ->
+    "projector"); weak heads never stand alone ("power bank", not "bank")."""
+    prod = " ".join(str(ctx.get("product") or ctx.get("category") or "").split())
+    core = re.split(r"\s+(?:with|for|in|on|from)\s+", prod, maxsplit=1,
+                    flags=re.I)[0].strip() or prod
+    ctoks = core.split()
+    if len(ctoks) >= 2 and ctoks[-1].lower() in ("set", "kit", "pack", "bundle"):
+        ctoks = ctoks[:-1]
+    if not ctoks:
+        ctoks = [str(ctx.get("category") or "product")]
+    comp = ctoks[-2:]
+    if len(comp) == 2 and len(comp[0]) == 1 and len(ctoks) >= 3:
+        comp = ctoks[-3:]                      # "vitamin c serum"
+    elif len(comp) == 2 and _adj_like(comp[0]):
+        comp = comp[1:]                        # "mini projector" -> projector
+    compound = " ".join(comp)
+    head = ctoks[-1]
+    levels = [(prod, compound), (" ".join(ctoks), compound), (compound, compound)]
+    if head.lower() not in _HOOK_WEAK_HEADS:
+        levels.append((head, head))
+    out, seen = [], set()
+    for pv, noun in levels:
+        if pv and pv.lower() not in seen:
+            seen.add(pv.lower())
+            out.append((pv, noun))
+    return out
+
+def _hook_slots(ctx, pv=None, noun=None):
+    noun = noun or ctx["category"]
+    topic = str(ctx.get("product", ""))
+    domain = ctx.get("domain", noun)
+    return {
         # D42 (judge loop, cycle 12): DETERMINER RULE — spoken dialogue never
         # uses a bare product noun ("I tested under-desk walking pad" fired
         # ungrammatical; the cycle-10 queued hygiene note, now live). Bare
         # product names in dialogue get "the" unless they already open with a
         # determiner/demonstrative/possessive.
-        "product": _det(ctx["product"]), "price": ctx["price"],
-        "category": ctx["category"], "ndays": ctx.get("ndays") or rng.choice([3, 7, 14, 30]),
+        "product": _det(pv if pv is not None else ctx["product"]),
+        "price": ctx["price"],
+        # D61/D73 (GEN-B): {category} is the HOOK noun (compound/head short
+        # form, plural-aware: "Most trash cans fail"), never the D76
+        # differentiator tail ("Most lids fail").
+        "category": noun, "category_pl": plural(noun),
+        "category_sg": singular(noun),
+        # D35 (GEN-B): the day-count is the transformation payoff's
+        # (ctx["ndays"], D40) or the product test card's "seven days" — the
+        # old rng.choice([3, 7, 14, 30]) promised "30 days" against a
+        # seven-day payoff.
+        "ndays": ctx.get("ndays") or 7,
         # D36: price may be None — guard the int() (belts-and-braces behind
         # D26's named-competitor gate; the {expensive} hook dies above anyway).
         # pipeline v2 crash fix: int("12.99") raised ValueError on every
         # decimal-price prompt (baseline: 30/990 runs crashed) — float first.
         "expensive": (f"my ${round(float(ctx['price'])*8)} {ctx['category']}"
                       if ctx.get("price") else f"a premium {ctx['category']}"),
-        "flaw": f"the {ctx['category']} flaw everyone ignores",
-        "moment": "3AM test", "proof": f"{rng.choice(['4.9★','12,000+ orders','sold out twice'])}",
-        "before": "chaos mornings", "after": "wake up calm",
+        "flaw": f"the {noun} flaw everyone ignores",
+        # D136 (GEN-B): proof renders ONLY what the prompt supplied — the old
+        # rng.choice(['4.9★','12,000+ orders','sold out twice']) invented
+        # social proof (FTC 16 CFR 465); proof-first templates are filtered
+        # out when ctx["proof"] is None.
+        "proof": ctx.get("proof"),
+        "moment": "3AM test", "after": "wake up calm", "before": "6 hours",
         # D47 (judge loop, cycle 13): routine slots — {time} (extracted clock
         # label, e.g. "5AM"), {label} (full routine label), {streak} (day
         # count). All default-safe; only populated for concept=routine.
         "time": ctx.get("routine_time", "5AM"),
         "label": ctx.get("routine_label", "the routine"),
         "streak": ctx.get("streak", "14"),
-        "timespan": "one week", "mistake": f"buying {ctx['category']} on looks alone",
-        "common": f"overpaying for {ctx['category']}",
+        "timespan": "one week",
+        "mistake": f"buying {plural(noun)} on looks alone",
+        "common": f"overpaying for {plural(noun)}",
         "identity": "skeptic", "persona_note": "an AI, so I test everything twice",
         "situation": "half asleep at 6AM",
         "thing": "morning routine",
-        # D8 challenge slots (only populated for concept=challenge; inert otherwise)
-        "noun": ctx.get("challenge_noun", ctx["category"]),
+        # D8 challenge slots (only populated for concept=challenge; inert
+        # otherwise). GEN-B: platform nouns keep their capitals in the hook.
+        "noun": _proper(ctx.get("challenge_noun", noun)),
         "span": ctx.get("span", "30 days"),
         # D67 (judge loop, cycle 17): practice-challenge pinned hook names
         # the day-count — needs the raw count, not the "30 days" string.
         "span_n": ctx.get("span_n", "30"),
         # D22 (judge loop, cycle 8): showcase {domain} slot for listicle hooks.
-        "domain": ctx.get("domain", ctx["category"]),
-        "before": "6 hours",
+        "domain": domain, "Domain": _cap1(domain),
+        # D13/D145 (GEN-B): advice topic slots
+        "topic": topic, "Topic": _cap1(topic),
     }
-    if auth:
-        slots.setdefault("authority", auth)
+
+def _render_hook_line(ctx, rng, line, auth, pv=None, noun=None):
     # pipeline v2 crash fix: the old double .format() re-parsed rendered text,
     # so a literal "{...}" in the prompt raised KeyError (baseline: 30/990
     # runs). generate() strips braces from the prompt (D31); a single pass
     # with the full slot dict renders every template.
+    # GEN-B: rng is unused (slots are draw-free, see pick_hook's hook rng);
+    # the argument stays for callers of the old signature.
+    slots = _hook_slots(ctx, pv, noun)
+    if auth:
+        slots.setdefault("authority", auth)
     return line.format(**slots)
 
 def _screen_pin(rendered):
@@ -1718,116 +2228,199 @@ def _screen_pin(rendered):
     # total exceeds budget.
     if len(rendered.split()) <= 8:
         return rendered
-    return rendered.split(".")[0].strip() + "."
+    first = rendered.split(".")[0].strip()
+    # D73 (GEN-B): a long practice object ("Day 30 of walking 10000 steps
+    # every single day") overflowed even the first sentence — trim the
+    # object's tail, never the "Day N of <gerund>" contract head.
+    ws = first.split()
+    if len(ws) > 8:
+        ws = ws[:8]
+        while len(ws) > 4 and ws[-1].lower().strip(",") in (
+                _OV_FUNC | _OV_STARTERS | {"single", "day", "days", "daily"}):
+            ws = ws[:-1]
+        first = " ".join(ws)
+    return first + "."
+
+def _hook_candidates(ctx, pool, ai, lex, fam_pref):
+    """D61/D73/D136/D137/D141 (GEN-B): every template of `pool` [(family,
+    template, requirement)] rendered at the most specific product phrase
+    that passes every screen; one candidate per template."""
+    fmt = ctx.get("fmt")
+    concept = ctx.get("concept", "product")
+    levels = _hook_nouns(ctx) if concept == "product" else [(None, None)]
+    focus = _hook_focus(ctx)
+    cnoun = str(ctx.get("challenge_noun", ""))
+    screen_cls = (ctx.get("abstinence_class") or "screen") == "screen"
+    out = []
+    for fam, line, req in pool:
+        slots = set(_SLOT_RE.findall(line))
+        low = line.lower()
+        if ai and (fam in _AI_UNSAFE_HOOK_FAMILIES or
+                   line in NICHE_HOOK_EXTRA.get("wellness", [])):
+            continue          # D137: first-person anecdote / implied lived sleep
+        if concept == "product" and slots & _HOOK_DEAD_SLOTS:
+            continue
+        if "price" in slots and not ctx.get("price"):
+            continue          # D37: never render "under $None"
+        if "expensive" in slots and not ctx.get("named_competitor"):
+            continue          # D26
+        if "proof" in slots and not ctx.get("proof"):
+            continue          # D136: no invented receipts
+        if fmt in ("demo", "review") and "industry" in low:
+            continue          # D35: a secret the demo/review payoff never reveals
+        verdict = "worth it" in low or "verdict" in low or "or skip" in low
+        if concept == "product" and verdict and fmt != "review":
+            continue          # D27/D35: only the review payoff pays a verdict
+        if "day 1 vs day" in low and fmt != "transformation":
+            continue          # D25/D135: the label pair needs the split-screen frame-0
+        if concept == "challenge":
+            if ("screen time" in low or "quiet won" in low) and not screen_cls:
+                continue      # D120: screen-class payoffs only
+            if "with no {noun}" in line and re.match(r"\w+ing\b", cnoun):
+                continue      # "with no buying coffee" -> the "without" form
+        req = tuple(req or ())
+        if "why" in req and not re.match(r"(why|how)\b", str(ctx.get("product", "")), re.I):
+            continue
+        if "creator" in req and ctx.get("niche") != "education":
+            continue
+        for pv, noun in levels:
+            try:
+                r = _render_hook_line(ctx, None, line, None, pv, noun)
+            except (KeyError, IndexError, ValueError):
+                break
+            r = _cap1(" ".join(humanize_dialogue(r).split()))
+            n = len(r.split())
+            if n > 8 or "{" in r or "}" in r or "None" in r:
+                continue      # D61/D73 whole-line budget (whitespace tokens)
+            if ai and _HOOK_FIRST_PERSON.search(r):
+                break         # D137: no shorter form fixes a first person
+            if lex is not None:
+                ptxt = str(ctx.get("prompt_text") or "")
+                if (lex.FALLBACK_HOOK.match(r) or lex.VAGUE_HOOK.search(r)
+                        or lex.SLOP.search(r) or lex.ABSOLUTE.search(r)
+                        or lex.GENERIC_BAIT.search(r)
+                        # D136: per pattern, exactly like the gate — proof of
+                        # a kind the prompt did not supply never renders
+                        or any(rx.search(r) and not rx.search(ptxt)
+                               for rx in lex.SOCIAL_PROOF)
+                        or (ai and lex.first_match(lex.AI_FIRST_PERSON, r))):
+                    break     # D136/D137/D139/D141/R02 — gate lexicon
+            cw = [w.lower().strip(".'’") for w in r.split()]
+            cw = [re.sub(r"[^a-z0-9'-]", "", w) for w in cw]
+            cw = [w for w in cw if len(w) >= 3 and w not in _OV_FUNC
+                  and w not in ("day", "days")]
+            if len(cw) != len(set(cw)):
+                continue      # "the lamp is the best lamp", "how to fix ... the fix"
+            words = {_hook_stem(w) for w in re.findall(r"[A-Za-z0-9][A-Za-z0-9'’.-]*", r)}
+            anchored = (bool(words & focus) or bool(re.search(r"\d", r))
+                        or (not ai and bool(_HOOK_FIRST_PERSON.search(r))))
+            ov = overlay_truncate(r.split('.')[0])   # what build_beats renders
+            if lex is not None and not lex.overlay_is_clean(ov, r)[0]:
+                continue      # D144: never draft a hook whose card the gate rejects
+            ov_words = {_hook_stem(w) for w in re.findall(r"[A-Za-z0-9][A-Za-z0-9'’.-]*", ov)}
+            ov_focus = "|" in ov or bool(ov_words & focus)
+            if concept == "product" and fmt == "review":
+                contract = verdict
+            elif concept == "product" and fmt == "transformation":
+                contract = "ndays" in slots or "day 1" in low
+            else:
+                contract = True
+            out.append({"family": fam, "line": r, "overlay": ov,
+                        "score": (anchored, ov_focus, contract, fam == fam_pref)})
+            break
+    return out
 
 def pick_hook(ctx, rng):
     # D6 (judge loop, cycle 3): hook-stack budget enforced at the gate — the
-    # verbal hook's FIRST SENTENCE must be ≤8 words (playbook §1). Draw up to
-    # 6 candidates; take the shortest first sentence; never emit >8 words.
+    # verbal hook's FIRST SENTENCE must be ≤8 words (playbook §1).
+    # GEN-B (pipeline v2) — D61/D73/D145/D137/D136/D35: every candidate is
+    # rendered at the most specific product phrase that fits the 8-word
+    # budget (_hook_nouns), screened by the gate lexicon, then scored
+    # (anchored R02 > frame-0 card names the payoff noun D109/R15 > format
+    # contract D27/D40 > the niche's family); the draw among equals uses a
+    # hook rng forked with ONE draw from the script rng, so bank edits here
+    # never reshuffle the beat stream. ctx["hook_source"] reports what
+    # rendered: "template" | "pinned" | "fallback" (D145), and the returned
+    # family is the family of the line that rendered.
     fam = NICHE_HOOK.get(ctx["niche"], "curiosity-gap")
     if _PACK and not _NO_RESEARCH:  # research bridge: live niche rankings override static map
         live = (_PACK.get("niche_hooks") or {}).get(ctx["niche"])
         if live and live[0]["category"] in HOOKS:
             fam = live[0]["category"]
     auth = NICHE_AUTHORITY.get(ctx["niche"])
+    # determinism (GEN-B): exactly one draw from the script rng, mixed with a
+    # stable digest of the concept (crc32, not hash(): PYTHONHASHSEED-proof)
+    # so the same seed varies the hook across products.
+    import zlib
+    hrng = random.Random(rng.getrandbits(64) ^ zlib.crc32(
+        f"{ctx.get('concept')}|{ctx.get('product')}|{ctx.get('fmt')}".encode("utf-8")))
+    ai = str(ctx.get("presenter") or "").strip().lower() == "ai"   # D137
+    lex = _hook_lexicon()
     # D47 (judge loop, cycle 13): routine hooks are PINNED, not drawn — the
     # genre's contract is the streak, and the hook must name the same
     # day-count the payoff delivers (D35 pairing). No draw means no chance of
     # emitting "I wake up at 5AM" while the payoff says "Day 14".
     if ctx.get("concept") == "routine":
-        return "day-counter", _screen_pin(_render_hook_line(ctx, rng, ROUTINE_HOOK_PINNED, auth))
+        ctx["hook_source"] = "pinned"   # D145
+        pin = ROUTINE_HOOK_PINNED_AI if ai else ROUTINE_HOOK_PINNED
+        return "day-counter", _screen_pin(humanize_dialogue(
+            _render_hook_line(ctx, hrng, pin, auth)))
     # D67 (judge loop, cycle 17): practice-challenge hooks are PINNED like
     # D52's routine pin — a drawn hook can name a different contract than
     # the payoff delivers ("I stopped X" grammar on a streak the presenter
     # is building). The pin names the day-count the payoff verdicts (D35).
     if ctx.get("challenge_type") == "practice":
-        return "day-counter", _screen_pin(_render_hook_line(ctx, rng, PRACTICE_CHALLENGE_HOOK, auth))
-    candidates = []
+        ctx["hook_source"] = "pinned"   # D145
+        return "day-counter", _screen_pin(humanize_dialogue(
+            _render_hook_line(ctx, hrng, PRACTICE_CHALLENGE_HOOK, auth)))
     # D8: challenge concepts never draw product-comparison hook lines —
     # "I tested {product} for {ndays}" is banned here (it produced
     # "I tested 30 days for 30 days"). D22 (judge loop, cycle 8): showcase
     # concepts draw listicle hooks ("POV: your apartment is missing these"),
-    # never the SKU-demo family.
-    lines = CHALLENGE_HOOKS if ctx.get("concept") == "challenge" else \
-            SHOWCASE_HOOKS if ctx.get("concept") == "showcase" else HOOKS[fam]
-    # D120 (judge loop, cycle 31): the screen-time hook candidate ("My screen
-    # time was {before} a day. Then I quit {noun}.") is doomscrolling-shaped —
-    # it shipped on the quit-coffee seed (938) behind the D73 word filter.
-    # Fire it only on screen-class abstinence nouns.
-    if (ctx.get("concept") == "challenge" and
-            ctx.get("challenge_type") == "abstinence" and
-            (ctx.get("abstinence_class") or "screen") != "screen"):
-        lines = [l for l in lines if "screen time" not in l.lower()] or lines
-    # D29 (judge loop, cycle 11): niche-gated extra hooks join the family's
-    # candidates — the wellness sleep-claim beats the family on word count.
-    lines = lines + NICHE_HOOK_EXTRA.get(ctx.get("niche"), [])
-    # D26 (judge loop, cycle 10): the "{expensive}" name-brand comparison
-    # ("I replaced my $160 name-brand mount") is retired unless the prompt
-    # names a competitor — an unverified price-vs-brand claim burned D19's
-    # trust contract across cycles 5/6/7 and evaded it via hooks in cycle 10.
-    if not ctx.get("named_competitor"):
-        lines = [l for l in lines if "{expensive}" not in l] or lines
-    # D37 (judge loop, cycle 12): price-bearing hooks ("the best {category}
-    # under ${price}") die when the prompt named no price — same gate as
-    # D26's {expensive} filter (never render "under $None").
-    if not ctx.get("price"):
-        lines = [l for l in lines if "{price}" not in l] or lines
-    # D35 (judge loop, cycle 11): HOOK-PAYOFF CONTRACT PAIRING (extends D5).
-    # The industry-secret hook promises a SECRET the demo/review payoff never
-    # reveals — cycle 11 fired "The machine industry doesn't want you to know
-    # this" + a durability payoff (secret → mechanism = broken contract).
-    # Demo/review formats can't deliver a named secret, so the template is
-    # gated out of those formats entirely.
-    if ctx.get("fmt") in ("demo", "review"):
-        lines = [l for l in lines if "industry" not in l] or lines
-    # D130 (judge loop, cycle 34): CHALLENGE hook pre-filter by the D73
-    # total-word budget BEFORE the draw. Three of the four CHALLENGE_HOOKS
-    # templates are multi-sentence and can NEVER pass the ≤8-total filter
-    # for multi-word nouns — only the D113 candidate ("I quit {noun} for
-    # {span}.") is budget-feasible there, so it won on a lucky draw. Seed
-    # 946 drew six losers and shipped the D113 fallback "Nobody mentions
-    # no social media apps." Drawing only from budget-feasible lines makes
-    # the hook deterministic-by-construction; the fallback stays as
-    # belt-and-suspenders. (Challenge renders are rng-free — noun/span —
-    # so pre-rendering costs no draw state.)
-    if ctx.get("concept") == "challenge":
-        feasible = [l for l in lines
-                    if (lambda r: len(r.split('.')[0].split()) <= 8
-                        and len(r.split()) <= 8)
-                    (_render_hook_line(ctx, rng, l, auth))]
-        lines = feasible or lines
-    for _ in range(6):
-        line = rng.choice(lines)
-        rendered = _render_hook_line(ctx, rng, line, auth)
-        first = rendered.split('.')[0].split()
-        candidates.append((len(first), len(rendered.split()), rendered))    # D61 (judge loop, cycle 15): HARD cap — "take the shortest" still emitted
-    # 9+ words whenever every draw was over budget (cycle 15: a 5-word {flaw}
-    # slot turned a 4-word template into a 9-word hook while the output printed
-    # "First sentence ≤8 words"). Filter to ≤8 first; guaranteed-short
-    # fallback last, verified against the same budget it enforces.
-    # D73 (judge loop, cycle 18, extends D61 + D54): the D61 cap only checked
-    # the FIRST SENTENCE, but the viewer hears the WHOLE hook line in the
-    # 0.5–3.0s window (2.5s × 1.15 × 3 = 8.6 words D43 budget) and the loop
-    # charter scores "verbal ≤8 words" on the full verbal hook. Seed-921
-    # shipped "I tested the magnetic eyelashes for 7 days. The result
-    # surprised me." — 8-word first sentence, 12 words total, in a 2.5s
-    # window (~290 wpm, unperformable per F86). Filter candidates on total
-    # words too.
-    ok = [c for c in candidates if c[0] <= 8 and c[1] <= 8]
-    if ok:
-        return fam, min(ok, key=lambda c: (c[0], c[1]))[2]
+    # never the SKU-demo family. D145 (GEN-B): each bank reports its own
+    # family name ("challenge", "listicle"), never the niche's product family.
+    concept = ctx.get("concept")
+    if concept == "challenge":
+        pool = [("challenge", l, None) for l in CHALLENGE_HOOKS]
+        pref = "challenge"
+    elif concept == "showcase":
+        pool = [("listicle", l, None) for l in SHOWCASE_HOOKS]
+        pref = "listicle"
+    elif concept == "advice":
+        pool = list(ADVICE_HOOKS)
+        pref = fam
+    else:
+        pool = [(f, l, None) for f, lines in HOOKS.items() for l in lines]
+        # D29 (judge loop, cycle 11): niche-gated extra hooks join the
+        # niche family's candidates.
+        pool += [(fam, l, None) for l in NICHE_HOOK_EXTRA.get(ctx.get("niche"), [])]
+        pref = fam
+    cands = _hook_candidates(ctx, pool, ai, lex, pref)
+    if cands:
+        top = max(c["score"] for c in cands)
+        best = [c for c in cands if c["score"] == top]
+        pick = best[hrng.randrange(len(best))]
+        ctx["hook_source"] = "template"   # D145
+        ctx["hook_overlay"] = pick["overlay"]
+        return pick["family"], pick["line"]
     # D113 (judge loop, cycle 28): the generic fallback renders the bare
     # category word as content — on the challenge branch that's "Nobody
     # mentions the challenge flaw." (seed 935), a D9 slot-hygiene violation
     # ("challenge flaw" names nothing). Challenge concepts get a
     # noun-carrying fallback; the same ≤8-word budget guards it.
-    if ctx.get("concept") == "challenge":
+    # D145 (GEN-B): the fallback is reported as such — family "fallback",
+    # hook_source "fallback" — never under the family that was discarded;
+    # it names the hook noun (short form), not the D76 differentiator.
+    ctx["hook_source"] = "fallback"
+    if concept == "challenge":
         fb = f"Nobody mentions no {ctx.get('challenge_noun', ctx['category'])}."
     else:
-        fb = f"Nobody mentions the {ctx['category']} flaw."
+        noun = (_hook_nouns(ctx)[-1][1] if concept == "product"
+                else ctx["category"])
+        fb = f"Nobody mentions the {noun} flaw."
     if len(fb.split()) <= 8:
-        return fam, fb
-    return fam, "Nobody mentions it."
+        return "fallback", fb
+    return "fallback", "Nobody mentions it."
 
 def build_beats(ctx, duration, rng, fmt, presenter="ai"):
     D = duration
@@ -3266,12 +3859,74 @@ def _beauty_subcat(ctx):
         return "skin"
     return None  # unclassifiable beauty keeps the legacy beauty tags/word
 
+# D140 (GEN-B, pipeline v2): the default niche's tags are DERIVED from the
+# concept noun — "#waterbottle #productreview", "#officefinds
+# #amazonfinds", "#sourdough #sourdoughtips" — never the generic-only
+# "#viral #fyp #ugc" (no niche signal; gate-1 D140). A derived tag never
+# carries a gate MISMATCH stem (vsp/gates.MISMATCH: skincare/hair/makeup/
+# fitness/cooking) and is never itself generic (lexicon.GENERIC_TAGS).
+_TAG_MISMATCH_STEMS = ("skincare", "hair", "makeup", "fitness", "cooking")
+_TAG_GENERIC = frozenset({"fyp", "foryou", "foryoupage", "viral", "ugc",
+                          "trending", "explore", "reels", "tiktok", "fy",
+                          "xyzbca"})
+
+def _tag(text):
+    t = re.sub(r"[^a-z0-9]", "", str(text).lower())
+    return "#" + t if len(re.sub(r"[^a-z]", "", t)) >= 3 else None
+
+def _default_tags(ctx):
+    c = ctx.get("concept", "product")
+    if c == "showcase":
+        base = [f"{ctx.get('domain', '')} finds", "amazon finds"]
+    elif c == "advice":
+        cat = singular(str(ctx.get("category", "")))
+        base = [cat, f"{cat} tips"]
+    elif c == "product":
+        base = [_hook_nouns(ctx)[0][1], "product review"]
+    else:
+        base = []
+    lex = _hook_lexicon()
+    generic = set(getattr(lex, "GENERIC_TAGS", ())) | _TAG_GENERIC
+    out = []
+    for b in base:
+        t = _tag(b)
+        if (t and t[1:] not in generic and t not in out
+                and not any(s in t for s in _TAG_MISMATCH_STEMS)):
+            out.append(t)
+    return out or ["#productreview"]
+
+def _mismatch_safe(tags, ctx):
+    """TAG-MISMATCH (GEN-B): drop a tag the gate-1 hashtag/niche rule
+    (vsp/gates.MISMATCH: #hair* on a "skin" prompt, #skincare/#makeup* on a
+    "hair" prompt, ...) would flag — "hair and skin serum" keeps #beautytok,
+    loses #hairtok. Never returns an empty list."""
+    try:
+        from vsp.gates import MISMATCH
+    except Exception:
+        MISMATCH = [("skincare", "hair"), ("hair", "skin"), ("makeup", "hair"),
+                    ("fitness", "beauty"), ("cooking", "beauty")]
+    cue = " ".join(str(ctx.get(k) or "") for k in
+                   ("prompt_text", "product", "category")).lower()
+    keep = [t for t in tags
+            if not any(w in t.lower() and c in cue for w, c in MISMATCH)]
+    return keep or ["#productreview"]
+
 def _scoped_tags(ctx):
+    return _mismatch_safe(_scoped_tags_raw(ctx), ctx)
+
+def _scoped_tags_raw(ctx):
     if ctx.get("niche") == "beauty":
         sub = _beauty_subcat(ctx)
         if sub:
             return _BEAUTY_SUBCAT_TAGS[sub][0]
-    return CAPTION_TAGS.get(ctx["niche"], CAPTION_TAGS["default"])
+    # D140 (GEN-B): creator-craft advice captions on the creator community,
+    # other education on the study community
+    if (ctx.get("niche") == "education" and ctx.get("concept") == "advice"
+            and _CREATOR_TOPIC.search(str(ctx.get("product", "")))):
+        return CAPTION_TAGS["education-creator"]
+    if ctx.get("niche") in CAPTION_TAGS and ctx.get("niche") != "default":
+        return CAPTION_TAGS[ctx["niche"]]
+    return _default_tags(ctx)   # D140 (GEN-B): never generic-only
 
 def _cta_word(ctx):
     # D107: beauty comment word is sub-category scoped ("comment HAIR" on hair
@@ -3280,7 +3935,16 @@ def _cta_word(ctx):
         sub = _beauty_subcat(ctx)
         if sub:
             return _BEAUTY_SUBCAT_TAGS[sub][1]
-    return NICHE_COMMENT_WORD.get(ctx.get("niche"), ctx["category"].upper())
+    # D34 (GEN-B): the fallback comment word is ONE word — the D30 multi-word
+    # categories rendered "comment CORDLESS DRILL SET"; the last non-generic
+    # word ("DRILL") is the noun the viewer types. Single-word categories are
+    # unchanged ("LAMP", "BOTTLE").
+    words = [w for w in re.findall(r"[A-Za-z0-9]+", str(ctx["category"]))
+             if w.lower() not in ("machine", "device", "gadget", "tool", "item",
+                                  "thing", "kit", "set", "system", "unit",
+                                  "product")]
+    fallback = (words[-1] if words else str(ctx["category"])).upper()
+    return NICHE_COMMENT_WORD.get(ctx.get("niche"), fallback)
 
 def build_caption(ctx, hookline, fmt, presenter):
     tags = _scoped_tags(ctx)
@@ -3319,7 +3983,7 @@ def build_caption(ctx, hookline, fmt, presenter):
     # tag the routine community (#morningroutine/#5amclub), never #viral.
     elif ctx.get("concept") == "routine":
         tags = (CAPTION_TAGS["routine"] if ctx.get("niche") == "wellness"
-                else CAPTION_TAGS.get(ctx["niche"], CAPTION_TAGS["default"]))
+                else _scoped_tags(ctx))   # D140 (GEN-B): never the generic default
         method = (f"The {ctx['routine_time']} Rule" if ctx.get("niche") == "wellness"
                   else ctx["routine_label"].title())
         lines = [hookline, "",
@@ -3340,15 +4004,28 @@ def build_caption(ctx, hookline, fmt, presenter):
         # the spoken CTA is skimmed). Same keyword as the bait beat, or the
         # funnel splits.
         cta_word = _cta_word(ctx)  # D107: beauty sub-category scoped
+        # D61 (GEN-B): the POV line names the object ("the trash can"), not
+        # the D76 differentiator tail ("the lid that finally delivered").
+        pov_noun = (_hook_nouns(ctx)[0][1] if ctx.get("concept") == "product"
+                    else ctx["category"])
         lines = [hookline, "",
-                 f"POV: the {ctx['category']} that finally delivered.",
+                 f"POV: the {pov_noun} that finally delivered.",
                  "", f"Comment {cta_word} for the full link list 👇", ""]
     else:
         lines = [hookline, "",
                  "Follow for the daily breakdown.", ""]
+        # D59/R14 (GEN-B): the advice bait's keyword ("comment HOOKS — I'll
+        # send you the free 3-second hooks-fix checklist", build_beats) echoes
+        # in the caption, like every product caption's keyword line.
+        if ctx.get("concept") == "advice":
+            lines[2:2] = [f"Comment {ctx['category'].upper()} for the free "
+                          f"3-second checklist 👇", ""]
     if presenter == "ai":
         lines.append("made with an AI persona")
         lines.append("")
+    # D140 (GEN-B): 1-5 tags (Instagram cap), none the gate's MISMATCH rule
+    # would flag, de-duplicated in order
+    tags = list(dict.fromkeys(_mismatch_safe(tags, ctx)))[:5]
     lines.append(" ".join(tags))
     return "\n".join(lines)
 
