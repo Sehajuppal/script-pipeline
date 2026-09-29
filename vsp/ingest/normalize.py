@@ -134,6 +134,26 @@ _REFRESH = ("like_count", "comments", "views", "shares", "saves", "caption",
             "posted_at", "url", "username")
 
 
+def _same_shortcode(con, r):
+    """The row for the same Instagram shortcode that this row may merge
+    with: a legacy row (media_id NULL), an import row ('sc:<shortcode>'), or
+    — for an 'sc:' import row — the API row with the real id."""
+    sc = shortcode(r["url"])
+    if not sc:
+        return None
+    esc = sc.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    cands = con.execute(
+        "SELECT * FROM reels WHERE platform=? AND (url LIKE ? ESCAPE '\\' "
+        "OR url LIKE ? ESCAPE '\\') ORDER BY id",
+        (r["platform"], "%/" + esc + "/%", "%/" + esc)).fetchall()
+    cands = [c for c in cands if shortcode(c["url"]) == sc]
+    for c in cands:
+        mid = c["media_id"]
+        if mid is None or str(mid).startswith("sc:") or r["media_id"].startswith("sc:"):
+            return c
+    return None
+
+
 def upsert_reel(con, row):
     """Insert or merge `row` on (platform, media_id). See module doc."""
     if "media_url" in row:
@@ -144,30 +164,27 @@ def upsert_reel(con, row):
         raise ValueError("upsert_reel needs a media_id")
     old = con.execute("SELECT * FROM reels WHERE platform=? AND media_id=?",
                       (r["platform"], r["media_id"])).fetchone()
-    status = "updated"
+    status, media_id = "updated", r["media_id"]
     if old is None:
-        sc = shortcode(r["url"])
-        if sc:
-            esc = sc.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-            cands = con.execute(
-                "SELECT * FROM reels WHERE media_id IS NULL AND (url LIKE ? ESCAPE '\\' "
-                "OR url LIKE ? ESCAPE '\\') ORDER BY id",
-                ("%/" + esc + "/%", "%/" + esc)).fetchall()
-            old = next((c for c in cands if shortcode(c["url"]) == sc), None)
+        old = _same_shortcode(con, r)
         if old is None:
             cols = [k for k in ROW_KEYS]
             con.execute(f"INSERT INTO reels({', '.join(cols)}) VALUES "
                         f"({', '.join('?' for _ in cols)})", [r[k] for k in cols])
             return "inserted"
-        status = "adopted"
+        have = old["media_id"]
+        if have is None or (str(have).startswith("sc:") and not media_id.startswith("sc:")):
+            status = "adopted"               # legacy / import row gets the real id
+        else:
+            media_id = have                  # an import "sc:" row merges into it
     old = dict(old)
     new = {}
     ours = old.get("source") is not None           # a row vsp.ingest wrote
     for k in _REFRESH:
         new[k] = r[k] if r[k] is not None else old.get(k)
-    if status == "adopted":
+    if status == "adopted" and not ours:
         new["url"] = old.get("url") or r["url"]       # keep the curated URL
-    new["media_id"] = r["media_id"]
+    new["media_id"] = media_id
     new["platform"] = r["platform"]
     new["niche"] = old.get("niche") or r["niche"]
     if r["is_own"]:
