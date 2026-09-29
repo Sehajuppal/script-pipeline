@@ -8,7 +8,7 @@ Files: `vsp/direction.py`, `vsp/data/vibes.json`, this note. Contract: `docs/CRE
 - `5e6561c` `render_md`, `style_paragraph`, `voice_spec`, `validate`, hermetic `selfcheck`, CLI
 - `361983f` energy-curve fix (a third level never empties a level); selfcheck runs the 39 self-test fixtures without ctx
 - `8e30c5c` C6 candid cues for human candid vibes; trend + licence-log line; selfcheck forces `VSP_NO_PRIORS=1`
-- this notes commit
+- `5db146a` this notes file
 
 ## Vibe distribution
 Golden matrix: 33 prompts × 5 formats × 2 presenters, seed 1, 30 s.
@@ -48,7 +48,7 @@ No golden prompt hits the cinematic-premium or asmr-satisfying cues. asmr-satisf
   - Set: the kitchen as the anchor spot revisited every day, with day markers.
 
 ## Verification
-- `python3.9 -m vsp.direction selfcheck`: OK (4.8 s). `python3.12`: OK (4.1 s). The selfcheck covers:
+- `python3.9 -m vsp.direction selfcheck`: OK (4.7 s). `python3.12`: OK (4.0 s). The selfcheck covers:
   - the 330 scripts, run twice, byte-identical;
   - PYTHONHASHSEED 0 and 4242 in subprocesses, identical;
   - `direct()` at 0.3 ms mean;
