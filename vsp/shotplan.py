@@ -759,20 +759,43 @@ def _classify_explicit(text, beat, rec, first):
 
 def _slots(groups, c):
     """Cut plan: per group a list of (s, e) sub-shot windows."""
-    loop_needed = c["duration"] <= 15.0 + 1e-9 and len(groups) > 1
+    loop_needed = c["duration"] <= 15.0 + 1e-9 and (
+        len(groups) > 1 or (groups and _dur(groups[0]["s"], groups[0]["e"]) > STATIC_MAX))
     plans = []
     for gi, g in enumerate(groups):
         dur = g["e"] - g["s"]
         rec = recipe(c["format"], c["concept"], g["beat"])
-        k = 1 if gi == 0 else _n_cuts(g["beat"], _dur(g["s"], g["e"]), c["target"],
-                                       len(rec.get("shots") or []), g["legacy_parts"] > 1)
+        k = _n_cuts(g["beat"], _dur(g["s"], g["e"]), c["target"],
+                    len(rec.get("shots") or []), g["legacy_parts"] > 1)
+        head0 = None
+        if gi == 0:
+            # frame 0 is its own short shot; an overlong opening beat (malformed
+            # or --script-json input) continues with its beat's recipe
+            k = 1
+            if _dur(g["s"], g["e"]) > STATIC_MAX:
+                rest = dur - 1.0
+                kr = max(1, _n_cuts(g["beat"] if g["beat"] not in NEVER_CUT else "", rest,
+                                    c["target"], 3, True) if rest > STATIC_MAX else 1)
+                k = 1 + kr
+                head0 = 1.0
         loop = False
         if loop_needed and gi == len(groups) - 1:
             loop = True
-            if k == 1 and dur >= 2.0 - 1e-9:
+            if head0 is not None:
+                k += 1                      # a single opening group ends on the loop too
+            elif k == 1 and dur >= 2.0 - 1e-9:
                 k = 2
         if k == 1:
             wins = [(g["s"], g["e"])]
+        elif head0 is not None:
+            L = min(1.2, max(0.6, round((dur - head0) * 0.3, 1))) if loop else 0.0
+            mid = k - 1 - (1 if loop else 0)
+            step = (dur - head0 - L) / max(1, mid)
+            wins = [(g["s"], g["s"] + head0)] + [(g["s"] + head0 + i * step, g["s"] + head0 + (i + 1) * step)
+                                                 for i in range(mid)]
+            if loop:
+                wins.append((g["e"] - L, g["e"]))
+            wins[-1] = (wins[-1][0], g["e"])
         elif loop:
             L = min(1.2, max(0.6, round(dur * 0.4, 1)))
             head = dur - L
@@ -1738,7 +1761,8 @@ def check_bundle(script, shots, bundle):
             prim = None
             hv = script.get("hook_variants")
             if isinstance(hv, list) and hv:
-                prim = next((v for v in hv if isinstance(v, dict) and v.get("is_primary")), hv[0])
+                dv = [v for v in hv if isinstance(v, dict)]
+                prim = next((v for v in dv if v.get("is_primary")), dv[0] if dv else None)
             vt = (prim or {}).get("visual_type")
             if vt in V.VISUAL_TYPES and vt not in lib(f0["shot_type"])["visual_types"] and not (
                     f0.get("ai_swapped_from") and vt in lib(f0["ai_swapped_from"])["visual_types"]):
