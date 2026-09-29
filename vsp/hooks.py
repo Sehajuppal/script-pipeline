@@ -215,9 +215,29 @@ def prompt_has_newness(prompt):
     return bool(_NEWNESS_PROMPT.search(prompt or ""))
 
 
+_MEMO_MAX = 50000
+_SCREEN_MEMO = {}
+_BASE_MEMO = {}
+_OV_MEMO = {}
+
+
+def _memo(table, key, fn):
+    hit = table.get(key)
+    if hit is None:
+        if len(table) > _MEMO_MAX:
+            table.clear()
+        hit = table[key] = fn()
+    return hit
+
+
 def screen_text(text, prompt, ai):
     """The §1.2 screens shared by verbal, overlay and caption_line. ->
-    [problem strings] ([] = clean)."""
+    [problem strings] ([] = clean). Pure; memoised."""
+    return list(_memo(_SCREEN_MEMO, (text or "", prompt or "", bool(ai)),
+                      lambda: tuple(_screen_text(text, prompt, ai))))
+
+
+def _screen_text(text, prompt, ai):
     t = text or ""
     p = prompt or ""
     out = []
@@ -433,6 +453,54 @@ def score_hook(verbal, overlay, visual_type, script, ctx=None, archetype=None,
             or classify(hook, payoff=info["payoff"])
     if others is None:
         others = [v.get("verbal") for v in hv if v.get("verbal") and v.get("verbal") != hook]
+    x = dict(_memo(_BASE_MEMO, (hook, ov, _info_key(info)),
+                   lambda: _base_features(hook, ov, info)))
+    arc = d["ARCHETYPES"].get(archetype or "")
+    x["archetype_prior"] = float(arc["prior"]) if arc and _arch_ok(archetype, info) else 0.0
+    kw = info["kw"]
+    drop = set(kw)
+    f3 = first3(hook)
+    nov = 1.0
+    if others:
+        mine = trigrams(hook, drop)
+        for o in others:
+            if first3(o) == f3:
+                nov = 0.0
+                break
+            nov = min(nov, 1.0 - jaccard(mine, trigrams(o, drop)))
+    x["novelty"] = round(nov, 4)
+    vh = d["VISUAL_HOOKS"].get(visual_type or "")
+    x["visual_type_strength"] = round(float(vh["prior"]) * (
+        1.0 if archetype in vh["best_archetypes"] else 0.6), 4) if vh else 0.0
+    w, dirn, bsum = d["_feat_w"], d["_feat_dir"], d["_bonus_sum"]
+    raw = 0.0
+    pts = []
+    for f in d["HOOK_SCORE_FEATURES"]:
+        fid = f["id"]
+        sign = -1.0 if dirn[fid] == "-" else 1.0
+        contrib = sign * w[fid] * x[fid]
+        raw += contrib
+        p = 100.0 * contrib / bsum
+        if abs(p) >= 0.05:
+            pts.append((p, fid))
+    score = round(100 * max(0.0, min(1.0, raw / bsum))) / 100.0
+    order = [f["id"] for f in d["HOOK_SCORE_FEATURES"]]
+    pts.sort(key=lambda pf: (-abs(pf[0]), order.index(pf[1])))
+    reasons = [f"{p:+.1f} {fid}: {_REASON.get(fid, fid)}" for p, fid in pts[:6]]
+    feats = {f["id"]: round(float(x[f["id"]]), 4) for f in d["HOOK_SCORE_FEATURES"]}
+    return score, feats, reasons
+
+
+def _info_key(info):
+    return (info["presenter"], info["payoff"], tuple(info["kw"]), info["head"],
+            tuple(sorted(info["payload"])), tuple(sorted(info["nums"])), info["price"],
+            info["proof"], info["newness"], info["offer"])
+
+
+def _base_features(hook, ov, info):
+    """Every feature but novelty, visual_type_strength and archetype_prior
+    (those depend on the other variants, the frame-0 type and the
+    archetype) — pure, memoised."""
     t = toks(hook)
     stems = [_stem(x) for x in t]
     x = {}
@@ -464,16 +532,6 @@ def score_hook(verbal, overlay, visual_type, script, ctx=None, archetype=None,
         x["question_form"] = 0.0
     loop = "?" in hook or bool(_LOOP.search(hook))
     x["open_loop_paired"] = (1.0 if pays(hook, info) else -1.0) if loop else 0.3
-    drop = set(kw)
-    mine = trigrams(hook, drop)
-    f3 = first3(hook)
-    nov = 1.0
-    for o in others or []:
-        if first3(o) == f3:
-            nov = 0.0
-            break
-        nov = min(nov, 1.0 - jaccard(mine, trigrams(o, drop)))
-    x["novelty"] = round(nov, 4)
     plain = [w for w, s in zip(t, stems) if s not in info["payload"]] or t
     syl = sum(_syllables(w) for w in plain) / max(1, len(plain))
     x["readability"] = 1.0 if syl <= 1.6 and hook.count(",") <= 1 else 0.0
@@ -484,11 +542,6 @@ def score_hook(verbal, overlay, visual_type, script, ctx=None, archetype=None,
             info["head"] in ovs else 0.8 if "label" in why else 0.6
     else:
         x["overlay_alignment"] = 0.0
-    vh = d["VISUAL_HOOKS"].get(visual_type or "")
-    x["visual_type_strength"] = round(float(vh["prior"]) * (
-        1.0 if archetype in vh["best_archetypes"] else 0.6), 4) if vh else 0.0
-    arc = d["ARCHETYPES"].get(archetype or "")
-    x["archetype_prior"] = float(arc["prior"]) if arc and _arch_ok(archetype, info) else 0.0
     x["we_pronoun"] = 1.0 if _WE.search(hook) else 0.0
     x["filler_greeting"] = 1.0 if _FILLER.search(hook.strip()) else 0.0
     x["vague_hype"] = 1.0 if (L.SLOP.search(hook) or L.VAGUE_HOOK.search(hook)
@@ -496,23 +549,7 @@ def score_hook(verbal, overlay, visual_type, script, ctx=None, archetype=None,
     x["clickbait_marker"] = 1.0 if risky_hits(hook, "", classes=("clickbait",)) else 0.0
     x["fake_urgency"] = 1.0 if (not info["offer"] and risky_hits(
         hook, "", classes=("urgency", "scarcity"))) else 0.0
-    w, dirn, bsum = d["_feat_w"], d["_feat_dir"], d["_bonus_sum"]
-    raw = 0.0
-    pts = []
-    for f in d["HOOK_SCORE_FEATURES"]:
-        fid = f["id"]
-        sign = -1.0 if dirn[fid] == "-" else 1.0
-        contrib = sign * w[fid] * x[fid]
-        raw += contrib
-        p = 100.0 * contrib / bsum
-        if abs(p) >= 0.05:
-            pts.append((p, fid))
-    score = round(100 * max(0.0, min(1.0, raw / bsum))) / 100.0
-    order = [f["id"] for f in d["HOOK_SCORE_FEATURES"]]
-    pts.sort(key=lambda pf: (-abs(pf[0]), order.index(pf[1])))
-    reasons = [f"{p:+.1f} {fid}: {_REASON.get(fid, fid)}" for p, fid in pts[:6]]
-    feats = {f["id"]: round(float(x[f["id"]]), 4) for f in d["HOOK_SCORE_FEATURES"]}
-    return score, feats, reasons
+    return x
 
 
 _REASON = {
@@ -640,12 +677,9 @@ def _subject(ctx, maker):
     if c == "showcase":
         return f"the first {ctx.get('domain', 'space')} find"
     if c == "challenge":
-        cn = str(ctx.get("challenge_noun") or "the habit")
-        try:
-            cn = maker._proper(cn)
-        except Exception:  # noqa: BLE001
-            pass
-        return cn
+        cn = _habit(ctx, maker)
+        return (f"the streak of {cn}" if ctx.get("challenge_type") == "practice"
+                else f"the streak without {cn}")
     if c == "routine":
         t = str(ctx.get("routine_time") or "")
         return f"the {t} routine" if t else "the routine"
@@ -656,6 +690,17 @@ def _subject(ctx, maker):
     except Exception:  # noqa: BLE001
         sp = str(ctx.get("category") or "the product")
     return sp if re.match(r"(?i)(?:the|a|an|my|these|this)\b", sp) else f"the {sp}"
+
+
+def _habit(ctx, maker):
+    if ctx.get("concept") == "routine":
+        return re.sub(r"(?i)^my\s+", "the ", str(ctx.get("routine_label") or "the routine"))
+    cn = str(ctx.get("challenge_noun") or "the habit")
+    try:
+        cn = maker._proper(cn)
+    except Exception:  # noqa: BLE001
+        pass
+    return cn
 
 
 def _day_n(line, ctx):
@@ -674,7 +719,8 @@ def _visual_sentence(vt, ctx, maker, line, ai):
     table = m["visual_sentences"].get(grp) or m["visual_sentences"]["product"]
     tmpl = table.get(vt) or m["visual_sentences"]["product"].get(vt) or \
         "Frame 0: {subject} in motion from the first frame."
-    out = tmpl.format(subject=_subject(ctx, maker), n=_day_n(line, ctx))
+    out = tmpl.format(subject=_subject(ctx, maker), n=_day_n(line, ctx),
+                      habit=_habit(ctx, maker))
     if ai and vt in m["ai_real_footage_visual_types"]:
         out += m["ai_visual_notes"]["real_footage"]
     elif ai and vt in ("product-in-action", "pov-hands", "satisfying-macro", "unboxing"):
@@ -755,7 +801,9 @@ def _render_candidates(ctx, maker, seed, ai, payoff):
             if res == "next":
                 continue
             r, _ov, anchored, ov_focus = res
-            ov = maker.overlay_truncate(r.split(".")[0])
+            head = r.split(".")[0]
+            ov = _memo(_OV_MEMO, (id(maker.overlay_truncate), head),
+                       lambda: maker.overlay_truncate(head))
             if r in seen or not anchored or screen_text(r, prompt, ai):
                 break
             seen.add(r)
@@ -845,6 +893,7 @@ def _variants(script, ctx, seed, maker):
         c["vts"] = _vt_options(c["archetype"], c["verbal"], c["overlay"], ctx, ai)
         c["pair"] = set(d["PAIRINGS"].get(c["archetype"], ()))
         c["tri"] = trigrams(c["verbal"], set(info["kw"]))
+        c["f3"] = first3(c["verbal"])
     # D35/D5: an opening whose loop the payoff does not pay never ships
     cands = [c for c in cands if c["paid"] and c["vts"]]
     chosen = _select(A, cands, info, ctx)
@@ -893,13 +942,14 @@ def _select(A, cands, info, ctx):
         d["_bonus_sum"]
     drop = set(info["kw"])
     sel = [{"verbal": A["verbal"], "archetype": A["archetype"], "vt": A["visual_type"],
-            "overlay": A["overlay"], "tri": trigrams(A["verbal"], drop)}]
+            "overlay": A["overlay"], "tri": trigrams(A["verbal"], drop),
+            "f3": first3(A["verbal"])}]
     used = set()
     niche = ctx.get("niche")
     pri = _load_priors()
     while len(sel) < MAX_VARIANTS:
         arcs = [x["archetype"] for x in sel]
-        f3s = {first3(x["verbal"]) for x in sel}
+        f3s = {x["f3"] for x in sel}
         vts = {x["vt"] for x in sel}
         ovs = {x["overlay"] for x in sel}
         clusters = {}
@@ -912,7 +962,7 @@ def _select(A, cands, info, ctx):
                 break          # near-miss wording only to reach 4 openings
             best_key = None
             for c in cands:
-                if c["idx"] in used or first3(c["verbal"]) in f3s:
+                if c["idx"] in used or c["f3"] in f3s:
                     continue
                 jac = max(jaccard(c["tri"], x["tri"]) for x in sel)
                 new_arc = c["archetype"] not in arcs

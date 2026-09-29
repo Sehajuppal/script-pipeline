@@ -1797,7 +1797,8 @@ better best most every least everyone everything nothing something someone
 anyone look looks looking got get gets watch wait happened happens instead
 done doing asleep tell tells told know knows explained
 keeps failing revealed reveals asks ask think decides misjudged ruins ruin
-breaks break held showed shows works work passes fixes fix missing winning""".split())
+breaks break held showed shows works work passes fixes fix missing winning
+go getting""".split())
 _OV_TRAIL = frozenset("""wrong alone anyway again honestly instead yet already
 too first today now daily""".split())
 # WS-HOOKS: verbs that read as a fragment at the end of a card ("MILK
@@ -2297,6 +2298,8 @@ CHALLENGE_ALT_HOOKS = [
  ("day-counter", "Day {span_n} without {noun}.", ("abstinence",)),
  ("day-counter", "Day {span_n} of no {noun}.", ("abstinence",)),
  ("question", "Can you really quit {noun} for {span}?", ("abstinence",)),
+ ("question", "Quit {noun} for {span}?", ("abstinence",)),
+ ("question", "Could you go {span} without {noun}?", ("abstinence",)),
  ("question", "Can a daily habit last {span}?", ("practice",)),
  ("story-time", "Day {span_n}, and I almost caved.", ("abstinence",)),
  ("story-time", "Day {span_n}, and I almost quit.", ("practice",)),
@@ -2389,6 +2392,7 @@ ROUTINE_ALT_HOOKS = [
  ("challenge", "{time}, every day, for {streak} days.", ("clock",)),
  ("question", "Can a {time} routine last {streak} days?", ("routine",)),
  ("transformation", "Day 1 vs day {streak}: the {time} routine.", ("routine",)),
+ ("challenge", "{streak} days of the {time} routine.", ("routine",)),
  ("confession", "I didn't think I'd last {streak} days.", ()),
 ]
 
@@ -2419,6 +2423,7 @@ SHOWCASE_ALT_HOOKS = [
  ("listicle", "The {domain} finds worth keeping.", ()),
  ("question", "{Domain} finds: worth it or skip?", ()),     # review (D27)
  ("transformation", "{Domain} finds, day 1 vs day {ndays}.", ()),
+ ("transformation", "Day 1 vs day {ndays}: {domain} finds.", ()),
 ]
 
 # D13/D145 (GEN-B): ADVICE hooks. Advice topics ("why your hooks fail") drew
@@ -2445,6 +2450,7 @@ ADVICE_HOOKS = [
  ("negative-command", "Don't post another {category_sg} before this.", ("creator",)),
  ("curiosity-gap", "The {category_sg} mistake most people make.", ()),
  ("negative-command", "Stop guessing with {category_sg}.", ()),
+ ("question", "Getting {category_sg} wrong? Here's the fix.", ()),
 ]
 # advice framing words: never the topic's head noun (parse_prompt's advice
 # category) — "the truth about protein" is about protein, "tips for better
@@ -2865,6 +2871,12 @@ def _hook_nouns(ctx):
 
 def _hook_slots(ctx, pv=None, noun=None):
     noun = noun or ctx["category"]
+    # WS-HOOKS: an acronym the prompt writes in capitals keeps them
+    # ("why your UGC ads don't convert" -> "this UGC mistake", not "ugc")
+    ptxt = str(ctx.get("prompt_text") or "")
+    if noun and noun.isalpha() and noun.islower() and re.search(
+            r"\b" + re.escape(noun.upper()) + r"\b", ptxt):
+        noun = noun.upper()
     topic = str(ctx.get("product", ""))
     domain = ctx.get("domain", noun)
     return {
