@@ -14,9 +14,12 @@ VSP_VIRAL_DB / VSP_FIXTURE_OK=1 are set for 2.0+ code.
 
 Per run it records: status (crash | gate1_fail | stage2_fail | gate2_fail |
 fail | pass), gate messages -> rule ids, the rubric (vsp/rubric.py) score,
-hook line, niche, runtime. The summary adds Wilson 95% intervals; `compare`
-adds paired statistics (exact McNemar on pass/fail flips, prompt-clustered
-bootstrap on rubric deltas).
+hook line, niche, runtime, and (pipeline v2.1) the evaluator's creative
+metrics read from the run's outdir (vsp/creative_eval.py: variants, keyword
+placement, shot plan, sections, D157/D159/D160 findings — zeros for runs of
+older versions). The summary adds Wilson 95% intervals and a "creative"
+block; `compare` adds paired statistics (exact McNemar on pass/fail flips,
+prompt-clustered bootstrap on rubric deltas) and creative rows.
 """
 import argparse
 import concurrent.futures as cf
@@ -36,6 +39,7 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
+from vsp import creative_eval as CE    # noqa: E402
 from vsp import rubric as RUB          # noqa: E402
 from vsp.fixtures import fixture_home  # noqa: E402
 
@@ -213,6 +217,14 @@ def run_case(case, py, repo, env, caps, extra, tmpout):
         row.setdefault("artifacts", [])
         if os.path.exists(os.path.join(outdir, f)):
             row["artifacts"].append(f)
+    # pipeline v2.1: the evaluator's creative metrics, read from the outdir
+    # (vsp/creative_eval.py; a pre-2.1 run has no creative files -> zeros)
+    try:
+        cr = CE.evaluate(outdir)
+        cr["findings"] = {k: v[:3] for k, v in (cr.get("findings") or {}).items()}
+    except Exception as e:  # noqa: BLE001 — a metric bug never kills a run
+        cr = {"error": repr(e)}
+    row["creative"] = cr
     return row
 
 
@@ -371,6 +383,7 @@ def summarize(rows):
         for f in r.get("artifacts", []):
             arts[f] = arts.get(f, 0) + 1
     s["artifact_counts"] = arts
+    s["creative"] = CE.summarize([r.get("creative") or {} for r in rows])
     return s
 
 
@@ -409,7 +422,45 @@ def render_summary(res):
     L.append(f"- e2e by format: {s['e2e_by_format']}")
     L.append(f"- runtime: {s['runtime_mean_s']}s/run · artifacts "
              f"{s['artifact_counts'] or 'none'}")
+    L += render_creative(s.get("creative"))
     return "\n".join(L)
+
+
+def _kn(v):
+    v = v or {}
+    return f"{v.get('k', 0)}/{v.get('n', 0)}"
+
+
+def render_creative(c):
+    """2-4 summary lines for the v2.1 creative block (absent in pre-2.1
+    result files -> no lines)."""
+    if not c:
+        return []
+    kp, sp = c.get("keyword_placement_pass") or {}, c.get("shot_plan_pass") or {}
+    f, g1 = c.get("findings") or {}, c.get("gate1_findings") or {}
+    return [
+        f"- creative: hook variants/script {c.get('hook_variants_per_script', 0)} "
+        f"· distinct visual types {c.get('distinct_visual_types_mean', 0)} · "
+        f"keyword placement {pct(kp.get('runs_rate', 0.0))} · hook strength "
+        f"{c.get('hook_strength_mean', 0):.1f} (primary variant "
+        f"{c.get('hook_strength_primary_mean', 0):.1f}) · vibes "
+        f"{c.get('vibes') or 'none'}",
+        f"- shot plan: pass {pct(sp.get('runs_rate', 0.0))} · typed "
+        f"{pct(c.get('shot_typed_share_mean', 0.0))} · cadence in band "
+        f"{_kn(c.get('cadence_in_band'))} · human by 3s "
+        f"{_kn(c.get('human_by_3s'))} · frame-0 product/result "
+        f"{_kn(c.get('frame0_product_result'))} · loop <=15s "
+        f"{_kn(c.get('loop_ok'))} · AI real footage "
+        f"{_kn(c.get('real_footage_marked'))} · high AI risk "
+        f"{pct(c.get('high_ai_risk_share_mean', 0.0))}",
+        f"- creative sections: {c.get('sections_present_mean', 0)}/4 per run "
+        f"{c.get('sections') or {}} · with direction/variants/discovery "
+        f"{c.get('with_direction', 0)}/{c.get('with_hook_variants', 0)}/"
+        f"{c.get('with_discovery', 0)} of {c.get('runs', 0)} · findings "
+        f"D157 {f.get('D157', 0)} D159 {f.get('D159', 0)} D160 {f.get('D160', 0)}"
+        f" · gate-1 D154 {g1.get('D154', 0)} D155 {g1.get('D155', 0)} D156 "
+        f"{g1.get('D156', 0)} D158 {g1.get('D158', 0)} · creative_warnings runs "
+        f"{c.get('creative_warning_runs', 0)}"]
 
 
 # ----------------------------------------------------------------- compare
@@ -476,6 +527,26 @@ def cmd_compare(a):
                      if cb else "—"))
     rows.append(("runtime / run (s)", SA["runtime_mean_s"], SB["runtime_mean_s"],
                  ratio(SA["runtime_mean_s"], SB["runtime_mean_s"])))
+    # pipeline v2.1 creative layer (result files without a creative block
+    # — older scorecards — compare as zeros)
+    CA, CB = SA.get("creative") or {}, SB.get("creative") or {}
+
+    def crate(c, key):
+        return (c.get(key) or {}).get("runs_rate", (c.get(key) or {}).get("rate", 0.0))
+
+    hx, hy = CA.get("hook_variants_per_script", 0.0), CB.get("hook_variants_per_script", 0.0)
+    rows.append(("hook variants / script", hx, hy, f"{hy - hx:+.2f}"))
+    x, y = crate(CA, "keyword_placement_pass"), crate(CB, "keyword_placement_pass")
+    rows.append(("keyword placement pass (D161)", pct(x), pct(y),
+                 f"{100 * (y - x):+.1f} pts"))
+    x, y = crate(CA, "shot_plan_pass"), crate(CB, "shot_plan_pass")
+    rows.append(("shot plan pass (typed, D157-clean)", pct(x), pct(y),
+                 f"{100 * (y - x):+.1f} pts"))
+    x, y = CA.get("hook_strength_mean", 0.0), CB.get("hook_strength_mean", 0.0)
+    rows.append(("hook strength (independent scorer)", f"{x:.1f}", f"{y:.1f}",
+                 f"{y - x:+.1f}"))
+    x, y = CA.get("sections_present_mean", 0.0), CB.get("sections_present_mean", 0.0)
+    rows.append(("v2.1 bundle sections / run (of 4)", x, y, f"{y - x:+.2f}"))
     L = [f"# Scorecard: {A['label']} → {B['label']}", "",
          f"Paired runs: {len(keys)} (same prompt × format × presenter × seed).",
          "", "| metric | " + A["label"] + " | " + B["label"] + " | change |",

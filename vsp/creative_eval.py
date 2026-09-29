@@ -141,7 +141,7 @@ def evaluate_files(script, shots, bundle_text):
         if _n(r.get("start_s")) and _n(r.get("end_s"))]
     durs = [e - a for a, e in spans if e > a]
     dur = s.get("duration_s") if _n(s.get("duration_s")) else (
-        max((e for _, e in spans), default=0.0))
+        max(e for _, e in spans) if spans else None)
     row["avg_shot_s"] = round(statistics.mean(durs), 3) if durs else None
     row["cuts_per_10s"] = round(10.0 * max(0, len(durs) - 1) / dur, 3) \
         if durs and dur else None
