@@ -1417,19 +1417,6 @@
    "before-after-split",
    "comparison"
   ],
-  "visual_sentences": {
-   "product-in-action": "Frame 0: {subject} mid-task, hands in frame, visible motion by 0.5 s, its real sound up.",
-   "result-reveal": "Frame 0: the finished result first, {subject} beside it, a real capture the payoff re-shows in context.",
-   "before-after-split": "Frame 0: split screen, before left and after right, matched framing and light, {subject} in both halves.",
-   "problem-state": "Frame 0: the problem at its worst, honestly shown, with {subject} entering the frame by 3 s.",
-   "pov-hands": "Frame 0: first-person angle, the viewer's hands already using {subject}, motion by 0.5 s.",
-   "face-reaction": "Frame 0: the presenter's face with {subject} in the same frame, the reaction already under way.",
-   "text-first": "Frame 0: a 3-word card over moving footage of {subject}; the card is added in the edit, never drawn in-frame.",
-   "unboxing": "Frame 0: the package already opening mid-action, {subject} half out; real packaging only, no invented branding.",
-   "comparison": "Frame 0: {subject} side by side with the usual alternative on the same test, same framing, no brand names.",
-   "day-counter": "Frame 0: a DAY {n} label over real footage from that day, {subject} in progress.",
-   "satisfying-macro": "Frame 0: extreme close-up of {subject} at work, its real sound up, little or no music."
-  },
   "ai_visual_notes": {
    "real_footage": " Real footage required: a generated result is not proof, so never render this frame.",
    "render": " AI render: neutral hands, no invented logos."
@@ -1448,6 +1435,37 @@
    "satisfying-macro": "Real product sound only, little or no music; the voice on the hook cue."
   },
   "audio_product_cue": "The product's real sound is the hook: volume-up card at frame 0, the voice on the hook cue.",
-  "ai_voice_cue": " Disclosed synthetic voice, natural prosody."
+  "ai_voice_cue": " Disclosed synthetic voice, natural prosody.",
+  "visual_sentences": {
+   "product": {
+    "product-in-action": "Frame 0: {subject} mid-task, hands in frame, visible motion by 0.5 s, its real sound up.",
+    "result-reveal": "Frame 0: the finished result first, {subject} beside it, a real capture the payoff re-shows in context.",
+    "before-after-split": "Frame 0: split screen, before left and after right, matched framing and light, {subject} in both halves.",
+    "problem-state": "Frame 0: the problem at its worst, honestly shown, with {subject} entering the frame by 3 s.",
+    "pov-hands": "Frame 0: first-person angle, the viewer's hands already using {subject}, motion by 0.5 s.",
+    "face-reaction": "Frame 0: the presenter's face with {subject} in the same frame, the reaction already under way.",
+    "text-first": "Frame 0: a 3-word card over moving footage of {subject}; the card is added in the edit, never drawn in-frame.",
+    "unboxing": "Frame 0: the package already opening mid-action, {subject} half out; real packaging only, no invented branding.",
+    "comparison": "Frame 0: {subject} side by side with the usual alternative on the same test, same framing, no brand names.",
+    "day-counter": "Frame 0: a DAY {n} label over real footage from that day, {subject} in progress.",
+    "satisfying-macro": "Frame 0: extreme close-up of {subject} at work, its real sound up, little or no music."
+   },
+   "streak": {
+    "day-counter": "Frame 0: a DAY {n} label over real footage from that day, {subject} in progress.",
+    "problem-state": "Frame 0: the habit at its worst, honestly shown ({subject}), before the streak starts.",
+    "text-first": "Frame 0: a 3-word card over moving footage of {subject}; the card is added in the edit, never drawn in-frame.",
+    "before-after-split": "Frame 0: split screen, day 1 left and day {n} right, matched framing and light, {subject} in both halves.",
+    "face-reaction": "Frame 0: the creator's face on day {n}, the log of {subject} in the same frame.",
+    "result-reveal": "Frame 0: the day-{n} result first (the log or the finished streak of {subject}), a real capture.",
+    "pov-hands": "Frame 0: first-person angle, hands mid-routine ({subject}), motion by 0.5 s."
+   },
+   "advice": {
+    "text-first": "Frame 0: a 3-word card over the creator mid-gesture on {subject}; the card is added in the edit, never drawn in-frame.",
+    "face-reaction": "Frame 0: the creator's face to camera mid-sentence on {subject}, no intro.",
+    "problem-state": "Frame 0: the failing example first ({subject} gone wrong), honestly shown.",
+    "comparison": "Frame 0: two examples side by side, the weak one and the fixed one ({subject}), same framing.",
+    "result-reveal": "Frame 0: the fixed example first ({subject} done right), a real capture."
+   }
+  }
  }
 }

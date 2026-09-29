@@ -77,6 +77,8 @@ HOOKS = {
    '{product} test: here\'s what happened.',
    '{category} test: here\'s the result.',
    '{category} verdict after {ndays} days.',          # review (D27)
+   '{product}: here\'s what {ndays} days showed.',
+   'The {category} detail most reviews skip.',
  ],
  "bold-claim": [
    # WS-HOOKS: the price shows once, with its currency — {price} renders
@@ -98,6 +100,7 @@ HOOKS = {
    '{after} from a {category}, one take.',
    '{expensive} lost to {product}.',
    '{ndays} days, one {category}, zero failures.',
+   '{product} held up for {ndays} days straight.',
  ],
  "negative-command": [
    'Stop {mistake}.',
@@ -147,6 +150,8 @@ HOOKS = {
    '{after} in {timespan}. Here\'s the before.',
    '{product}, {ndays} days later.',
    '{ndays} days of {product}. Here\'s the after.',
+   '{product}: the after, {ndays} days in.',
+   '{ndays} days with {product}: worth it?',          # review (D27)
    'Same {category}, day 1 vs day {ndays}.',
  ],
  "story-time": [                                     # human only (D137)
@@ -202,6 +207,10 @@ HOOKS = {
    '{category_pl} keep failing? This one didn\'t.',
    'Another {category} that breaks in a week?',
    'Your {category} keeps failing? Here\'s the fix.',
+   'Why does your {category} keep failing?',
+   'Still fighting your {category}? Here\'s the fix.',
+   'One {category} flaw ruins the whole thing.',
+   'Broken {category} again? Not this one.',
  ],
  "question": [
    'Is {product} actually worth it?',                # review (D27)
@@ -265,6 +274,7 @@ HOOKS = {
    'Here\'s {product} doing its job.',
    '{product} at the {moment}, no cuts.',
    '{product} in action. Here\'s the test.',
+   'Here\'s {product} at work, up close.',
  ],
  "day-counter": [
    'Day 1 vs day {ndays}.',
@@ -1785,7 +1795,8 @@ thing things detail just make makes sense quit making posting killing needs
 need held won changed really actually even still never always again first
 better best most every least everyone everything nothing something someone
 anyone look looks looking got get gets watch wait happened happens instead
-done doing asleep tell tells told know knows explained""".split())
+done doing asleep tell tells told know knows explained
+keeps failing revealed reveals asks ask think decides misjudged""".split())
 _OV_TRAIL = frozenset("""wrong alone anyway again honestly instead yet already
 too first today now daily""".split())
 _OV_STARTERS = frozenset("no every one zero all most each any".split())
@@ -1799,6 +1810,10 @@ _OV_BREAK = re.compile(r"[,:;!?()\[\]\"\u201c\u201d|\u2014\u2013\u2192]|\s-\s")
 _OV_LABEL_PREFIX = re.compile(r"^\s*(?:story ?time|psa|update|reminder|"
                               r"confession|hot take|unpopular opinion|"
                               r"full disclosure)\s*:\s*", re.I)
+# WS-HOOKS: a one-word interjection sentence ("Honestly? I misjudged the
+# lamp.") is not the card — the next sentence is
+_OV_INTERJECTION = re.compile(r"^\s*(?:honestly|real talk|seriously|okay|ok|so|"
+                              r"wait|confession|update|psa)\s*[?!:,]\s+(?=\S)", re.I)
 
 def _ov_is_num(w):
     return w.replace(".", "").replace(",", "").isdigit() or w in _OV_NUMWORDS
@@ -1810,7 +1825,7 @@ def _ov_duration(run):
 
 def overlay_truncate(s, max_words=3):
     # hook playbook §4: frame-0 on-screen text ≤3 words, works muted
-    text = (s or "").strip()
+    text = _OV_INTERJECTION.sub("", (s or "").strip(), count=1) or (s or "").strip()
     cut = re.search(r"[.!?](?:\s|$)", text)   # first sentence only (D144)
     if cut:
         text = text[:cut.start()]
@@ -1882,15 +1897,34 @@ def overlay_truncate(s, max_words=3):
         while len(ws) > 1 and ws[-1].lower() in _OV_FUNC:
             ws = ws[:-1]
         return " ".join(ws).upper()
-    pool = [r for r in clean if not _ov_duration(r)] or clean
     def _strong(r):
         return any(t["low"] not in _OV_WEAK and not _ov_is_num(t["low"]) for t in r)
+    pool = [r for r in clean if not _ov_duration(r)] or clean
+    # WS-HOOKS: when nothing but weak verbs is left ("I didn't think I'd
+    # last 21 days" -> "THINK"), the duration is the card ("LAST 21 DAYS")
+    if not any(_strong(r) for r in pool):
+        pool = clean
+    def _content(r):
+        # nouns carry the card: tokens that are not weak verbs, numbers,
+        # time words or function words ("7 DAYS REVEALED" < "SILK PILLOWCASE")
+        return min(max_words, sum(1 for t in r if t["low"] not in _OV_WEAK
+                                  and t["low"] not in _OV_TIME and t["low"] not in _OV_FUNC
+                                  and not _ov_is_num(t["low"])))
     for r in pool:
         while len(r) > 1 and _strong(r[:-1]) and r[-1]["low"] in _OV_TRAIL:
             r.pop()
-    best = max(range(len(pool)), key=lambda i: (_strong(pool[i]),
+    best = max(range(len(pool)), key=lambda i: (_strong(pool[i]), _content(pool[i]),
                                                 min(len(pool[i]), max_words), i))
     run = list(pool[best])
+    # WS-HOOKS: an over-long run sheds a trailing duration first ("5AM
+    # routine last 14 days" -> "5AM ROUTINE", not the "14 DAYS" tail)
+    if len(run) > max_words:
+        k = len(run)
+        while k > 1 and (_ov_is_num(run[k - 1]["low"]) or run[k - 1]["low"] in _OV_TIME):
+            k -= 1
+        if 0 < k < len(run) and any(run[j]["low"] in _OV_TIME or _ov_is_num(run[j]["low"])
+                                    for j in range(k, len(run))) and _strong(run[:k]):
+            run = run[:k]
     # an over-long run sheds its weak edges before the tail cut, so the cut
     # never beheads the noun ("trash can nobody mentions" -> "TRASH CAN",
     # not "CAN NOBODY MENTIONS"); a still-long NAME keeps its compound head
@@ -2519,6 +2553,9 @@ HOOK_ARCHETYPE = {
  "{product}, {ndays} days later.": ("transformation", "showcase", "day-counter"),
  "{ndays} days of {product}. Here's the after.": ("transformation", "showcase"),
  "{ndays} days, one {category}, zero failures.": ("bold-claim", "day-counter"),
+ "{product}: the after, {ndays} days in.": ("transformation", "showcase"),
+ "{ndays} days with {product}: worth it?": ("question", "transformation"),
+ "{product} held up for {ndays} days straight.": ("bold-claim", "day-counter"),
  # SHOWCASE_HOOKS (family "listicle"): a roundup is also a showcase (D81)
  "Things in my {domain} that just make sense.": ("listicle", "showcase"),
  "POV: your {domain} is missing these.": ("listicle", "showcase", "pov"),
@@ -2551,6 +2588,12 @@ _HOOK_VERDICT = re.compile(r"worth it|verdict|or skip|keep or return|should you 
 # headlines barely better than chance (hooks-deep-dive §1.2/§4.2: 54%), so
 # smaller gaps are noise, not strength.
 HOOK_STRENGTH_MARGIN = 0.08
+# the niche's family (NICHE_HOOK / the live research family) gets this many
+# tickets in the draw among equals — a preference, not a veto: with strength
+# ties it used to take the whole draw, and one research category seen 4
+# times (ugc-ads "problem-solution") made seven niches open on the same
+# skeleton (hooks-deep-dive §0/§3.4: sameness is fatigue; HOOK-09)
+HOOK_PREF_WEIGHT = 2
 _HOOK_NEWNESS = re.compile(
     r"\b(?:new|newly|brand-new|just (?:launched|dropped|released)|launch(?:ed|ing)?|"
     r"release[ds]?|debut(?:s|ed)?|next-gen|version \d|v\d|2\.0)\b", re.I)
@@ -2609,7 +2652,10 @@ def hook_pool(ctx):
     concept = ctx.get("concept")
     fam = NICHE_HOOK.get(ctx.get("niche"), "curiosity-gap")
     if concept == "challenge":
-        return ([("challenge", l, None) for l in CHALLENGE_HOOKS] +
+        # the D8 bank is quit-grammar ("I quit {noun}"): abstinence only — a
+        # practice streak's primary is pinned (D67), its alternates come
+        # from the practice forms below
+        return ([("challenge", l, ("abstinence",)) for l in CHALLENGE_HOOKS] +
                 [tuple(x) for x in CHALLENGE_ALT_HOOKS])
     if concept == "showcase":
         return ([("listicle", l, None) for l in SHOWCASE_HOOKS] +
@@ -3035,9 +3081,10 @@ def _hook_candidates(ctx, pool, ai, lex, fam_pref):
     that passes every screen; one candidate per distinct line.
     score = (anchored R02, overlay names the payoff noun D109/R15,
     (format contract D27/D40, hook-strength tier WS-HOOKS), learned prior
-    WS-INT, the niche's family) — lexicographic, so strength ranks after the
-    three quality components and before the learned prior and the niche
-    family, while the published slots stay put ([3] learned, [4] niche)."""
+    WS-INT, the niche's family) — strength ranks after the three quality
+    components and before the learned prior; pick_hook draws among the
+    [:4]-equals with the niche family (slot [4]) weighted HOOK_PREF_WEIGHT.
+    The published slots stay put ([3] learned, [4] niche)."""
     fmt = ctx.get("fmt")
     concept = ctx.get("concept", "product")
     focus = _hook_focus(ctx)
@@ -3090,9 +3137,10 @@ def pick_hook(ctx, rng):
     # rendered at the most specific product phrase that fits the 8-word
     # budget (_hook_nouns), screened by the gate lexicon, then scored
     # (anchored R02 > frame-0 card names the payoff noun D109/R15 > format
-    # contract D27/D40 > the niche's family); the draw among equals uses a
-    # hook rng forked with ONE draw from the script rng, so bank edits here
-    # never reshuffle the beat stream. ctx["hook_source"] reports what
+    # contract D27/D40 > WS-HOOKS hook-strength tier > WS-INT learned prior);
+    # the draw among equals favours the niche's family (HOOK_PREF_WEIGHT) and
+    # uses a hook rng forked with ONE draw from the script rng, so bank edits
+    # here never reshuffle the beat stream. ctx["hook_source"] reports what
     # rendered: "template" | "pinned" | "fallback" (D145), and the returned
     # family is the family of the line that rendered.
     fam = NICHE_HOOK.get(ctx["niche"], "curiosity-gap")
@@ -3196,9 +3244,18 @@ def pick_hook(ctx, rng):
                 _LEARNED_LAST["priors_used"] = {
                     f: {"alpha": v["alpha"], "beta": v["beta"], "n": v["n"]}
                     for f, v in ts.items()}
-        top = max(c["score"] for c in cands)
-        best = [c for c in cands if c["score"] == top]
-        pick = best[hrng.randrange(len(best))]
+        # the draw among equals (quality, strength, learned prior): one
+        # hrng draw, the niche family weighted HOOK_PREF_WEIGHT
+        top = max(c["score"][:4] for c in cands)
+        best = [c for c in cands if c["score"][:4] == top]
+        wts = [HOOK_PREF_WEIGHT if c["score"][4] else 1 for c in best]
+        pick = best[-1]
+        r = hrng.randrange(sum(wts))
+        for c, wt in zip(best, wts):
+            if r < wt:
+                pick = c
+                break
+            r -= wt
         ctx["hook_source"] = "template"   # D145
         ctx["hook_overlay"] = pick["overlay"]
         # WS-HOOKS: what vsp.hooks reports as variant A

@@ -363,7 +363,8 @@ _PAYS = {
                           r"wrong about)\b", re.I),
     "measurable-demo": re.compile(r"\b(?:check(?:ing)? this|check|before you|here'?s "
                                   r"(?:what|the|why)|test\w*|detail|watch|works?|"
-                                  r"result|fail\w*|fix\w*|zero|revealed|job|action)\b", re.I),
+                                  r"result|fail\w*|fix\w*|zero|revealed|job|action|"
+                                  r"break\w*|broke\w*|week|held|showed)\b", re.I),
     "transformation": re.compile(r"\b(?:after|before|day 1|day \d+|\d+ days|changed|"
                                  r"difference|vs)\b", re.I),
     "list": re.compile(r"\b(?:these|finds?|list|every|things|check this|here'?s what|"
@@ -568,6 +569,336 @@ def visual_type_of_direction(direction):
             return vt
     return "product-in-action" if re.search(r"\bhands?\b", direction or "", re.I) \
         else "text-first"
+
+
+# ------------------------------------------------------------ variants
+IDS = "ABCDE"
+MAX_VARIANTS = 5            # VARIANT_POLICY.count.total_max
+MIN_VARIANTS = 3            # §1.2: 3-5 variants
+MMR_LAMBDA = 0.7            # score first, then diversity (MMR)
+MAX_JACCARD = 0.2           # VARIANT_POLICY.diversity.max_trigram_jaccard
+MAX_PER_CLUSTER = 2         # VARIANT_POLICY.diversity.max_per_cluster
+_AFTER_RX = re.compile(r"\bafter\b|\bbefore\b|\bday 1 vs day\b|\blater\b|\b\d+ days\b|"
+                       r"\bday \d+\b|\bresult\b", re.I)
+_DAYN_RX = re.compile(r"\bday (\d+)\b|\b(\d+) days\b", re.I)
+_ALT_RX = re.compile(r"\bvs\.?\b|\bor\b|\bside by side\b|\btwo\b|\bwhich wins\b", re.I)
+_MUTED_TAIL = re.compile(r"\s*Works muted \(85% watch sound-off\)\.?\s*$")
+
+
+def variants(script, ctx=None, seed=None, maker=None):
+    """script["hook_variants"] (docs/CREATIVE-PLAN.md §1.2) or None. Never
+    raises: a script this cannot read (no hook stack, no maker) gets None."""
+    try:
+        return _variants(script, ctx, seed, maker)
+    except Exception:  # noqa: BLE001 — the maker must never die on variants
+        return None
+
+
+def _hook_items(script):
+    hs = [it for it in (script.get("hook_stack") or []) if isinstance(it, dict)]
+    vt = next((it for it in hs if str(it.get("type", "")).upper() == "VISUAL TRIGGER"), None)
+    vh = next((it for it in hs if "VERBAL HOOK" in str(it.get("type", "")).upper()
+               and it.get("dialogue")), None)
+    return vt, vh
+
+
+def ctx_from_script(script, maker):
+    """A parse context for a script without one (--script-json): the maker's
+    parse of the prompt plus what the script itself states (format,
+    presenter, the transformation day count)."""
+    prompt = re.sub(r"\s+", " ", re.sub(r"[{}]", "", str(script.get("prompt") or ""))).strip()
+    if not prompt:
+        return None
+    ctx = maker.parse_prompt(prompt)
+    ctx["_prompt"] = script.get("prompt")
+    ctx["fmt"] = script.get("format")
+    ctx["presenter"] = script.get("presenter")
+    blob = " ".join(str(it.get(k) or "") for it in (script.get("hook_stack") or [])
+                    if isinstance(it, dict) for k in ("direction", "payoff_contract"))
+    m = re.search(r"DAY 1 (?:vs|left, )\s*DAY (\d+)", blob, re.I)
+    if ctx.get("fmt") == "transformation" and m:
+        ctx["ndays"] = int(m.group(1))
+    return ctx
+
+
+def _group(concept):
+    return "streak" if concept in ("challenge", "routine") else \
+        "advice" if concept == "advice" else "product"
+
+
+def _subject(ctx, maker):
+    c = ctx.get("concept", "product")
+    if c == "showcase":
+        return f"the first {ctx.get('domain', 'space')} find"
+    if c == "challenge":
+        cn = str(ctx.get("challenge_noun") or "the habit")
+        try:
+            cn = maker._proper(cn)
+        except Exception:  # noqa: BLE001
+            pass
+        return cn
+    if c == "routine":
+        t = str(ctx.get("routine_time") or "")
+        return f"the {t} routine" if t else "the routine"
+    if c == "advice":
+        return str(ctx.get("category") or "the topic")
+    try:
+        sp = maker._short_product(ctx)
+    except Exception:  # noqa: BLE001
+        sp = str(ctx.get("category") or "the product")
+    return sp if re.match(r"(?i)(?:the|a|an|my|these|this)\b", sp) else f"the {sp}"
+
+
+def _day_n(line, ctx):
+    m = _DAYN_RX.search(line or "")
+    if m:
+        return m.group(1) or m.group(2)
+    for k in ("ndays", "span_n", "streak"):
+        if ctx.get(k):
+            return str(ctx[k])
+    return "7"
+
+
+def _visual_sentence(vt, ctx, maker, line, ai):
+    m = data()["maker"]
+    grp = _group(ctx.get("concept", "product"))
+    table = m["visual_sentences"].get(grp) or m["visual_sentences"]["product"]
+    tmpl = table.get(vt) or m["visual_sentences"]["product"].get(vt) or \
+        "Frame 0: {subject} in motion from the first frame."
+    out = tmpl.format(subject=_subject(ctx, maker), n=_day_n(line, ctx))
+    if ai and vt in m["ai_real_footage_visual_types"]:
+        out += m["ai_visual_notes"]["real_footage"]
+    elif ai and vt in ("product-in-action", "pov-hands", "satisfying-macro", "unboxing"):
+        out += m["ai_visual_notes"]["render"]
+    return out
+
+
+def _audio(vt, ctx, ai):
+    m = data()["maker"]
+    cat = str(ctx.get("category") or "")
+    if ctx.get("concept", "product") == "product" and any(
+            k in cat for k in ("noise", "sound", "speaker", "audio", "headphone")):
+        out = m["audio_product_cue"]
+    else:
+        out = m["audio_cues"].get(vt) or m["audio_cues"]["text-first"]
+    return out + (m["ai_voice_cue"] if ai else "")
+
+
+def _vt_options(arc, line, overlay, ctx, ai):
+    """Frame-0 visual types that can honestly open this line, best first:
+    the archetype's pairings (hooks-deep-dive §2.5), then any other type with
+    prior >= 0.6 (HOOK-10); a label-pair card needs the split screen
+    (D25/D135), a DAY-N marker needs the hook's own day count, a comparison
+    frame needs an alternative the line names, face-reaction is human-only."""
+    d = data()
+    feas = d["maker"]["concept_visual_types"].get(ctx.get("concept", "product"),
+                                                  d["maker"]["concept_visual_types"]["product"])
+    if "|" in (overlay or ""):
+        return ["before-after-split"] if "before-after-split" in feas else []
+    order = list(d["PAIRINGS"].get(arc, []))
+    rest = sorted((v for v in d["VISUAL_HOOKS"] if v not in order and
+                   float(d["VISUAL_HOOKS"][v]["prior"]) >= 0.6),
+                  key=lambda v: (-float(d["VISUAL_HOOKS"][v]["prior"]), v))
+    out = []
+    for vt in order + rest:
+        if vt not in feas or (ai and vt in d["maker"]["ai_excluded_visual_types"]):
+            continue
+        if vt == "day-counter" and not _DAYN_RX.search(line):
+            continue
+        if vt == "before-after-split" and not (
+                arc in ("transformation", "day-counter") and _AFTER_RX.search(line)):
+            continue
+        if vt == "comparison" and not _ALT_RX.search(line):
+            continue
+        if vt == "result-reveal" and not (_AFTER_RX.search(line) or arc in (
+                "showcase", "bold-claim", "transformation", "proof-first", "curiosity-gap")):
+            continue
+        out.append(vt)
+    return out
+
+
+def _render_candidates(ctx, maker, seed, ai, payoff):
+    """Every payoff-compatible template of the maker's own pool, rendered by
+    the maker's renderer (local rng, the niche authority), screened exactly
+    like the primary (maker._hook_template_ok / _hook_finish) plus §1.2."""
+    rng = random.Random(seeding.derive_seed(seed, "hooks"))
+    auth = getattr(maker, "NICHE_AUTHORITY", {}).get(ctx.get("niche"))
+    pool = maker.hook_pool(ctx)
+    focus = maker._hook_focus(ctx)
+    levels = maker._hook_levels(ctx)
+    prompt = str(ctx.get("prompt_text") or ctx.get("_prompt") or "")
+    compat = set(data()["_compat"].get(payoff, ()))
+    out, seen = [], set()
+    for idx, (fam, line, req) in enumerate(pool):
+        arc = maker._hook_template_ok(ctx, fam, line, req, ai, payoff, variant=True)
+        if arc is None or arc not in compat:
+            continue
+        for lctx, pv, noun in levels:
+            try:
+                raw = maker._render_hook_line(lctx, rng, line, auth, pv, noun)
+            except (KeyError, IndexError, ValueError):
+                break
+            res = maker._hook_finish(lctx, raw, ai, L, focus)
+            if res == "stop":
+                break
+            if res == "next":
+                continue
+            r, _ov, anchored, ov_focus = res
+            ov = maker.overlay_truncate(r.split(".")[0])
+            if r in seen or not anchored or screen_text(r, prompt, ai):
+                break
+            seen.add(r)
+            out.append({"family": fam, "archetype": arc, "verbal": r, "overlay": ov,
+                        "ov_focus": ov_focus, "template": line, "idx": idx})
+            break
+    return out
+
+
+def _prior_means(niche, arc, vt):
+    """Learned tie-break only (docs/CREATIVE-PLAN.md §1.5): posterior means
+    with n >= 3, neutral 0.5 otherwise."""
+    try:
+        from vsp import priors as P
+        pri = P.load_priors()
+        if not pri:
+            return 0.5, 0.5
+        a = P.mean_for(pri, "archetype", niche, arc)
+        v = P.mean_for(pri, "visual_type", niche, vt)
+        return (0.5 if a is None else a), (0.5 if v is None else v)
+    except Exception:  # noqa: BLE001
+        return 0.5, 0.5
+
+
+def _variants(script, ctx, seed, maker):
+    if not isinstance(script, dict):
+        return None
+    vt_item, vh_item = _hook_items(script)
+    if vt_item is None or vh_item is None:
+        return None
+    maker = maker or _maker()
+    if maker is None or not hasattr(maker, "hook_pool"):
+        return None
+    if ctx is None:
+        ctx = ctx_from_script(script, maker)
+        if ctx is None:
+            return None
+    d = data()
+    presenter = str(ctx.get("presenter") or script.get("presenter") or "").lower()
+    ai = presenter == "ai"
+    payoff = maker._hook_payoff(ctx)
+    compat = d["_compat"].get(payoff, [])
+    info = hook_info(script, ctx, maker)
+    info["payoff"] = payoff
+    verbal = " ".join(str(vh_item.get("dialogue") or "").split())
+    overlay = str(vt_item.get("on_screen") or "")
+    direction = str(vt_item.get("direction") or "")
+    fam_a = str(script.get("hook_family") or "")
+    arc_a = ctx.get("hook_archetype")
+    if arc_a not in compat:
+        arc_a = classify(verbal, fam_a, payoff)
+    vt_a = visual_type_of_direction(direction)
+    A = {"id": "A", "is_primary": True, "archetype": arc_a, "family": fam_a,
+         "verbal": verbal, "overlay": overlay, "visual_type": vt_a,
+         "visual": _MUTED_TAIL.sub("", " ".join(direction.split())) or
+         _visual_sentence(vt_a, ctx, maker, verbal, ai),
+         "audio": _audio(vt_a, ctx, ai), "caption_line": verbal}
+    cands = [c for c in _render_candidates(ctx, maker, seed, ai, payoff)
+             if c["verbal"] != verbal and first3(c["verbal"]) != first3(verbal)]
+    # one feature pass per candidate; the visual type and novelty terms are
+    # added per MMR round (score_hook is linear in both)
+    w = d["_feat_w"]
+    bsum = d["_bonus_sum"]
+    for c in cands:
+        _s, feats, _r = score_hook(c["verbal"], c["overlay"], None, script, ctx,
+                                   archetype=c["archetype"], others=(), info=info)
+        raw = 0.0
+        for f in d["HOOK_SCORE_FEATURES"]:
+            fid = f["id"]
+            if fid in ("novelty", "visual_type_strength"):
+                continue
+            raw += (-1.0 if f["direction"] == "-" else 1.0) * w[fid] * feats[fid]
+        c["raw0"] = raw
+        c["vts"] = _vt_options(c["archetype"], c["verbal"], c["overlay"], ctx, ai)
+        c["tri"] = trigrams(c["verbal"], set(info["kw"]))
+    chosen = _select(A, cands, info, ctx, script, strict=True)
+    if len(chosen) < MIN_VARIANTS:
+        chosen = _select(A, cands, info, ctx, script, strict=False)
+    if len(chosen) < MIN_VARIANTS:
+        return None
+    out = []
+    for i, c in enumerate(chosen):
+        if i == 0:
+            v = dict(A)
+        else:
+            v = {"id": IDS[i], "is_primary": False, "archetype": c["archetype"],
+                 "family": c["family"], "verbal": c["verbal"], "overlay": c["overlay"],
+                 "visual_type": c["vt"],
+                 "visual": _visual_sentence(c["vt"], ctx, maker, c["verbal"], ai),
+                 "audio": _audio(c["vt"], ctx, ai), "caption_line": c["verbal"]}
+        out.append(v)
+    for v in out:
+        others = [o["verbal"] for o in out if o is not v]
+        s, feats, reasons = score_hook(v["verbal"], v["overlay"], v["visual_type"], script,
+                                       ctx, archetype=v["archetype"], others=others,
+                                       info=info)
+        v["score"], v["features"], v["reasons"] = s, feats, reasons
+    return out
+
+
+def _select(A, cands, info, ctx, script, strict):
+    """Maximal marginal relevance over (candidate, visual type): λ·score +
+    (1-λ)·(1 - max trigram Jaccard), plus a bonus for a new archetype /
+    cluster / card. Hard: distinct visual types and first three words
+    (§1.2); strict also: Jaccard <= 0.2, <= 2 per cluster, new archetypes.
+    Learned priors break ties only (n >= 3)."""
+    d = data()
+    w_vt, w_nov, bsum = d["_feat_w"]["visual_type_strength"], d["_feat_w"]["novelty"], \
+        d["_bonus_sum"]
+    drop = set(info["kw"])
+    sel = [{"verbal": A["verbal"], "archetype": A["archetype"], "vt": A["visual_type"],
+            "overlay": A["overlay"], "tri": trigrams(A["verbal"], drop)}]
+    used = set()
+    niche = ctx.get("niche")
+    while len(sel) < MAX_VARIANTS:
+        best, best_key = None, None
+        arcs = [s["archetype"] for s in sel]
+        f3s = {first3(s["verbal"]) for s in sel}
+        vts = {s["vt"] for s in sel}
+        ovs = {s["overlay"] for s in sel}
+        clusters = {}
+        for s in sel:
+            cl = cluster_of(s["archetype"])
+            clusters[cl] = clusters.get(cl, 0) + 1
+        for c in cands:
+            if c["idx"] in used or first3(c["verbal"]) in f3s:
+                continue
+            jac = max(jaccard(c["tri"], s["tri"]) for s in sel)
+            new_arc = c["archetype"] not in arcs
+            cl = cluster_of(c["archetype"])
+            if strict and (jac > MAX_JACCARD or not new_arc or
+                           clusters.get(cl, 0) >= MAX_PER_CLUSTER):
+                continue
+            for vt in c["vts"]:
+                if vt in vts:
+                    continue
+                vh = d["VISUAL_HOOKS"][vt]
+                vts_x = float(vh["prior"]) * (1.0 if c["archetype"] in vh["best_archetypes"] else 0.6)
+                raw = c["raw0"] + w_vt * vts_x + w_nov * (1.0 - jac)
+                score = max(0.0, min(1.0, raw / bsum))
+                mmr = MMR_LAMBDA * score + (1 - MMR_LAMBDA) * (1.0 - jac) + \
+                    0.05 * new_arc + 0.02 * (c["overlay"] not in ovs)
+                pa, pv = _prior_means(niche, c["archetype"], vt)
+                key = (round(mmr, 2), round(pa, 4), round(pv, 4), -c["idx"], vt)
+                if best_key is None or key > best_key:
+                    best, best_key = dict(c, vt=vt), key
+        if best is None:
+            break
+        used.add(best["idx"])
+        sel.append(best)
+    # §1.2: >= 3 distinct archetypes once there are 4+ variants
+    while len(sel) >= 4 and len({s["archetype"] for s in sel}) < 3:
+        sel.pop()
+    return sel
 
 
 # ------------------------------------------------------------ classify
