@@ -784,6 +784,8 @@ PITFALLS = [
 ]
 PITFALL_COST = 4
 AUDIT_PITFALLS = {"P2"}
+LEGACY_IDS = frozenset(f"R{i:02d}" for i in range(1, 21))
+RUBRIC_VERSION = "R01-R28 (pipeline v2.1)"
 
 
 def _dup_sentence(s):
@@ -826,11 +828,15 @@ def score(script):
     selection = max(0.0, _agg(lambda c: not c["audit"]) - sel_pen)
     audit = _agg(lambda c: c["audit"])
     overall = max(0.0, _agg(lambda c: True) - all_pen)
+    # the v2.0 scale (R01-R20 + pitfalls): comparable with result files
+    # scored before the v2.1 checks existed (scorecard 'shippable' uses it)
+    legacy = max(0.0, _agg(lambda c: c["id"] in LEGACY_IDS) - all_pen)
     flags = sorted({c["id"] for c in checks if c["pass"] is False
                     and c["id"] in ("R05", "R06", "R16", "R18", "R19")})
     return {"score": round(overall, 1), "selection_score": round(selection, 1),
             "audit_score": round(audit, 1), "checks": checks,
-            "pitfalls": pits, "compliance_flags": flags}
+            "pitfalls": pits, "compliance_flags": flags,
+            "legacy_score": round(legacy, 1), "version": RUBRIC_VERSION}
 
 
 def summary_line(result):

@@ -104,35 +104,48 @@ PART2 = re.compile(r"\bpart (?:2|two)\b", re.I)
 # false limited-time offers, baseless countdowns, false low-stock and
 # high-demand messages, fake discounts); Meta deceptive-pricing policy.
 # Transcribed from docs/research/hooks-deep-dive.md §5 RISKY_PHRASES
-# UR-01..UR-04 with two deliberate changes: "sold out" / "best-seller" stay
-# with D136 (SOCIAL_PROOF — one claim, one rule id), and a bare "hurry"
-# ("mornings in a hurry") is not urgency — only "hurry up/now/before" or
-# "hurry," / "hurry!" are.
+# UR-01..UR-04 with deliberate changes: "sold out" / "best-seller" stay
+# with D136 (SOCIAL_PROOF — one claim, one rule id), and bare words that are
+# ordinary language elsewhere ("hurry", "act fast", "almost gone", "limited
+# time", "ends today", "half off") only count in their offer/urgency form
+# (sentence-initial "Hurry!", "limited-time offer", "sale ends", ...).
 # (id, class, pattern); class decides the allow-path in offer_allowed().
+#
+# Precision over recall (the rule reads every --script-json input): each
+# phrase must be an offer/urgency FORM, not ordinary language — "mornings
+# in a hurry", "the stain is almost gone", "was 40 min, now 15", "people
+# with limited time", "everyone is getting this wrong", "these patches act
+# fast", "the challenge ends today", "take half off the ends", "use the code
+# on the lid" all pass (self-test unit v21-precision-negation-corpus).
 OFFER_URGENCY_PATTERNS = (
     ("UR-01", "urgency",
-     r"\bhurry(?: up| now| before)\b|\bhurry[,!]|\bact (?:fast|now)\b|"
-     r"\blast chance\b|\bbefore (?:it'?s|they'?re) gone\b|"
+     r"\bhurry(?: up| now| before)\b|(?:^|[.!?]\s*)hurry\b|"
+     r"(?:^|[.!?]\s*)act (?:fast|now)\b|\bact (?:fast|now) (?:before|while)\b|"
+     r"\blast chance to (?:buy|grab|get|order|save)\b|"
+     r"\bbefore (?:it'?s|they'?re) (?:all )?gone\b|"
      r"\b(?:sale|offer|deal|discount|promo(?:tion)?)s? (?:ends?|ending)\b|"
-     r"\bends (?:tonight|today|tomorrow|soon|at midnight|in \d+)\b|"
-     r"\btoday only\b|\bonly today\b|\blimited[- ]time\b|"
-     r"\bwhile (?:supplies|stocks?) lasts?\b|\bdon'?t miss (?:out|this deal)\b|"
-     r"\bflash sale\b|\b(?:24|48|72)[- ]hours? only\b|\bcountdown (?:is on|timer)\b"),
+     r"\bends (?:tonight|at midnight)\b|\btoday only\b|"
+     r"\blimited[- ]time (?:offer|deal|sale|only|price|discount)\b|"
+     r"\bfor a limited time\b|\bwhile (?:supplies|stocks?) lasts?\b|"
+     r"\bdon'?t miss (?:this|the|our) (?:deal|sale|offer|drop)\b|"
+     r"\bflash sale\b|\b(?:24|48|72)[- ]hours? only\b|\bthe countdown is on\b"),
     ("UR-02", "scarcity",
      r"\bonly (?:\d+|a few|a handful) (?:left|remaining|in stock)\b|"
-     r"\balmost (?:gone|sold out)\b|\bselling (?:out )?fast\b|\bselling out\b|"
-     r"\b(?:low|limited) (?:stock|supply|quantities)\b|\bgoing fast\b|"
-     r"\b(?:last|final) (?:few|\d+) (?:units?|pieces?|left)\b"),
+     r"\balmost sold out\b|\bselling (?:out )?fast\b|"
+     r"\b(?:low|limited) stock\b|\blimited quantities\b|"
+     r"\b(?:last|final) (?:few|\d+) (?:units?|left)\b"),
     ("UR-03", "demand",
      r"\b\d[\d,.]*[kKmM]? (?:people|others|shoppers) (?:are )?"
      r"(?:viewing|watching|looking at|buying|shopping)\b|"
-     r"\b(?:everyone|everybody) is (?:buying|getting)\b"),
+     r"\b(?:everyone|everybody) is (?:buying|ordering)\b|"
+     r"\b(?:everyone|everybody) is getting (?:one|theirs|these|them)\b"),
     ("UR-04", "offer",
-     r"\b(?:was|regularly|reg\.?) [$€£]?\d[\d.,]*\b.{0,15}\b(?:now|today) [$€£]?\d|"
-     r"\b\d{1,3}\s?% off\b|\b\d{1,3} percent off\b|\bhalf off\b|"
+     r"\b(?:was|regularly|reg\.?) [$€£]\d[\d.,]*\b.{0,15}\b(?:now|today) [$€£]?\d|"
+     r"\b\d{1,3}\s?% off\b|\b\d{1,3} percent off\b|"
+     r"\bhalf (?:off|price) (?:today|now|sitewide|everything)\b|"
      r"\bprice (?:goes|is going) up\b|\bwon'?t be this price\b|"
-     r"\b(?:promo|discount|coupon) code\b|\buse (?:my |our |the )?code\b|"
-     r"\bbogo\b|\bbuy one,? get one\b|\bfree shipping\b|\bon sale\b|"
+     r"\b(?:promo|discount|coupon) code\b|\buse (?:my |our )?code\s+[A-Za-z]+\d+\b|"
+     r"\bbogo\b|\bbuy one,? get one\b|\bfree shipping\b|\bon sale (?:now|today)\b|"
      r"\bclearance sale\b|\bdeal of the (?:day|week)\b"),
 )
 OFFER_URGENCY = [re.compile(p, re.I) for _, _, p in OFFER_URGENCY_PATTERNS]
@@ -208,6 +221,13 @@ def clickbait_hits(text):
         if m:
             out.append((cid, sev, m.group(0)))
     return out
+
+
+# D37 inside the v2.1 screens (hook variants, platform captions): a currency
+# amount — "pounds" is left out on purpose ("holds 50 pounds" is a weight;
+# legacy D37 itself only reads "$N").
+PRICE_STRICT = re.compile(r"(?:[$€£]\s?\d[\d,]*(?:\.\d+)?|\b\d[\d,]*(?:\.\d+)?\s?"
+                          r"(?:dollars|bucks|usd|euros?)\b)", re.I)
 
 
 def price_in(prompt):

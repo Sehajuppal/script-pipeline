@@ -199,6 +199,7 @@ def run_case(case, py, repo, env, caps, extra, tmpout):
             row.update({
                 "rubric": res["score"], "rubric_selection": res["selection_score"],
                 "rubric_audit": res["audit_score"],
+                "rubric_legacy": res.get("legacy_score", res["score"]),
                 "rubric_failed": [c["id"] for c in res["checks"]
                                   if c["pass"] is False],
                 "pitfalls": [p["id"] for p in res["pitfalls"]],
@@ -274,7 +275,7 @@ def cmd_run(a):
             print(f"  {len(rows)}/{len(cases)} runs", file=sys.stderr)
     rows.sort(key=lambda r: r["key"])
     result = {"label": a.label, "repo": repo_src, "git_sha": git_sha(repo_src),
-              "python": a.python,
+              "python": a.python, "rubric_version": RUB.RUBRIC_VERSION,
               "created": _dt.datetime.now(_dt.timezone.utc).isoformat(),
               "capabilities": caps, "extra_args": extra,
               "matrix": {"prompts": len(golden), "formats": formats,
@@ -293,7 +294,12 @@ def cmd_run(a):
 
 # ----------------------------------------------------------------- metrics
 def shippable(r):
-    return (r["status"] == "pass" and r.get("rubric", 0) >= SHIP_MIN_RUBRIC
+    # the v2.0-scale rubric (R01-R20) so the metric means the same thing in
+    # every result file: R21+ fail on absent creative keys by design, which
+    # would otherwise flip v2.0 scripts to "not shippable" with no change.
+    # Rows from older result files carry only "rubric" (that same scale).
+    return (r["status"] == "pass"
+            and r.get("rubric_legacy", r.get("rubric", 0)) >= SHIP_MIN_RUBRIC
             and not r.get("compliance_flags"))
 
 
@@ -330,7 +336,9 @@ def summarize(rows):
                        "selection_mean": round(statistics.mean(
                            r["rubric_selection"] for r in scored), 1),
                        "audit_mean": round(statistics.mean(
-                           r["rubric_audit"] for r in scored), 1)}
+                           r["rubric_audit"] for r in scored), 1),
+                       "legacy_mean": round(statistics.mean(
+                           r.get("rubric_legacy", r["rubric"]) for r in scored), 1)}
         chk = {}
         for r in scored:
             for cid in r["rubric_failed"]:
@@ -423,6 +431,10 @@ def render_summary(res):
     L.append(f"- runtime: {s['runtime_mean_s']}s/run · artifacts "
              f"{s['artifact_counts'] or 'none'}")
     L += render_creative(s.get("creative"))
+    if "rubric" in s and "legacy_mean" in s["rubric"]:
+        L.append(f"- rubric on the v2.0 scale (R01-R20; shippable uses it): mean "
+                 f"{s['rubric']['legacy_mean']} · rubric version "
+                 f"{res.get('rubric_version') or 'R01-R20'}")
     return "\n".join(L)
 
 
@@ -511,6 +523,10 @@ def cmd_compare(a):
     if "rubric" in SA and "rubric" in SB:
         rows.append(("rubric mean", SA["rubric"]["mean"], SB["rubric"]["mean"],
                      f"{SB['rubric']['mean'] - SA['rubric']['mean']:+.1f}"))
+        # like-for-like across rubric versions (older files: mean = R01-R20)
+        la = SA["rubric"].get("legacy_mean", SA["rubric"]["mean"])
+        lb = SB["rubric"].get("legacy_mean", SB["rubric"]["mean"])
+        rows.append(("rubric mean, v2.0 scale (R01-R20)", la, lb, f"{lb - la:+.1f}"))
         rows.append(("rubric audit-only mean", SA["rubric"]["audit_mean"],
                      SB["rubric"]["audit_mean"],
                      f"{SB['rubric']['audit_mean'] - SA['rubric']['audit_mean']:+.1f}"))

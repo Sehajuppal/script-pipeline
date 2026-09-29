@@ -378,15 +378,22 @@ GRADES = ("P", "S", "M", "A")
 HUMORS = ("none", "light", "high")
 AI_MUSIC = re.compile(r"\bAI[- ](?:generated )?(?:music|track|song|soundtrack|beat)s?\b|"
                       r"\bgenerated (?:music|track|song)s?\b|\bsuno\b|\budio\b", re.I)
-NEGATION = re.compile(r"\b(?:no|never|not|don'?t|do not|avoid|without|nor|isn'?t)\b",
-                      re.I)
+NEGATION = re.compile(r"\b(?:no|never|not|none|don'?t|do not|avoid|without|nor|"
+                      r"isn'?t|aren'?t|blocked|banned|prohibited|disallowed|"
+                      r"forbidden)\b", re.I)
+SENTENCE_END = re.compile(r"(?<=[.;!?])\s+")
 SYNTH_VOICE = re.compile(r"\b(?:synthetic|AI[- ]generated|AI voice|generated voice|"
                          r"text[- ]to[- ]speech|TTS|voice clone|cloned voice|"
                          r"synthesi[sz]ed)\b", re.I)
 DISCLOSED = re.compile(r"\bdisclos\w*", re.I)
-HUMAN_CLAIM = re.compile(r"\b(?:human voice(?: only)?|human read|real (?:human|person)|"
-                         r"a real person|actual person|not (?:an? )?AI|not synthetic|"
-                         r"100% human|recorded by a human)\b", re.I)
+# a claim to BE human (aiming for natural prosody — "sound like a real
+# person" — is not one). STRICT forms are claims even though they contain a
+# negation word; SOFT forms are skipped inside a negated sentence.
+HUMAN_CLAIM_STRICT = re.compile(r"\bnot (?:an? )?AI\b|\bnot synthetic\b|"
+                                r"\b100% human\b|\bI'?m (?:a )?(?:real|human)\b", re.I)
+HUMAN_CLAIM = re.compile(r"\bhuman voice(?: only)?\b|\bhuman read\b|"
+                         r"\breal human voice\b|\bis a real person\b|"
+                         r"\brecorded by a human\b|\bhuman voiceover\b", re.I)
 
 
 def _norm_ws(s):
@@ -394,21 +401,33 @@ def _norm_ws(s):
 
 
 def _first3(text):
-    return tuple(L.norm(text).split()[:3])
+    return tuple(L.norm(_txt(text)).split()[:3])
 
 
-def _negated(text, start, span=28):
-    """True when a negation word sits just before `start` in `text`."""
-    return bool(NEGATION.search(text[max(0, start - span):start]))
-
-
-def _affirmed(rx, text):
-    """First match of rx in text that is not negated (per line) or None."""
+def sentences(text):
+    """Lines split at sentence/clause ends (. ; ! ?) — the negation scope."""
     for ln in (text or "").splitlines():
-        for m in rx.finditer(ln):
-            if not _negated(ln, m.start()):
-                return m
+        for s in SENTENCE_END.split(ln):
+            if s.strip():
+                yield s
+
+
+def _affirmed(rx, text, skip=None):
+    """First match of rx whose sentence carries no negation word anywhere
+    (before, inside or after the match — "AI-generated music is not
+    allowed", "never …, AI-generated music") and no `skip` marker; None
+    when every match is negated. Precision over recall: a sentence that
+    negates anything is not read as an instruction."""
+    for sent in sentences(text):
+        m = rx.search(sent)
+        if m and not NEGATION.search(sent) and not (skip and skip.search(sent)):
+            return m
     return None
+
+
+def _is(v, container):
+    """Membership that never raises on unhashable values."""
+    return isinstance(v, str) and v in container
 
 
 def _prompt_claim_keys(prompt):
@@ -426,7 +445,7 @@ def claim_screens(text, ctx, ai=None):
         return out
     if "{" in t or "}" in t:
         out.append("D31 raw {slot}")
-    m = L.PRICE.search(t) or re.search(r"\$\d+", t)
+    m = L.PRICE_STRICT.search(t)
     if m and not L.price_in(prompt):
         out.append(f"D37 price {_q(m.group(0), 20)}")
     for rx in L.SOCIAL_PROOF:
@@ -743,24 +762,24 @@ def check_d156(script, bundle_text, ctx):
     out = _shape(d, "DIRECTION_SCHEMA", "direction", "D156")
     if "schema_version" in d and d.get("schema_version") != 1:
         out.append(f"D156: schema_version {d.get('schema_version')!r} (want 1)")
-    if "vibe" in d and d.get("vibe") not in CV.VIBES:
+    if "vibe" in d and not _is(d.get("vibe"), CV.VIBES):
         out.append(f"D156: vibe {d.get('vibe')!r} is not a creative_vocab.VIBES id")
     sv = d.get("secondary_vibe")
-    if sv is not None and (sv not in CV.VIBES or sv == d.get("vibe")):
+    if sv is not None and (not _is(sv, CV.VIBES) or sv == d.get("vibe")):
         out.append(f"D156: secondary_vibe {sv!r} is not a second VIBES id")
     tone = d.get("tone")
     if tone is not None:
         if not isinstance(tone, dict):
             out.append("D156: tone is not an object")
         else:
-            if "voice" in tone and tone.get("voice") not in CV.TONES:
+            if "voice" in tone and not _is(tone.get("voice"), CV.TONES):
                 out.append(f"D156: tone.voice {tone.get('voice')!r} is not a "
                            f"creative_vocab.TONES id")
             al = tone.get("allowed")
             if al is not None and not (isinstance(al, list)
-                                       and all(x in CV.TONES for x in al)):
+                                       and all(_is(x, CV.TONES) for x in al)):
                 out.append(f"D156: tone.allowed {al!r} holds non-TONES ids")
-            if "humor" in tone and tone.get("humor") not in HUMORS:
+            if "humor" in tone and not _is(tone.get("humor"), HUMORS):
                 out.append(f"D156: tone.humor {tone.get('humor')!r} (none|light|high)")
     if "energy" in d and not (_num(d.get("energy")) and 1 <= d["energy"] <= 5):
         out.append(f"D156: energy {d.get('energy')!r} is not 1–5")
@@ -817,10 +836,8 @@ def check_d156(script, bundle_text, ctx):
                 if not (_num(e.get("energy")) and 1 <= e["energy"] <= 5):
                     out.append(f"D156: energy_curve[{i}] energy "
                                f"{e.get('energy')!r} is not 1–5")
-                (es, ee), (s, x) = G.parse_t(_txt(e.get("t"))), window(it)
-                if None not in (es, s) and (abs(es - s) > 0.05 or abs(ee - x) > 0.05):
-                    out.append(f"D156: energy_curve[{i}] t {_q(e.get('t'), 20)} "
-                               f"!= item t {_q(it.get('t'), 20)}")
+                # no window equality: the contract asks for count + order,
+                # and stage-6 relayout re-times beats after enrich()
     mus = d.get("music")
     if mus is not None:
         if not isinstance(mus, dict):
@@ -839,7 +856,7 @@ def check_d156(script, bundle_text, ctx):
                            f"one commercial lane per platform")
             tt = lic.get("tiktok") if isinstance(lic, dict) else None
             if isinstance(tt, dict):
-                m = _affirmed(AI_MUSIC, _txt(tt.get("library")) + "\n"
+                m = _affirmed(AI_MUSIC, _txt(tt.get("library")) + ".\n"
                               + _txt(tt.get("note")))
                 if m:
                     out.append(f"D156: music.licensing.tiktok names AI music "
@@ -861,7 +878,8 @@ def check_d156(script, bundle_text, ctx):
     cam = d.get("camera")
     if isinstance(cam, dict) and cam.get("movement") is not None:
         mv = cam.get("movement")
-        bad = [x for x in mv if x not in CV.CAMERA_MOVES] if isinstance(mv, list) else [mv]
+        bad = [x for x in mv if not _is(x, CV.CAMERA_MOVES)] \
+            if isinstance(mv, list) else [mv]
         if bad:
             out.append(f"D156: camera.movement {bad[:3]} are not CAMERA_MOVES ids")
     ts = d.get("text_style")
@@ -872,7 +890,7 @@ def check_d156(script, bundle_text, ctx):
     ev = d.get("evidence")
     if isinstance(ev, list):
         bad = [e.get("grade") for e in ev if isinstance(e, dict)
-               and e.get("grade") not in GRADES]
+               and not _is(e.get("grade"), GRADES)]
         if bad:
             out.append(f"D156: evidence grades {bad[:3]} (P|S|M|A)")
     voice = d.get("voice")
@@ -891,7 +909,7 @@ def check_d156(script, bundle_text, ctx):
                     probs.append("names no synthetic voice")
                 if not DISCLOSED.search(spec):
                     probs.append("never says it is disclosed")
-                m = _affirmed(HUMAN_CLAIM, spec)
+                m = HUMAN_CLAIM_STRICT.search(spec) or _affirmed(HUMAN_CLAIM, spec)
                 if m:
                     probs.append(f"claims a human voice ({_q(m.group(0), 20)})")
                 if probs:
@@ -992,6 +1010,10 @@ FRAME0_TEXT = re.compile(r"\b(?:product|result|results|after|before|problem|mess
                          r"day[- ]\d+)\b", re.I)
 PROOF_BEAT = re.compile(r"\b(?:EVIDENCE|PAYOFF)\b", re.I)
 NON_PROOF_PURPOSES = ("reaction", "emotion", "cta", "transition", "b-roll")
+# frame-0 purpose consistency: the research SHOT_LIBRARY opens on shots
+# typed hook, demo, proof, payoff, context, reaction or b-roll — but never on
+# an end-card / transition role
+FRAME0_BAD_PURPOSES = ("cta", "transition")
 LOOP_TEXT = re.compile(r"\bloop(?:s|ed|ing)?\b", re.I)
 PROMPT_STOP = {"product", "set", "kit", "mini", "portable", "new", "best",
                "things", "thing", "days", "day", "stopped", "buying", "make",
@@ -1072,12 +1094,15 @@ def shot_blocks(text):
         visual = [ln for ln in lines if not ln.startswith(SPEECH_LINES)
                   and not ln.startswith("- Shot type:")]
         vid = (typed or {}).get("shot_type") or ""
+        onscreen = " ".join(ln[len("- On-screen text:"):] for ln in lines
+                            if ln.startswith("- On-screen text:"))
         out.append({"n": m.group(1), "s": float(m.group(2)), "e": float(m.group(3)),
                     "beat": (m.group(4) or "").strip(), "lines": lines,
                     "typed": typed if not errs else None, "parsed": typed,
                     "type_errors": errs, "n_type_lines": len(tl),
                     "visual": " ".join(ln[2:] for ln in visual) + " "
-                    + vid.replace("-", " "), "real_footage": rf})
+                    + vid.replace("-", " "), "onscreen": onscreen.strip(),
+                    "real_footage": rf})
     return out
 
 
@@ -1099,12 +1124,14 @@ def shot_signals(block):
 def is_proof_shot(block, strict=False):
     """D157: a shot that proves a result — purpose 'proof', an EVIDENCE /
     PAYOFF beat shot, or a DEMO shot that shows the result. The gate skips
-    reaction / emotion / cta / transition / b-roll purposes on those beats;
-    strict=True (creative_eval audit) does not."""
+    reaction / emotion / cta / transition / b-roll purposes on those beats
+    and shots that show a face (the AI persona's own shot is generated by
+    construction and cannot be filmed — the proof must be a separate insert);
+    strict=True (the creative_eval audit) skips neither."""
     p = (block.get("parsed") or {}).get("purpose")
     if p == "proof":
         return True
-    if not strict and p in NON_PROOF_PURPOSES:
+    if not strict and (p in NON_PROOF_PURPOSES or shot_signals(block)["face"]):
         return False
     beat = block.get("beat") or ""
     if PROOF_BEAT.search(beat):
@@ -1122,8 +1149,9 @@ def _prompt_anchor_tokens(script):
 def frame0_shows_subject(block, script):
     """D157: the frame-0 shot shows the product/result or the subject/
     problem — a prompt noun, or a product/result/problem/before-after word,
-    in its visual lines or shot type id."""
-    vis = block.get("visual") or ""
+    in its visual lines, its on-screen text (a text-first opener carries the
+    subject in the card) or its shot type id."""
+    vis = (block.get("visual") or "") + " " + (block.get("onscreen") or "")
     toks = set(L.keyword_tokens(vis))
     return bool(toks & _prompt_anchor_tokens(script)) or bool(FRAME0_TEXT.search(vis))
 
@@ -1168,9 +1196,10 @@ def check_d157(script, bundle_text, ctx):
                    f"{', '.join(untyped[0]['type_errors'])}) — every shot is typed")
     f0 = blocks[0]
     p0 = f0.get("parsed") or {}
-    if p0.get("purpose") and p0["purpose"] != "hook":
+    if p0.get("purpose") in FRAME0_BAD_PURPOSES:
         out.append(f"D157: frame-0 shot {f0['n']} has purpose {p0['purpose']!r}"
-                   f" — the frame-0 shot is the visual hook (purpose 'hook')")
+                   f" — the opening shot cannot be a {p0['purpose']} shot (it is "
+                   f"the visual hook)")
     sid0 = p0.get("shot_type") or ""
     if sid0 in FRAME0_BANNED or "talking-head" in sid0:
         out.append(f"D157: frame-0 shot {f0['n']} is a talking head "
@@ -1229,6 +1258,9 @@ QUOTED = re.compile(r"\"([^\"\n]{1,80})\"|\u201c([^\u201d\n]{1,80})\u201d")
 ARTIST_CREDIT = re.compile(r"(?:\"[^\"\n]{1,80}\"|\u201c[^\u201d\n]{1,80}\u201d)\s+"
                            r"(?:by|from|feat\.?|ft\.?)\s+[A-Z]")
 SEARCH_LINE = re.compile(r"\bsearch\w*|\bquer(?:y|ies)\b", re.I)
+# a quoted span can only be a track title on a line about music
+MUSIC_LINE = re.compile(r"\b(?:music|track|song|songs|sound|sounds|soundtrack|audio|"
+                        r"bed|playlist|artist|tune|beat|library)\b", re.I)
 PLATFORM_WORD = re.compile(r"\b(?:tiktok|instagram|meta|facebook|youtube|shorts)\b",
                            re.I)
 MUSIC_IN_MASTER = re.compile(
@@ -1258,6 +1290,8 @@ def check_d159(script, bundle_text, ctx):
     titles = []
     for ln in body.splitlines():
         credit = ARTIST_CREDIT.search(ln)
+        if not credit and not MUSIC_LINE.search(ln):
+            continue            # "reveal pause", "BEFORE | AFTER": not music
         for m in QUOTED.finditer(ln):
             span = (m.group(1) or m.group(2) or "").strip()
             if not span:
@@ -1270,11 +1304,11 @@ def check_d159(script, bundle_text, ctx):
                    f"({', '.join(_q(x, 30) for x in titles[:3])}) — never name a "
                    f"commercial track (only library search queries may be quoted, "
                    f"on a 'search' line)")
-    for ln in body.splitlines():
-        m = _affirmed(AI_MUSIC, ln)
-        if m and (re.search(r"\btiktok\b", ln, re.I) or not PLATFORM_WORD.search(ln)):
+    for sent in sentences(body):   # clause scope: "…; blocked on TikTok"
+        m = _affirmed(AI_MUSIC, sent)
+        if m and (re.search(r"\btiktok\b", sent, re.I) or not PLATFORM_WORD.search(sent)):
             out.append(f"D159: AI music recommended for TikTok "
-                       f"({_q(ln.strip(), 60)}) — no AI music on TikTok "
+                       f"({_q(sent.strip(), 60)}) — no AI music on TikTok "
                        f"commercial content")
             break
     m = _affirmed(MUSIC_IN_MASTER, body)
@@ -1285,15 +1319,23 @@ def check_d159(script, bundle_text, ctx):
     return _cap(out, "D159")
 
 
-RENDER_TEXT = re.compile(
+# D160 in-frame text requests. STRICT forms are requests however the line
+# is worded (the v2.0 "ON-SCREEN TEXT (render exactly, …): X" line); SOFT
+# forms only count in a sentence with no negation and no edit-overlay marker
+# ("On-screen text is an edit overlay, never generated in-frame", "Render in
+# 9:16 with no captions" and "Text on screen: none" are hygiene, not requests).
+RENDER_TEXT_STRICT = re.compile(
     r"\brender(?:ed|ing|s)? exactly\b|"
     r"\bON-SCREEN TEXT\s*\((?![^)\n]*\b(?:edit|overlay|post|composite\w*|"
-    r"not (?:rendered|generated)|do not render|never render)\b)|"
-    r"\b(?:any )?on-screen text (?:is|uses?|should|must|in)\b|"
+    r"not (?:rendered|generated)|do not render|never render)\b)", re.I)
+RENDER_TEXT = re.compile(
+    r"\b(?:any )?on-screen text (?:is|uses?|should|must)\b|"
     r"\btext on screen\s*:|"
     r"\b(?:render|draw|write|print|generate|spell out|type out|display|burn)\w*\b"
     r"[^.\n]{0,40}\b(?:on-screen text|text overlay|captions?|subtitles?|"
     r"lettering|the words|the text|title card)\b", re.I)
+EDIT_MARK = re.compile(r"\b(?:edit|editing|overlay|overlays|post|post-production|"
+                       r"composit\w*|added later|in the edit)\b", re.I)
 VISUAL_PROMPT = re.compile(r"^(?:- )?VISUAL PROMPT:(.*)$", re.M)
 DQUOTE = re.compile(r"\"[^\"\n]{2,}\"|\u201c[^\u201d\n]{2,}\u201d")
 
@@ -1333,7 +1375,7 @@ def identity_lock(script, bundle_text):
 def render_prompt_problems(block):
     """D160 hygiene problems of one render-prompt block (text)."""
     probs = []
-    m = _affirmed(RENDER_TEXT, block)
+    m = RENDER_TEXT_STRICT.search(block) or _affirmed(RENDER_TEXT, block, skip=EDIT_MARK)
     if m:
         probs.append(f"asks the model to render on-screen text "
                      f"({_q(m.group(0), 30)})")

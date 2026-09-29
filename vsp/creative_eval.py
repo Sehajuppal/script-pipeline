@@ -60,8 +60,9 @@ VISUAL_TYPE_SHOTS = {
     "comparison": ("comparison-side-by-side", "rejection-lineup"),
     "day-counter": ("day-counter-selfie", "establishing-ws", "mirror-selfie",
                     "pov-walk-in", "selfie-walk-talk", "timestamp-proof-insert"),
-    "face-reaction": ("face-reaction-product", "reaction-cutaway-3q",
-                      "talking-head-product-in-hand"),
+    "face-reaction": ("face-reaction-product", "reaction-cutaway-3q"),
+    # (talking-head-product-in-hand is also face-reaction in the library but
+    # D157 bans talking heads at frame 0, so it never counts as a match)
     "pov-hands": ("over-shoulder-demo", "overhead-hands-demo", "pov-hands-first-use"),
     "problem-state": ("insert-object-detail", "matched-before", "problem-state-open",
                       "stress-test-action", "toss-aside-cutaway"),
@@ -120,41 +121,76 @@ def _n(x):
     return isinstance(x, (int, float)) and not isinstance(x, bool)
 
 
+def _s(v):
+    """A string field or '' — malformed creative keys never crash a metric."""
+    return v if isinstance(v, str) else ""
+
+
 def evaluate_files(script, shots, bundle_text):
+    """Metrics for one run (see the module docstring). Never raises on a
+    malformed script / shots / bundle: a metric that cannot be computed
+    records its error in row['errors'] and keeps its zero value."""
+    row = _zero_row()
+    try:
+        _evaluate(row, script, shots, bundle_text)
+    except Exception as e:  # noqa: BLE001 — metrics never kill a scorecard
+        row.setdefault("errors", []).append(f"{type(e).__name__}: {e}")
+    return row
+
+
+def _zero_row():
+    return {"keys": {k: False for k in ("direction", "hook_variants", "discovery")},
+            "variant_count": 0, "distinct_visual_types": 0, "distinct_archetypes": 0,
+            "vibe": None, "tone": None, "primary_keyword": None,
+            "creative_warnings": [], "keyword_placement_pass": False,
+            "hook_strength": None, "hook_strength_primary": None, "shots": 0,
+            "shots_typed": 0, "shot_typed_share": 0.0, "shots_json_typed_share": 0.0,
+            "avg_shot_s": None, "cuts_per_10s": None, "cadence_in_band": None,
+            "human_by_3s": False, "frame0_product_result": False,
+            "frame0_visual_match": None, "loop_ok": None, "real_footage_marked": None,
+            "high_ai_risk_share": None,
+            "sections": {n: False for n in SECTION_NAMES}, "sections_present": 0,
+            "alt_openings": 0, "alt_openings_match": None, "alt_prompt_problems": 0,
+            "findings": {rid: [] for rid in GATE2_IDS},
+            "gate1_findings": {rid: 0 for rid in GATE1_IDS}, "shot_plan_pass": False}
+
+
+def _evaluate(row, script, shots, bundle_text):
     from vsp import rubric as RUB
     from vsp import rules as RL
     s = script if isinstance(script, dict) else {}
-    text = bundle_text or ""
+    text = bundle_text if isinstance(bundle_text, str) else ""
     rows = _shot_rows(shots)
     ai = s.get("presenter") == "ai"
     hv = s.get("hook_variants") if isinstance(s.get("hook_variants"), list) else []
     hv = [v for v in hv if isinstance(v, dict)]
     d = s.get("direction") if isinstance(s.get("direction"), dict) else {}
     tone = d.get("tone") if isinstance(d.get("tone"), dict) else {}
-    row = {"keys": {k: k in s for k in ("direction", "hook_variants", "discovery")},
-           "variant_count": len(hv),
-           "distinct_visual_types": len({v.get("visual_type") for v in hv
-                                         if v.get("visual_type")}),
-           "distinct_archetypes": len({v.get("archetype") for v in hv
-                                       if v.get("archetype")}),
-           "vibe": d.get("vibe") if isinstance(d.get("vibe"), str) else None,
-           "tone": tone.get("voice") if isinstance(tone.get("voice"), str) else None,
-           "primary_keyword": RUB.script_keyword(s) or None,
-           "creative_warnings": list(s.get("creative_warnings") or [])}
+    cw = s.get("creative_warnings")
+    row.update({"keys": {k: k in s for k in ("direction", "hook_variants", "discovery")},
+                "variant_count": len(hv),
+                "distinct_visual_types": len({_s(v.get("visual_type")) for v in hv}
+                                             - {""}),
+                "distinct_archetypes": len({_s(v.get("archetype")) for v in hv} - {""}),
+                "vibe": _s(d.get("vibe")) or None,
+                "tone": _s(tone.get("voice")) or None,
+                "primary_keyword": RUB.script_keyword(s) or None,
+                "creative_warnings": ([str(x) for x in cw] if isinstance(cw, list)
+                                      else [str(cw)] if cw else [])})
     try:
         row["keyword_placement_pass"] = bool(s) and RUB.keyword_placement(s)[0]
     except Exception:  # noqa: BLE001 — a metric bug never kills a scorecard
         row["keyword_placement_pass"] = False
-    prim = next((v for v in hv if v.get("is_primary")), hv[0] if hv else {})
-    arche = prim.get("archetype") or s.get("hook_family")
+    prim = next((v for v in hv if v.get("is_primary") is True), hv[0] if hv else {})
+    arche = _s(prim.get("archetype")) or _s(s.get("hook_family"))
     try:
         row["hook_strength"] = RUB.hook_score(
-            RUB.hook_line(s), RUB.frame0_overlay(s), prim.get("visual_type"),
+            RUB.hook_line(s), RUB.frame0_overlay(s), _s(prim.get("visual_type")),
             arche, s)[0] if s and RUB.hook_line(s) else None
-        verbals = [v.get("verbal") or "" for v in hv]
+        verbals = [_s(v.get("verbal")) for v in hv]
         row["hook_strength_primary"] = RUB.hook_score(
-            prim.get("verbal"), prim.get("overlay"), prim.get("visual_type"),
-            prim.get("archetype"), s,
+            _s(prim.get("verbal")), _s(prim.get("overlay")),
+            _s(prim.get("visual_type")), _s(prim.get("archetype")), s,
             others=[x for v, x in zip(hv, verbals) if v is not prim])[0] if hv else None
     except Exception:  # noqa: BLE001
         row["hook_strength"] = row["hook_strength_primary"] = None
@@ -193,7 +229,7 @@ def evaluate_files(script, shots, bundle_text):
         row["human_by_3s"] = human >= 1.0 - 1e-9
         row["frame0_product_result"] = RL.frame0_shows_subject(blocks[0], s)
         sid0 = (blocks[0].get("parsed") or {}).get("shot_type")
-        vt = prim.get("visual_type")
+        vt = _s(prim.get("visual_type"))
         if sid0 and vt in VISUAL_TYPE_SHOTS and sid0 in _KNOWN_SHOTS:
             row["frame0_visual_match"] = sid0 in VISUAL_TYPE_SHOTS[vt]
         if row["loop_ok"] is not None:
@@ -218,7 +254,7 @@ def evaluate_files(script, shots, bundle_text):
     alts = ALT_HEAD.findall(RL.section(text, "ALTERNATE OPENINGS") or "")
     row["alt_openings"] = len(alts)
     row["alt_openings_match"] = (sorted(alts) == sorted(
-        v.get("id") for v in hv if not v.get("is_primary"))) if hv else None
+        str(v.get("id")) for v in hv if v.get("is_primary") is not True)) if hv else None
     # audit: the D160 hygiene screens applied to the alternate-opening render
     # prompts too (the gate reads SHOT PROMPTS only)
     row["alt_prompt_problems"] = sum(

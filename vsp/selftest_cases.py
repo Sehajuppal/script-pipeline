@@ -618,6 +618,23 @@ def _only_rule(bundle, script, rid):
     return [f"{rid}: stray messages {stray}"] if stray else []
 
 
+PAYOFF_SHOT4 = ("### Shot 4 (6.0–9.0s) — COMMENT BAIT",
+                "### Shot 4 (6.0–9.0s) — PAYOFF")
+
+
+def _ai_payoff_result(b):
+    """Shot 4 of the AI brief becomes a product-only PAYOFF result shot
+    (no face, no identity lock) without a REAL FOOTAGE line."""
+    b = _swap(b, *PAYOFF_SHOT4)
+    b = _swap(b, "- Camera: Presenter to camera with the product, handheld, keyword on screen.",
+              "- Camera: Close-up of the finished result on the counter, slow push-in.")
+    b = _swap(b, "face-reaction-product · MCU · handheld · cta",
+              "result-first-reveal · MCU · push-in · payoff")
+    return _swap(b, f"VISUAL PROMPT: {V21_IDENTITY}. Medium close-up, handheld: the "
+                    f"presenter holds the test product toward the lens and smiles.",
+                 "VISUAL PROMPT: Close-up, slow push-in: the finished result on the counter.")
+
+
 def _v21_variants():
     """(name, presenter ai?, rule id, fn(bundle) -> bundle) — one violation
     per D157 / D159 / D160 clause of the synthetic v2.1 bundle."""
@@ -626,14 +643,15 @@ def _v21_variants():
         ("d157-untyped-shot", False, "D157", lambda b: _swap(b, S3 + "\n", "")),
         ("d157-bad-shot-type-field", False, "D157", lambda b: _swap(
             b, "MS · push-in · demo", "MS · zoom · demo")),
-        ("d157-frame0-purpose-not-hook", False, "D157", lambda b: _swap(
-            b, "CU · push-in · hook · energy 5", "CU · push-in · context · energy 5")),
+        ("d157-frame0-purpose-cta", False, "D157", lambda b: _swap(
+            b, "CU · push-in · hook · energy 5", "CU · push-in · cta · energy 5")),
         ("d157-frame0-talking-head", False, "D157", lambda b: _swap(
             b, "hook-hands-mid-action · CU", "talking-head-mcu · CU")),
-        ("d157-frame0-no-subject", False, "D157", lambda b: _swap(_swap(
+        ("d157-frame0-no-subject", False, "D157", lambda b: _swap(_swap(_swap(
             b, "Frame 0 mid-action: hands on the test product, before and after split.",
             "A wide establishing view of the room, hands in frame."),
-            "hook-hands-mid-action · CU", "establishing-ws · CU")),
+            "hook-hands-mid-action · CU", "establishing-ws · CU"),
+            "- On-screen text: BEFORE | AFTER", "- On-screen text: LOOK")),
         ("d157-no-human-by-3s", False, "D157", lambda b: _swap(_swap(_swap(_swap(
             b, "Frame 0 mid-action: hands on the test product, before and after split.",
             "Frame 0: the test product alone, the result shown."),
@@ -650,6 +668,7 @@ def _v21_variants():
         ("d157-ai-proof-shot-not-real-footage", True, "D157", lambda b: _swap(
             b, "- REAL FOOTAGE REQUIRED: the on-camera result proves the claim — "
                "do not generate\n", "")),
+        ("d157-ai-payoff-result-not-real-footage", True, "D157", _ai_payoff_result),
         ("d157-no-loop-at-15s", False, "D157", lambda b: _swap(_swap(_swap(
             b, "loop-return-frame · CU", "end-card-hero · CU"),
             "- Loop: returns to frame 0's framing and motion.\n", ""),
@@ -777,6 +796,142 @@ def _unit_v21_silent_on_legacy():
     return probs
 
 
+# ------------------------------ WS-EVAL: precision corpus (false-fail probes)
+# Contract-valid or ordinary wording that a heuristic must NOT fail (found
+# by the semantic review of the evaluator diff), with positive controls.
+D158_INNOCUOUS = ("In a hurry, one pass and it is done.",
+                  "The stain is almost gone. One pass.",
+                  "Dry time was 40 min, now 15 min.",
+                  "Made for mornings with limited time.",
+                  "Everyone is getting this step wrong.",
+                  "These patches act fast. One pass.",
+                  "The challenge ends in 30 days.",
+                  "Take half off the ends first.",
+                  "Just use the code on the lid.")
+D158_FAKE = ("Hurry, only 3 left!", "Limited-time offer. One pass.",
+             "Sale ends Sunday. One pass.", "Use code SAVE10 at checkout.",
+             "Was $40, now $25. One pass.")
+D159_OK_LINES = (
+    "- AI music: allowed only for Instagram and YouTube organic posts; "
+    "blocked on TikTok commercial content.",
+    "- TikTok lane: Commercial Music Library; never the general Sounds "
+    "library, another user's original sound or AI-generated music.",
+    '- Showmanship: one "reveal pause" right before the payoff.',
+    '- Text cards: bold sans, max 3 words, e.g. "BEFORE | AFTER".',
+    "- Add music at upload only, never mixed into the master.",
+    '- Search the library for: "upbeat acoustic".')
+D160_OK_LINES = ("On-screen text is an edit overlay, never generated in-frame.",
+                 "Render in 9:16 vertical with no captions or subtitles.",
+                 "Generate a clean plate: no text overlay in frame.",
+                 "Leave the top third clear for on-screen text in the edit.",
+                 "Text on screen: none (added in the edit).")
+
+
+def _unit_precision_corpus():
+    """Ordinary / hygienic wording passes D154-D160; the true forms fail."""
+    from vsp import gates
+    good, _ = legacy_cases()
+    probs = []
+    for line in D158_INNOCUOUS:
+        errs = gates.gate1({**good, "beats": _with_beat(good, 2, dialogue=line)})
+        if errs:
+            probs.append(f"D158 false fail on {line!r}: {errs}")
+    for line in D158_FAKE:
+        errs = gates.gate1({**good, "beats": _with_beat(good, 2, dialogue=line)})
+        if not any(e.startswith("D158:") for e in errs):
+            probs.append(f"D158 missed {line!r}: {errs}")
+    c, cai = creative_fixture(good), creative_fixture(good_ai(good))
+    for note in ("Never: general Sounds library, another user's original sound, "
+                 "AI-generated music (Music Terms endorsement clause).",
+                 "AI-generated music is not allowed on TikTok commercial content."):
+        d = json_copy(c["direction"])
+        d["music"]["licensing"]["tiktok"]["note"] = note
+        if gates.gate1({**c, "direction": d}):
+            probs.append(f"D156 false fail on TikTok note {note[:40]!r}")
+    for spec, want in (("Natural-prosody synthetic voice, disclosed as AI; it should "
+                        "sound like a real person talking to a friend.", True),
+                       ("Synthetic voice, disclosed. I'm a real person.", False)):
+        d = json_copy(cai["direction"])
+        d["voice"]["spec"] = spec
+        if (not gates.gate1({**cai, "direction": d})) != want:
+            probs.append(f"D156 voice spec {spec[-30:]!r}: want pass={want}")
+    for fld, obj in (("hook_variants", _hv(c, 1, verbal="Stop skipping the 20 pounds test.",
+                                           overlay="")),
+                     ("discovery", _dsc(c, "tiktok", caption="Test product: holds 50 "
+                                        "pounds.\n#testproduct #beautytok"))):
+        if gates.gate1({**c, fld: obj}):
+            probs.append(f"{fld}: a weight ('pounds') read as a price")
+    s = v21_script(good, False)
+    b = v21_bundle(s)
+    anchor = "- No AI music on TikTok commercial content."
+    for ln in D159_OK_LINES:
+        errs = gates.gate2(_swap(b, anchor, anchor + "\n" + ln), s)
+        if errs:
+            probs.append(f"D159 false fail on {ln[:40]!r}: {errs}")
+    p1 = "AUDIO: the real product sound.\n\n#### Prompt — Shot 2"
+    for ln in D160_OK_LINES:
+        errs = gates.gate2(_swap(b, p1, ln + "\n" + p1), s)
+        if errs:
+            probs.append(f"D160 false fail on {ln!r}: {errs}")
+    return probs
+
+
+def _unit_v21_payoff_and_frame0():
+    """The AI persona's own PAYOFF shot (face) needs no REAL FOOTAGE line; a
+    research frame-0 shot typed 'demo' is a valid opener; a text-first
+    opener carries the subject in its on-screen card."""
+    from vsp import gates
+    good, _ = legacy_cases()
+    probs = []
+    sa = v21_script(good, True)
+    ba = _swap(_swap(v21_bundle(sa), *PAYOFF_SHOT4),
+               "face-reaction-product · MCU · handheld · cta",
+               "talking-head-product-in-hand · MCU · push-in · payoff")
+    if gates.gate2(ba, sa):
+        probs.append(f"persona PAYOFF shot forced to real footage: {gates.gate2(ba, sa)}")
+    s = v21_script(good, False)
+    b = _swap(v21_bundle(s), "hook-hands-mid-action · CU · push-in · hook",
+              "product-operating-cu · CU · push-in · demo")
+    if gates.gate2(b, s):
+        probs.append(f"frame 0 typed 'demo' rejected: {gates.gate2(b, s)}")
+    adv = {**s, "prompt": "why your hooks fail"}
+    b = _swap(_swap(_swap(v21_bundle(adv),
+                          "- Camera: Frame 0 mid-action: hands on the test product, "
+                          "before and after split.",
+                          "- Camera: Frame 0 mid-action: creator hands mid-gesture, "
+                          "text overlay already up."),
+                    "hook-hands-mid-action · CU · push-in · hook",
+                    "text-card-over-motion · CU · push-in · hook"),
+              "- On-screen text: BEFORE | AFTER", "- On-screen text: HOOKS FAIL")
+    errs = [e for e in gates.gate2(b, adv) if e.startswith("D157")]
+    if errs:
+        probs.append(f"text-first frame 0 with the subject on the card rejected: {errs}")
+    return probs
+
+
+def _unit_repair_with_creative_keys():
+    """Stage-6 timing relayout still repairs a script that carries a
+    direction (D156 compares energy_curve count + order, not windows)."""
+    import json
+    import re
+    import viral_script_maker as vsm
+    from vsp import gates, repair
+    base = json.loads(json.dumps(vsm.generate("electric milk frother", presenter="human",
+                                              fmt="demo", duration=30, seed=1)))
+    b = base["beats"][3]
+    m = re.findall(r"\d+(?:\.\d+)?", b["t"])
+    b["t"] = f"{float(m[0]) + 1.0:.1f}-{float(m[1]):.1f}s"
+    probs = []
+    if not gates.gate1(base):
+        return ["fixture drift: the nudged window no longer fails gate 1"]
+    for label, s in (("legacy", base),
+                     ("with direction", {**base, "direction": creative_direction(base)})):
+        s2, log, ok = repair.repair(json.loads(json.dumps(s)), gates.gate1, max_rounds=3)
+        if not ok or gates.gate1(s2):
+            probs.append(f"repair {label}: passed={ok} {gates.gate1(s2)[:2]}")
+    return probs
+
+
 # ------------------------------------------ WS-EVAL: rubric / eval / schema
 LEGACY_RUBRIC = (  # R01-R20 (id, tier, weight, audit) — frozen, never edited
     ("R01", "E", 3, False), ("R02", "E", 3, False), ("R03", "E", 3, False),
@@ -892,6 +1047,19 @@ def _unit_creative_eval():
     if leg["variant_count"] or leg["keyword_placement_pass"] or \
             (not leg["shots_typed"] and leg["shot_plan_pass"]):
         probs.append(f"legacy row not zeros: {leg}")
+    # malformed creative keys never crash a metric (the scorecard would
+    # otherwise record the run as zeros)
+    c = creative_fixture(good)
+    hv = [dict(v) for v in c["hook_variants"]]
+    hv[2].pop("id")
+    hv[1]["id"] = 0
+    hv[0]["visual_type"] = {"x": 1}
+    for bad in ({**c, "hook_variants": hv}, {**c, "creative_warnings": 3},
+                {**c, "direction": {"vibe": {"x": 1}, "tone": "warm"}},
+                {**c, "discovery": {"primary_keyword": 7}}):
+        r = CE.evaluate_files(bad, {"shots": "x"}, 42)
+        if r.get("errors"):
+            probs.append(f"creative_eval errors on a malformed script: {r['errors']}")
     summ = CE.summarize([row, leg, CE.evaluate_files(None, None, None)])
     json.dumps(summ)
     if summ["runs"] != 3 or summ["shot_plan_pass"]["k"] < 1 or \
@@ -953,7 +1121,10 @@ def unit_cases():
             ("v21-gate2-silent-on-legacy-bundles", _unit_v21_silent_on_legacy),
             ("v21-rubric-creative-checks", _unit_rubric_creative),
             ("v21-creative-eval-metrics", _unit_creative_eval),
-            ("v21-schema-creative-defs", _unit_schema_creative)]
+            ("v21-schema-creative-defs", _unit_schema_creative),
+            ("v21-precision-negation-corpus", _unit_precision_corpus),
+            ("v21-payoff-and-frame0-openers", _unit_v21_payoff_and_frame0),
+            ("v21-repair-with-creative-keys", _unit_repair_with_creative_keys)]
 
 
 def all_cases():
@@ -1332,7 +1503,7 @@ def creative_cases(good):
          False, ["D156: shape errors"], only("D156")),
         # ---- D158 offer / urgency (script viewer text + caption)
         ("d158-fake-limited-time", {**good, "beats": _with_beat(
-            good, 2, dialogue="Limited time. One pass, done.")},
+            good, 2, dialogue="Limited-time offer. One pass, done.")},
          False, ["D158:"], only("D158")),
         ("d158-fake-scarcity", {**good, "beats": _with_beat(
             good, 2, dialogue="Only 3 left. One pass, done.")},
@@ -2138,7 +2309,8 @@ def _e2e_creative_keys(h):
         if s.get("creative_warnings"):
             probs.append(f"{tag}: creative_warnings {s['creative_warnings'][:2]}")
         ctx = rules.build_ctx(s)
-        for fn in (rules.check_d154, rules.check_d155, rules.check_d156):
+        for fn in (rules.check_d154, rules.check_d155, rules.check_d156,
+                   rules.check_d158):
             msgs = fn(s, None, ctx)
             if msgs:
                 probs.append(f"{tag}: {msgs[:2]}")
