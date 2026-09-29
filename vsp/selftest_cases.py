@@ -370,8 +370,108 @@ def _unit_check_crash_fails_closed():
     return []
 
 
+ROUTE_KEYS = ("sanitized_prompt", "price", "concept", "niche", "fit",
+              "category", "complexity", "votes", "agreement", "confidence",
+              "recommended_presenter", "presenter_reason",
+              "recommended_formats", "lane_warnings", "input_errors",
+              "input_warnings")
+
+
+def _unit_router_contract():
+    import json
+    import os
+    from vsp import config
+    from vsp.router import route
+    prompts = []
+    golden = os.path.join(config.REPO, "evals", "golden.jsonl")
+    if os.path.isfile(golden):
+        with open(golden, encoding="utf-8") as f:
+            prompts = [json.loads(ln)["prompt"] for ln in f if ln.strip()
+                       and not ln.startswith("//")]
+    probs = []
+    edge = [None, "", "   ", "x" * 301, "a {limited} edition bottle",
+            "tiktok shop LED lamp"]
+    for p in prompts + edge:
+        for pres in (None, "ai"):
+            try:
+                r = route(p, presenter=pres, fmt="review", pack=False)
+            except Exception as e:  # noqa: BLE001
+                probs.append(f"route({p!r}) raised {type(e).__name__}: {e}")
+                continue
+            missing = [k for k in ROUTE_KEYS if k not in r]
+            if missing:
+                probs.append(f"route({p!r}) missing keys {missing}")
+            if not 0.0 <= r.get("agreement", -1) <= 1.0 or \
+                    r.get("recommended_presenter") not in ("ai", "human"):
+                probs.append(f"route({p!r}) bad agreement/presenter")
+    if route("", pack=False)["input_errors"] != ["empty prompt"]:
+        probs.append("empty prompt not reported as an input error")
+    if not route("x" * 301, pack=False)["input_errors"]:
+        probs.append("301-char prompt not reported as an input error")
+    r = route("a {limited} edition bottle", pack=False)
+    if "{" in r["sanitized_prompt"] or not r["input_warnings"]:
+        probs.append("braces not stripped with a warning")
+    r = route("tiktok shop LED lamp", presenter="ai", pack=False)
+    if not any("TikTok Shop" in w for w in r["lane_warnings"]):
+        probs.append("TikTok Shop x AI lane warning missing")
+    r = route("ergonomic office chair", pack=False)
+    if r["niche"] == "beauty":
+        probs.append("'chair' routed to beauty (substring hijack not outvoted)")
+    return probs
+
+
+def _unit_research_contract():
+    import json
+    import os
+    import tempfile
+    from datetime import datetime, timedelta, timezone
+    from vsp import research as R
+    probs = []
+    now = datetime(2026, 9, 28, 12, 0, tzinfo=timezone.utc)
+    pack = {"generated_at": (now - timedelta(hours=50)).isoformat(),
+            "sources": {}, "reels_total": 3, "schema_version": 2,
+            "niche_map": {"beauty": ["fashion-beauty"]},
+            "niche_hooks": {"fashion-beauty": [
+                {"category": "comment-bait", "times_seen": 9},     # unmapped
+                {"category": "grwm-hook", "times_seen": 5}]},
+            "fresh_hook_lines": [
+                {"hook": "(visual open, bathroom mirror)", "niche": "fashion-beauty"},
+                {"hook": "null", "niche": "fashion-beauty"},
+                {"hook": "POV: your lashes finally stayed on", "niche": "fashion-beauty"},
+                {"hook": "Hood Cinema!", "niche": "comedy"}]}
+    if R.validate_pack(pack):
+        probs.append(f"valid v2 pack rejected: {R.validate_pack(pack)}")
+    if not R.validate_pack({"generated_at": "x", "reels_total": -1}):
+        probs.append("invalid pack accepted")
+    if R.live_hook_family(pack, "beauty") != "transformation":
+        probs.append("live_hook_family did not walk past an unmapped rank-0 "
+                     "category")
+    lines = [x["hook"] for x in R.niche_fresh_lines(pack, "beauty")]
+    if lines != ["POV: your lashes finally stayed on"]:
+        probs.append(f"niche_fresh_lines kept descriptions/off-niche lines: {lines}")
+    d = tempfile.mkdtemp(prefix="vsp_unit_pack_")
+    try:
+        path = os.path.join(d, "pack.json")
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(pack, f)
+        got, meta = R.load_pack(path, now=now)
+        if got is None or not meta["stale"] or len(meta["sha256"] or "") != 64:
+            probs.append(f"load_pack meta wrong: {meta}")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write("{not json")
+        got, meta = R.load_pack(path, now=now)
+        if got is not None or not meta["errors"]:
+            probs.append("corrupt pack not reported")
+    finally:
+        import shutil
+        shutil.rmtree(d, ignore_errors=True)
+    return probs
+
+
 def unit_cases():
     return [("registry-shape", _unit_registry_shape),
+            ("router-contract", _unit_router_contract),
+            ("research-pack-contract", _unit_research_contract),
             ("deliverable-block-in-sync", _unit_deliverable_in_sync),
             ("deliverable-check-strengthened", _unit_deliverable_strengthened),
             ("d138-brief-label-instruction", _unit_d138_brief_label),
