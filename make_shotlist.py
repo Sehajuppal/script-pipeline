@@ -871,7 +871,7 @@ def render_bundle(d, shots, vo_lines, refs=None):
         L.append("")
         # Persona-loop x pipeline (2026-09-28): fidelity rules distilled from the
         # AI-persona persuasion dossier — the video model must not "improve" her.
-        _pname = (_persona.get("name") or "the AI persona")
+        _pname = (_persona.get("name") or "The AI persona")
         _pro = _pronoun(presenter_identity_txt)
         L.append(f"## PERSONA — fidelity rules (do not redesign {_pro})")
         L.append(f"- {_pname} is a recurring character. Render the identity above EXACTLY in every shot of THIS video and keep {_pro} recognizably identical across videos in the series — face, hair, outfit, age. Identity drift reads as fake and triggers rejection (dossier Q2/F10).")
