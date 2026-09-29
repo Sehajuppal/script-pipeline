@@ -99,6 +99,135 @@ LINK_GROUPS = [["link in bio"],
 # D146 — series promise
 PART2 = re.compile(r"\bpart (?:2|two)\b", re.I)
 
+# ------------------------------------------------ pipeline v2.1 (RULES §68)
+# D158 — fake urgency, scarcity or offers. FTC dark-pattern taxonomy (2022:
+# false limited-time offers, baseless countdowns, false low-stock and
+# high-demand messages, fake discounts); Meta deceptive-pricing policy.
+# Transcribed from docs/research/hooks-deep-dive.md §5 RISKY_PHRASES
+# UR-01..UR-04 with two deliberate changes: "sold out" / "best-seller" stay
+# with D136 (SOCIAL_PROOF — one claim, one rule id), and a bare "hurry"
+# ("mornings in a hurry") is not urgency — only "hurry up/now/before" or
+# "hurry," / "hurry!" are.
+# (id, class, pattern); class decides the allow-path in offer_allowed().
+OFFER_URGENCY_PATTERNS = (
+    ("UR-01", "urgency",
+     r"\bhurry(?: up| now| before)\b|\bhurry[,!]|\bact (?:fast|now)\b|"
+     r"\blast chance\b|\bbefore (?:it'?s|they'?re) gone\b|"
+     r"\b(?:sale|offer|deal|discount|promo(?:tion)?)s? (?:ends?|ending)\b|"
+     r"\bends (?:tonight|today|tomorrow|soon|at midnight|in \d+)\b|"
+     r"\btoday only\b|\bonly today\b|\blimited[- ]time\b|"
+     r"\bwhile (?:supplies|stocks?) lasts?\b|\bdon'?t miss (?:out|this deal)\b|"
+     r"\bflash sale\b|\b(?:24|48|72)[- ]hours? only\b|\bcountdown (?:is on|timer)\b"),
+    ("UR-02", "scarcity",
+     r"\bonly (?:\d+|a few|a handful) (?:left|remaining|in stock)\b|"
+     r"\balmost (?:gone|sold out)\b|\bselling (?:out )?fast\b|\bselling out\b|"
+     r"\b(?:low|limited) (?:stock|supply|quantities)\b|\bgoing fast\b|"
+     r"\b(?:last|final) (?:few|\d+) (?:units?|pieces?|left)\b"),
+    ("UR-03", "demand",
+     r"\b\d[\d,.]*[kKmM]? (?:people|others|shoppers) (?:are )?"
+     r"(?:viewing|watching|looking at|buying|shopping)\b|"
+     r"\b(?:everyone|everybody) is (?:buying|getting)\b"),
+    ("UR-04", "offer",
+     r"\b(?:was|regularly|reg\.?) [$€£]?\d[\d.,]*\b.{0,15}\b(?:now|today) [$€£]?\d|"
+     r"\b\d{1,3}\s?% off\b|\b\d{1,3} percent off\b|\bhalf off\b|"
+     r"\bprice (?:goes|is going) up\b|\bwon'?t be this price\b|"
+     r"\b(?:promo|discount|coupon) code\b|\buse (?:my |our |the )?code\b|"
+     r"\bbogo\b|\bbuy one,? get one\b|\bfree shipping\b|\bon sale\b|"
+     r"\bclearance sale\b|\bdeal of the (?:day|week)\b"),
+)
+OFFER_URGENCY = [re.compile(p, re.I) for _, _, p in OFFER_URGENCY_PATTERNS]
+_OFFER_CLASSES = tuple(cls for _, cls, _ in OFFER_URGENCY_PATTERNS)
+
+# the prompt supplies an offer / deadline (allow-path for urgency + offer
+# classes) or a stock / demand figure (allow-path for scarcity + demand)
+OFFER_CUE = re.compile(
+    r"%\s*off\b|\b\d{1,3} percent off\b|\bhalf off\b|\bsale\b|\bdiscount\w*|"
+    r"\bdeals?\b|\bcoupons?\b|\bpromo\w*|\bcode\b|\boffers?\b|\bbogo\b|"
+    r"\bbuy one,? get one\b|\bfree shipping\b|\bclearance\b|\blimited[- ]time\b|"
+    r"\btoday only\b|\bdeadline\b|\bexpires?\b|\bends? (?:on |at |by )?"
+    r"(?:today|tonight|tomorrow|midnight|monday|tuesday|wednesday|thursday|"
+    r"friday|saturday|sunday|\d)", re.I)
+STOCK_CUE = re.compile(
+    r"\bin stock\b|\bstock\b|\b\d+ (?:units?|pieces?|left)\b|"
+    r"\blimited (?:run|supply|quantities|stock)\b|\bonly \d+\b|"
+    r"\b\d[\d,.]*[kKmM]? (?:people|shoppers|buyers|customers)\b", re.I)
+
+
+def offer_in(prompt, kind=None):
+    """D158 allow-path: the prompt itself supplies the offer.
+
+    kind=None / "offer" / "urgency": an offer or deadline cue (sale,
+    discount, % off, code, free shipping, limited-time, ends …) or any
+    OFFER_URGENCY phrase in the prompt. kind="scarcity" / "demand": a stock
+    or demand figure (in stock, only 3, 12k shoppers …) or a scarcity/demand
+    phrase in the prompt — a discount is not a stock claim."""
+    p = prompt or ""
+    if kind in ("scarcity", "demand"):
+        return bool(STOCK_CUE.search(p)) or any(
+            rx.search(p) for rx, cls in zip(OFFER_URGENCY, _OFFER_CLASSES)
+            if cls in ("scarcity", "demand"))
+    return bool(OFFER_CUE.search(p)) or any(rx.search(p) for rx in OFFER_URGENCY)
+
+
+def offer_urgency_hits(text, prompt=""):
+    """D158: [(id, class, matched text)] in `text` the prompt does not allow
+    (first match per pattern, pattern order)."""
+    out = []
+    for rx, (pid, cls, _) in zip(OFFER_URGENCY, OFFER_URGENCY_PATTERNS):
+        m = rx.search(text or "")
+        if m and not offer_in(prompt, cls):
+            out.append((pid, cls, m.group(0)))
+    return out
+
+
+# rubric — clickbait markers (Meta clickbait-links guideline: withholding and
+# sensational phrasing, all caps, "!!"; YouTube egregious-clickbait policy).
+# hooks-deep-dive.md §5 RISKY_PHRASES CB-01..CB-07; CB-06 is case-sensitive.
+CLICKBAIT_PATTERNS = (
+    ("CB-01", "error", r"\byou (?:won'?t|will never|wont) believe\b|"
+                       r"\byou'?ll never guess\b", re.I),
+    ("CB-02", "error", r"\bwhat happen(?:s|ed) next\b|\bwait (?:for it|till|until)\b|"
+                       r"\b(?:watch|stay) (?:till|until|to) the end\b", re.I),
+    ("CB-03", "error", r"\bsecret (?:to|behind)\b|\bthey don'?t want you to know\b|"
+                       r"\bindustry (?:doesn'?t|does not) want\b", re.I),
+    ("CB-04", "warn", r"\b(?:shocking|jaw[- ]dropping|mind[- ]?blowing|"
+                      r"this will shock you)\b", re.I),
+    ("CB-05", "warn", r"\b(?:nobody|no one) (?:is talking about|talks about|"
+                      r"mentions|knows|tells you)\b", re.I),
+    ("CB-06", "warn", r"!{2,}|\?!|\b[A-Z]{2,}(?:\s+[A-Z]{2,}){3,}\b", 0),
+    ("CB-07", "warn", r"^\s*stop scrolling\b", re.I),
+)
+CLICKBAIT = [re.compile(p, f) for _, _, p, f in CLICKBAIT_PATTERNS]
+
+
+def clickbait_hits(text):
+    """[(id, severity, matched text)] — clickbait markers in `text`."""
+    out = []
+    for rx, (cid, sev, _, _) in zip(CLICKBAIT, CLICKBAIT_PATTERNS):
+        m = rx.search(text or "")
+        if m:
+            out.append((cid, sev, m.group(0)))
+    return out
+
+
+def price_in(prompt):
+    """D37 allow-path (requires_price archetypes): the prompt names a price."""
+    return bool(PRICE.search(prompt or "") or re.search(r"\$\d", prompt or ""))
+
+
+PROOF_CUE = re.compile(
+    r"\b(?:rated|ratings?|reviews?|reviewed|stars?|tested by|lab[- ]tested|"
+    r"certified|award\w*|clinical\w*|stud(?:y|ies)|dermatologist\w*|"
+    r"proven)\b", re.I)
+
+
+def proof_in(prompt):
+    """D136 allow-path (requires_proof archetypes): the prompt supplies a
+    proof claim (a SOCIAL_PROOF form, a rating, a review count, a test,
+    a certification or a study)."""
+    p = prompt or ""
+    return bool(first_match(SOCIAL_PROOF, p) or PROOF_CUE.search(p))
+
 WORD_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9'’.-]*")
 
 
