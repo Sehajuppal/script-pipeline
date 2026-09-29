@@ -1,0 +1,18 @@
+{
+ "prompt": "cable organizer box",
+ "presenter": "ai",
+ "format": "demo",
+ "duration_s": 30,
+ "niche": "home",
+ "fit": "good",
+ "hook_family": "negative-command",
+ "hook_source": "template",
+ "hook_stack": [
+  {"t": "0.0-0.5s", "type": "VISUAL TRIGGER", "on_screen": "CORDS"},
+  {"t": "0.5-3.0s", "type": "VERBAL HOOK", "dialogue": "Stop stacking cords behind your desk."}
+ ],
+ "beats": [
+  {"t": "3.0-30.0s", "type": "PAYOFF", "dialogue": "One box, every plug inside, lid closed."}
+ ],
+ "caption": "This cable box hides every cord on your desk.\n\n#desksetup #cablemanagement"
+}

@@ -27,6 +27,11 @@ Migrations (schema v1):
     classify never double counts and never touches the research agent's
     own rows); posts also carries hook + candidate_seed and reel_metrics a
     source (api | import:<name>) — OPTIONAL_COLUMNS, added when missing.
+  * pipeline v2.1 (vsp.feedback, still schema v1: additive only): posts
+    gains variant_id (the alternate opening that was posted: A = primary),
+    hook_archetype + visual_type (that variant's), vibe, tone (the
+    direction's tone.voice) and primary_keyword — OPTIONAL_COLUMNS too, so
+    a v2.0 DB gains them on its next connect() and old rows read NULL.
 Legacy readers select named columns (make_shotlist.niche_references,
 research_bridge), so they keep working on both schemas. External WRITERS
 must use named-column INSERTs into reels once it is migrated.
@@ -130,7 +135,11 @@ NEW_TABLES = [
 ]
 # additive columns on the new tables (added when missing, like reels')
 OPTIONAL_COLUMNS = {
-    "posts": [("hook", "TEXT"), ("candidate_seed", "INTEGER")],
+    "posts": [("hook", "TEXT"), ("candidate_seed", "INTEGER"),
+              # v2.1 creative layer (vsp.feedback link; NULL for older scripts)
+              ("variant_id", "TEXT"), ("hook_archetype", "TEXT"),
+              ("visual_type", "TEXT"), ("vibe", "TEXT"), ("tone", "TEXT"),
+              ("primary_keyword", "TEXT")],
     "reel_metrics": [("source", "TEXT")],        # api | import:<name>
 }
 INDEXES = [

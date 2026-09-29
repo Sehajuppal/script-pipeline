@@ -1,0 +1,61 @@
+{
+ "prompt": "electric milk frother",
+ "presenter": "human",
+ "format": "demo",
+ "duration_s": 30,
+ "niche": "home",
+ "fit": "good",
+ "hook_family": "curiosity-gap",
+ "hook_source": "template",
+ "hook_stack": [
+  {"t": "0.0-0.5s", "type": "VISUAL TRIGGER", "on_screen": "FROTHER FLAW", "visual": "Frame 0: the frother spinning in a glass of milk, foam rising."},
+  {"t": "0.5-3.0s", "type": "VERBAL HOOK", "dialogue": "The frother flaw nobody warns you about."}
+ ],
+ "beats": [
+  {"t": "3.0-12.0s", "type": "DEMO", "dialogue": "Cold milk, ten seconds, and the foam still holds its shape."},
+  {"t": "12.0-30.0s", "type": "PAYOFF", "dialogue": "The flaw: it only works if the whisk sits below the surface."}
+ ],
+ "caption": "The frother flaw nobody warns you about.\n\nPOV: the foam finally holds.\n\nLink in bio 👆\n\n#milkfrother #latteathome #coffeetok",
+ "hook_variants": [
+  {"id": "A", "is_primary": true, "archetype": "curiosity-gap", "family": "curiosity-gap",
+   "verbal": "The frother flaw nobody warns you about.", "overlay": "FROTHER FLAW",
+   "visual_type": "product-in-action", "visual": "Frame 0: the frother spinning in a glass of milk, foam rising.",
+   "audio": "motor whir up front", "caption_line": "The frother flaw nobody warns you about.",
+   "score": 0.78, "features": {"payload_first3": 1.0, "open_loop_paired": 1.0}, "reasons": ["product in the first 3 words", "loop paid by the payoff"]},
+  {"id": "B", "is_primary": false, "archetype": "proof-first", "family": "proof-first",
+   "verbal": "Watch this foam hold for sixty seconds.", "overlay": "FOAM TEST",
+   "visual_type": "result-reveal", "visual": "Frame 0: a latte with stiff foam next to a running timer.",
+   "audio": "timer tick", "caption_line": "Watch this foam hold for 60 seconds straight.",
+   "score": 0.74, "features": {"concrete_specific": 1.0}, "reasons": ["a number and a visible result"]},
+  {"id": "C", "is_primary": false, "archetype": "negative-command", "family": "negative-command",
+   "verbal": "Stop whisking milk by hand.", "overlay": "STOP WHISKING",
+   "visual_type": "problem-state", "visual": "Frame 0: a hand whisk splashing milk over the counter.",
+   "audio": "whisk clatter", "caption_line": "Stop whisking milk by hand for your latte.",
+   "score": 0.69, "features": {"negativity": 1.0}, "reasons": ["one concrete negative word"]}
+ ],
+ "direction": {
+  "schema_version": 1,
+  "vibe": "clean-aesthetic", "vibe_reason": "a kitchen gadget demo reads best bright and tidy", "secondary_vibe": null,
+  "tone": {"voice": "confident", "allowed": ["confident", "warm"], "humor": "light", "notes": "matter-of-fact, no hype"},
+  "energy": 3,
+  "pacing": {"target_wpm": [155, 180], "avg_shot_s": [1.8, 3.0], "cuts_per_10s": [3, 5], "max_static_s": 3.5, "pattern_interrupt_s": 4.0},
+  "music": {"moods": ["bright"], "bpm": [100, 120], "genres": ["lo-fi pop"], "vo_ducking_db": -12, "sfx": ["whir"], "in_master": false,
+            "search_queries": ["bright kitchen", "clean upbeat", "morning coffee"],
+            "licensing": {"instagram": {"library": "Meta Sound Collection", "note": "add at upload"}}},
+  "voice": {"presenter": "human", "spec": "natural, close-mic"},
+  "do": ["show the foam at frame 0"], "dont": ["name a commercial track"]
+ },
+ "discovery": {
+  "schema_version": 1,
+  "primary_keyword": "milk frother", "secondary_keywords": ["latte at home"],
+  "search_intents": ["is a milk frother worth it"],
+  "placement": {"spoken_by_s": 3.0, "on_screen_by_s": 0.5, "caption_first_60": true, "hashtag": "#milkfrother", "cover_text": true},
+  "comment_word": "FROTHER",
+  "platforms": {
+   "instagram": {"caption": "Milk frother test: the flaw nobody warns you about.\n\nLink in bio 👆\n\n#milkfrother #latteathome",
+                 "hashtags": ["#milkfrother", "#latteathome"], "description_line": "Milk frother test",
+                 "toggles": {"is_ai_generated": false}, "trial_reels": {"recommended": true, "protocol": "post B and C as manual trials within 2 h"},
+                 "notes": []}
+  }
+ }
+}
