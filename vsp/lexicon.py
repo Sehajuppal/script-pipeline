@@ -99,6 +99,155 @@ LINK_GROUPS = [["link in bio"],
 # D146 — series promise
 PART2 = re.compile(r"\bpart (?:2|two)\b", re.I)
 
+# ------------------------------------------------ pipeline v2.1 (RULES §68)
+# D158 — fake urgency, scarcity or offers. FTC dark-pattern taxonomy (2022:
+# false limited-time offers, baseless countdowns, false low-stock and
+# high-demand messages, fake discounts); Meta deceptive-pricing policy.
+# Transcribed from docs/research/hooks-deep-dive.md §5 RISKY_PHRASES
+# UR-01..UR-04 with deliberate changes: "sold out" / "best-seller" stay
+# with D136 (SOCIAL_PROOF — one claim, one rule id), and bare words that are
+# ordinary language elsewhere ("hurry", "act fast", "almost gone", "limited
+# time", "ends today", "half off") only count in their offer/urgency form
+# (sentence-initial "Hurry!", "limited-time offer", "sale ends", ...).
+# (id, class, pattern); class decides the allow-path in offer_allowed().
+#
+# Precision over recall (the rule reads every --script-json input): each
+# phrase must be an offer/urgency FORM, not ordinary language — "mornings
+# in a hurry", "the stain is almost gone", "was 40 min, now 15", "people
+# with limited time", "everyone is getting this wrong", "these patches act
+# fast", "the challenge ends today", "take half off the ends", "use the code
+# on the lid" all pass (self-test unit v21-precision-negation-corpus).
+OFFER_URGENCY_PATTERNS = (
+    ("UR-01", "urgency",
+     r"\bhurry(?: up| now| before)\b|(?:^|[.!?]\s*)hurry\b|"
+     r"(?:^|[.!?]\s*)act (?:fast|now)\b|\bact (?:fast|now) (?:before|while)\b|"
+     r"\blast chance to (?:buy|grab|get|order|save)\b|"
+     r"\bbefore (?:it'?s|they'?re) (?:all )?gone\b|"
+     r"\b(?:sale|offer|deal|discount|promo(?:tion)?)s? (?:ends?|ending)\b|"
+     r"\bends (?:tonight|at midnight)\b|\btoday only\b|"
+     r"\blimited[- ]time (?:offer|deal|sale|only|price|discount)\b|"
+     r"\bfor a limited time\b|\bwhile (?:supplies|stocks?) lasts?\b|"
+     r"\bdon'?t miss (?:this|the|our) (?:deal|sale|offer|drop)\b|"
+     r"\bflash sale\b|\b(?:24|48|72)[- ]hours? only\b|\bthe countdown is on\b"),
+    ("UR-02", "scarcity",
+     r"\bonly (?:\d+|a few|a handful) (?:left|remaining|in stock)\b|"
+     r"\balmost sold out\b|\bselling (?:out )?fast\b|"
+     r"\b(?:low|limited) stock\b|\blimited quantities\b|"
+     r"\b(?:last|final) (?:few|\d+) (?:units?|left)\b"),
+    ("UR-03", "demand",
+     r"\b\d[\d,.]*[kKmM]? (?:people|others|shoppers) (?:are )?"
+     r"(?:viewing|watching|looking at|buying|shopping)\b|"
+     r"\b(?:everyone|everybody) is (?:buying|ordering)\b|"
+     r"\b(?:everyone|everybody) is getting (?:one|theirs|these|them)\b"),
+    ("UR-04", "offer",
+     r"\b(?:was|regularly|reg\.?) [$€£]\d[\d.,]*\b.{0,15}\b(?:now|today) [$€£]?\d|"
+     r"\b\d{1,3}\s?% off\b|\b\d{1,3} percent off\b|"
+     r"\bhalf (?:off|price) (?:today|now|sitewide|everything)\b|"
+     r"\bprice (?:goes|is going) up\b|\bwon'?t be this price\b|"
+     r"\b(?:promo|discount|coupon) code\b|\buse (?:my |our )?code\s+[A-Za-z]+\d+\b|"
+     r"\bbogo\b|\bbuy one,? get one\b|\bfree shipping\b|\bon sale (?:now|today)\b|"
+     r"\bclearance sale\b|\bdeal of the (?:day|week)\b"),
+)
+OFFER_URGENCY = [re.compile(p, re.I) for _, _, p in OFFER_URGENCY_PATTERNS]
+_OFFER_CLASSES = tuple(cls for _, cls, _ in OFFER_URGENCY_PATTERNS)
+
+# the prompt supplies an offer / deadline (allow-path for urgency + offer
+# classes) or a stock / demand figure (allow-path for scarcity + demand)
+OFFER_CUE = re.compile(
+    r"%\s*off\b|\b\d{1,3} percent off\b|\bhalf off\b|\bsale\b|\bdiscount\w*|"
+    r"\bdeals?\b|\bcoupons?\b|\bpromo\w*|\bcode\b|\boffers?\b|\bbogo\b|"
+    r"\bbuy one,? get one\b|\bfree shipping\b|\bclearance\b|\blimited[- ]time\b|"
+    r"\btoday only\b|\bdeadline\b|\bexpires?\b|\bends? (?:on |at |by )?"
+    r"(?:today|tonight|tomorrow|midnight|monday|tuesday|wednesday|thursday|"
+    r"friday|saturday|sunday|\d)", re.I)
+STOCK_CUE = re.compile(
+    r"\bin stock\b|\bstock\b|\b\d+ (?:units?|pieces?|left)\b|"
+    r"\blimited (?:run|supply|quantities|stock)\b|\bonly \d+\b|"
+    r"\b\d[\d,.]*[kKmM]? (?:people|shoppers|buyers|customers)\b", re.I)
+
+
+def offer_in(prompt, kind=None):
+    """D158 allow-path: the prompt itself supplies the offer.
+
+    kind=None / "offer" / "urgency": an offer or deadline cue (sale,
+    discount, % off, code, free shipping, limited-time, ends …) or any
+    OFFER_URGENCY phrase in the prompt. kind="scarcity" / "demand": a stock
+    or demand figure (in stock, only 3, 12k shoppers …) or a scarcity/demand
+    phrase in the prompt — a discount is not a stock claim."""
+    p = prompt or ""
+    if kind in ("scarcity", "demand"):
+        return bool(STOCK_CUE.search(p)) or any(
+            rx.search(p) for rx, cls in zip(OFFER_URGENCY, _OFFER_CLASSES)
+            if cls in ("scarcity", "demand"))
+    return bool(OFFER_CUE.search(p)) or any(rx.search(p) for rx in OFFER_URGENCY)
+
+
+def offer_urgency_hits(text, prompt=""):
+    """D158: [(id, class, matched text)] in `text` the prompt does not allow
+    (first match per pattern, pattern order)."""
+    out = []
+    for rx, (pid, cls, _) in zip(OFFER_URGENCY, OFFER_URGENCY_PATTERNS):
+        m = rx.search(text or "")
+        if m and not offer_in(prompt, cls):
+            out.append((pid, cls, m.group(0)))
+    return out
+
+
+# rubric — clickbait markers (Meta clickbait-links guideline: withholding and
+# sensational phrasing, all caps, "!!"; YouTube egregious-clickbait policy).
+# hooks-deep-dive.md §5 RISKY_PHRASES CB-01..CB-07; CB-06 is case-sensitive.
+CLICKBAIT_PATTERNS = (
+    ("CB-01", "error", r"\byou (?:won'?t|will never|wont) believe\b|"
+                       r"\byou'?ll never guess\b", re.I),
+    ("CB-02", "error", r"\bwhat happen(?:s|ed) next\b|\bwait (?:for it|till|until)\b|"
+                       r"\b(?:watch|stay) (?:till|until|to) the end\b", re.I),
+    ("CB-03", "error", r"\bsecret (?:to|behind)\b|\bthey don'?t want you to know\b|"
+                       r"\bindustry (?:doesn'?t|does not) want\b", re.I),
+    ("CB-04", "warn", r"\b(?:shocking|jaw[- ]dropping|mind[- ]?blowing|"
+                      r"this will shock you)\b", re.I),
+    ("CB-05", "warn", r"\b(?:nobody|no one) (?:is talking about|talks about|"
+                      r"mentions|knows|tells you)\b", re.I),
+    ("CB-06", "warn", r"!{2,}|\?!|\b[A-Z]{2,}(?:\s+[A-Z]{2,}){3,}\b", 0),
+    ("CB-07", "warn", r"^\s*stop scrolling\b", re.I),
+)
+CLICKBAIT = [re.compile(p, f) for _, _, p, f in CLICKBAIT_PATTERNS]
+
+
+def clickbait_hits(text):
+    """[(id, severity, matched text)] — clickbait markers in `text`."""
+    out = []
+    for rx, (cid, sev, _, _) in zip(CLICKBAIT, CLICKBAIT_PATTERNS):
+        m = rx.search(text or "")
+        if m:
+            out.append((cid, sev, m.group(0)))
+    return out
+
+
+# D37 inside the v2.1 screens (hook variants, platform captions): a currency
+# amount — "pounds" is left out on purpose ("holds 50 pounds" is a weight;
+# legacy D37 itself only reads "$N").
+PRICE_STRICT = re.compile(r"(?:[$€£]\s?\d[\d,]*(?:\.\d+)?|\b\d[\d,]*(?:\.\d+)?\s?"
+                          r"(?:dollars|bucks|usd|euros?)\b)", re.I)
+
+
+def price_in(prompt):
+    """D37 allow-path (requires_price archetypes): the prompt names a price."""
+    return bool(PRICE.search(prompt or "") or re.search(r"\$\d", prompt or ""))
+
+
+PROOF_CUE = re.compile(
+    r"\b(?:rated|ratings?|reviews?|reviewed|stars?|tested by|lab[- ]tested|"
+    r"certified|award\w*|clinical\w*|stud(?:y|ies)|dermatologist\w*|"
+    r"proven)\b", re.I)
+
+
+def proof_in(prompt):
+    """D136 allow-path (requires_proof archetypes): the prompt supplies a
+    proof claim (a SOCIAL_PROOF form, a rating, a review count, a test,
+    a certification or a study)."""
+    p = prompt or ""
+    return bool(first_match(SOCIAL_PROOF, p) or PROOF_CUE.search(p))
+
 WORD_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9'’.-]*")
 
 
@@ -116,6 +265,49 @@ def first_match(patterns, text):
         if m:
             return m
     return None
+
+
+KEYWORD_STOP = {"a", "an", "the", "for", "with", "of", "and", "in", "on", "to",
+                "my", "your", "this", "that", "is", "it", "at", "by", "vs"}
+
+
+def _kstem(w):
+    w = w.lower().strip(".'’")
+    for pos in ("'s", "’s"):
+        if w.endswith(pos):
+            w = w[:-2]
+    if len(w) > 4 and w.endswith("es") and w[:-2].endswith(("sh", "ch", "x", "ss", "z")):
+        return w[:-2]
+    if len(w) > 3 and w.endswith("s") and not w.endswith("ss"):
+        return w[:-1]
+    return w
+
+
+def keyword_tokens(text):
+    """Plural/possessive-tolerant tokens; hyphens split words."""
+    return [_kstem(w) for w in norm((text or "").replace("-", " ")).split()]
+
+
+def keyword_in(text, keyword, loose=False):
+    """D155/D161: the keyword occurs in `text` as a contiguous token run
+    (case-, plural- and hyphen-insensitive). loose=True also accepts every
+    content token of the keyword present anywhere in `text` (DISC-01 "exact
+    or all content lemmas")."""
+    k = keyword_tokens(keyword)
+    t = keyword_tokens(text)
+    if not k or not t:
+        return False
+    if any(t[i:i + len(k)] == k for i in range(len(t) - len(k) + 1)):
+        return True
+    if loose:
+        content = [w for w in k if w not in KEYWORD_STOP]
+        return bool(content) and all(w in t for w in content)
+    return False
+
+
+def compact_tag(text):
+    """'#Milk-Frothers' / 'milk frother' -> 'milkfrother' (plural-tolerant)."""
+    return "".join(keyword_tokens(re.sub(r"[#_]", " ", text or "")))
 
 
 def overlay_is_clean(overlay, hook):

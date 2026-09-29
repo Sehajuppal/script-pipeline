@@ -22,6 +22,16 @@ dir. Last, OPTIONAL_SELFCHECKS (vsp.ingest, vsp.feedback, vsp.improve —
 built on other branches) run in a child each when importlib.util.find_spec
 finds them: selfcheck() -> (ok, lines) must return ok; an absent module (or
 one without selfcheck()) is only noted.
+
+Pipeline v2.1 (WS-EVAL, RULES.md §68): creative_cases() add the D154 / D155
+/ D156 / D158 gate-1 cases (synthetic contract-valid direction /
+hook_variants / discovery + one failing case per clause); the v21-* unit
+checks build a synthetic v2.1 brief for D157 / D159 / D160 and cover the
+R21-R28 rubric, vsp.creative_eval and the schema $defs; e2e-creative-keys
+runs once vsp.direction / vsp.hooks / vsp.discovery exist (else it is
+noted as skipped); OPTIONAL_SELFCHECKS also lists vsp.direction, vsp.hooks,
+vsp.discovery and vsp.shotplan. Checks may leave notes in h.state["notes"]
+(printed with the summary line).
 """
 import hashlib
 import json
@@ -272,6 +282,7 @@ def run(pipeline_path, keep=False):
         fails += [f"e2e {name}: {pr}" for pr in probs]
     sc_fails, sc_notes = _optional_selfchecks(h)
     fails += sc_fails
+    sc_notes = list(h.state.get("notes", [])) + sc_notes   # e2e skips / scope
     # hermeticity: the repo's outputs/ and learned/ trees must be untouched
     if _tree_digest(repo_outputs) != before_tree:
         fails.append("hermeticity: self-test modified the repo's outputs/")

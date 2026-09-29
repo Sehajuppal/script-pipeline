@@ -2798,3 +2798,409 @@ the baseline:
 - New rule-owner boundary: `AGENTS.md` rule 2 — automation may not remove or
   loosen any gate rule; `vsp.improve verify` enforces it.
 
+
+## §68 — PIPELINE v2.1 CREATIVE LAYER (2026-09-29)
+
+Appended by the independent evaluator (WS-EVAL, branch ws/eval), written
+from the contract only (`docs/CREATIVE-PLAN.md` §0–§2) and the four research
+reports in `docs/research/` — shots-cinematography.md (SC),
+vibe-tone-music.md (VTM), hooks-deep-dive.md (HDD), discovery-seo.md (DS);
+every external source below is linked from them. Entry format as in §66:
+rule, mechanism, source, evidence grade, enforced in, verification. Grades
+as in §66 (VERIFIED / CONTESTED / INFERENCE / REGULATORY / PROPOSED); the
+research grade ([P] platform rule or law, [S] strong, [M] moderate, [A]
+anecdotal or our inference) is quoted next to it.
+
+Principles (CREATIVE-PLAN §0.2): a gate rule validates only what is present
+— D154/D155/D156 are silent without their script key, D158 without a
+matching phrase, D157/D160 on every bundle without a `- Shot type:` line,
+D159 without a `## CREATIVE DIRECTION` section — so legacy fixtures,
+`--script-json` inputs and v2.0 bundles keep their exact outcomes (verified
+on every pre-existing self-test case, all 33 `outputs/*/script.json` and a
+1,320-script generated matrix: 0 changed findings). The rubric scores presence and
+quality: an absent creative key FAILS R21–R27 (§68 rubric below). Every
+v2.1 gate message starts with its id. The builders' modules are never read:
+the evaluator transcribes the research tables itself (audit-only checks and
+the holdout catch a builder that games a check).
+
+### New rules D154–D161
+
+- D154. HOOK-VARIANT INTEGRITY: `script["hook_variants"]` holds 3–5 objects
+  with unique ids A, B, C… in order; exactly one `is_primary`, variant A,
+  whose `verbal` equals the script's VERBAL HOOK dialogue and whose
+  `overlay` equals the VISUAL TRIGGER on_screen; `visual_type` values are
+  VISUAL_TYPES ids and all distinct; archetypes are HOOK_ARCHETYPES ids, at
+  least 3 distinct when there are 4+ variants; the first three words of
+  `verbal` differ between variants. Every variant passes the primary hook's
+  screens: `verbal` 1–8 whitespace tokens, no `{`/`}` in any text field, the
+  overlay ≤3 words and `lexicon.overlay_is_clean(overlay, verbal)`, and
+  verbal/overlay/caption_line clear of D37 (a currency amount —
+  `lexicon.PRICE_STRICT`; "50 pounds" is a weight), D136 (social proof),
+  D139 (bait), D141 (absolutes) and D158 (urgency/offers) against the prompt,
+  plus D137 and no `human_only` archetype for an AI presenter;
+  `requires_price` / `requires_proof` / `requires_offer` archetypes only when
+  the prompt supplies that input (`lexicon.price_in` / `proof_in` /
+  `offer_in`). Shape errors against `schema/script.schema.json`
+  (`$defs.hook_variant`) are reported under D154 too.
+  Mechanism: Meta's retrieval treats ads that share an opening as one
+  creative, so alternates must change the frame-0 visual, the archetype and
+  the first words; an alternate is still a hook the viewer hears, so every
+  hook screen applies to it. Payoff compatibility (CREATIVE-PLAN §1.2, last
+  clause) is scored, not gated — the payoff type is not a contract key — by
+  rubric R26 (VARIANT_POLICY.payoff_compat).
+  Source: HDD §3.1, §3.4, §3.6 VARIANT_POLICY;
+  [Meta Andromeda engineering post](https://engineering.fb.com/2024/12/02/production-engineering/meta-andromeda-advantage-automation-next-gen-personalized-ads-retrieval-engine/);
+  [Meta creative diversity rating](https://searchengineland.com/meta-ads-creative-diversity-485751);
+  [Motion 2026 hook tactics](https://motionapp.com/library/research/creative-benchmarks-2026/top-hook-tactics);
+  [FTC 16 CFR 465](https://www.ecfr.gov/current/title-16/chapter-I/subchapter-D/part-465)
+  (D136/D137 screens). [VERIFIED — contract; research M for the
+  same-opening grouping, P for the screens]
+  Enforced in: gate 1 (`vsp/rules.py` check_d154, `rules.claim_screens`).
+  Verification: self-test `v21-creative-good`, `v21-creative-good-ai`,
+  `v21-creative-3-variants-good` (pass) and `d154-too-few-variants`,
+  `d154-not-a-list`, `d154-ids-not-lettered`, `d154-primary-not-a`,
+  `d154-primary-verbal-drift`, `d154-primary-overlay-drift`,
+  `d154-duplicate-visual-type`, `d154-unknown-visual-type`,
+  `d154-unknown-archetype`, `d154-two-archetypes-in-four`,
+  `d154-shared-first-three-words`, `d154-variant-over-8-words`,
+  `d154-variant-raw-slot`, `d154-overlay-not-hook-phrase`,
+  `d154-overlay-over-3-words`, `d154-variant-invented-price`,
+  `d154-variant-social-proof`, `d154-variant-engagement-bait`,
+  `d154-variant-absolute-claim`, `d154-variant-fake-urgency`,
+  `d154-ai-variant-lived-experience`, `d154-ai-human-only-archetype`,
+  `d154-price-anchor-without-price`, `d154-proof-first-without-proof`,
+  `d154-shape-features-not-numbers` (each fails with D154 alone);
+  e2e `e2e-creative-keys` once vsp.hooks exists.
+
+- D155. DISCOVERY PACKAGING INTEGRITY: when `script["discovery"]` is present
+  it carries a non-empty `primary_keyword`; per platform the distinct
+  hashtags (the `hashtags` list plus tags in the platform texts) number ≤5
+  on TikTok, ≤5 on Instagram, ≤15 on YouTube, are `#tag` strings and are
+  never generic-only (D140); TikTok/Instagram captions ≤2,200 characters;
+  the YouTube title ≤100 characters with no `<`/`>` and the description
+  ≤5,000 UTF-8 bytes; every caption, description line, title, description
+  and the cover text pass D37, D136, D139, D141 and D158 (and D137 for an AI
+  presenter) and carry no `{slot}`; no platform text names a CTA destination
+  the script caption does not (D46 link groups); presenter=ai: every
+  TikTok/Instagram caption and the YouTube description carries an AI
+  disclosure line (`lexicon.has_ai_disclosure_line`) and no AI toggle
+  (`is_aigc`, `is_ai_generated`, `containsSyntheticMedia`) is present and
+  false; the primary keyword sits in line 1 of each platform caption and in
+  the YouTube title; cover text ≤5 words, cover `frame_s` inside the video.
+  Shape errors against `$defs.discovery` are reported under D155.
+  Mechanism: the packaging ships to the viewer and the platform APIs as-is
+  — an over-limit field fails the upload, an unscreened caption re-opens
+  every claim the script gates closed, and a platform toggle contradicting
+  the disclosure is a mislabel.
+  Source: DS §8 PLATFORM_PACKAGING and GATE_RULES DISC-03/04/06/07/08/09;
+  [TikTok Content Posting API](https://developers.tiktok.com/doc/content-posting-api-reference-direct-post);
+  [YouTube videos API](https://developers.google.com/youtube/v3/docs/videos);
+  [YouTube hashtag policy](https://support.google.com/youtube/answer/6390658?hl=en);
+  [Instagram 5-hashtag cap](https://www.socialmediatoday.com/news/instagram-implements-new-limits-on-hashtag-use/808309/);
+  [Instagram API changelog (is_ai_generated)](https://developers.facebook.com/docs/instagram-platform/changelog);
+  [Meta engagement bait](https://transparency.meta.com/features/approach-to-ranking/content-distribution-guidelines/engagement-bait/).
+  [REGULATORY — platform limits and policy; research P]
+  Enforced in: gate 1 (`vsp/rules.py` check_d155).
+  Verification: self-test `v21-creative-good`, `v21-creative-good-ai` (pass)
+  and `d155-not-an-object`, `d155-tiktok-too-many-hashtags`,
+  `d155-instagram-generic-only-hashtags`, `d155-youtube-16-hashtags`,
+  `d155-youtube-title-too-long`, `d155-youtube-title-angle-brackets`,
+  `d155-youtube-description-over-5000-bytes`, `d155-caption-invented-price`,
+  `d155-caption-social-proof`, `d155-caption-engagement-bait`,
+  `d155-title-absolute-claim`, `d155-caption-fake-urgency`,
+  `d155-second-cta-destination`, `d155-ai-caption-no-disclosure`,
+  `d155-ai-toggle-false`, `d155-keyword-not-in-caption-line-1`,
+  `d155-keyword-not-in-youtube-title`, `d155-cover-text-over-5-words`,
+  `d155-cover-frame-outside-video`, `d155-no-primary-keyword`,
+  `d155-shape-placement-hashtag` (each fails with D155 alone).
+
+- D156. DIRECTION INTEGRITY: when `script["direction"]` is present its ids
+  are valid (vibe and secondary_vibe in VIBES, tone.voice/allowed in TONES,
+  humor none|light|high, camera.movement in CAMERA_MOVES, evidence grades
+  P|S|M|A, palette_hex `#RRGGBB`); energy and every energy_curve energy are
+  integers 1–5; `pacing.target_wpm` is [lo, hi] within 140–200 and never
+  slower than a beat was sized for — hi ≥ 180 wpm when any spoken item
+  sizes at 3.0 words/s, ≥ 150 when all carry a SLOW_KEY (the maker's and
+  D43's rate); `max_static_s` ≤ 3.5; `music.in_master` is false with a
+  library for each of tiktok, instagram and youtube_shorts, and the TikTok
+  lane names no AI music; `text_style.max_words_per_card` ≤ 3 (D17);
+  `voice.presenter` equals the script's presenter and, for presenter=ai,
+  `voice.spec` names a synthetic voice, says it is disclosed and never
+  claims to be human ("human read", "human voice only", "not an AI", "I'm
+  real" … — aiming for natural prosody, "sound like a real person", is not a
+  claim); `energy_curve` has exactly one entry per hook_stack + beats item,
+  in script order (count and item type — not the windows, which stage-6
+  relayout re-times after `enrich()`). Negation is read per sentence: a
+  sentence that negates ("never … AI-generated music", "AI-generated music is
+  not allowed") is not a recommendation. Shape errors against
+  `$defs.direction` (e.g. a direction without a vibe) are reported under
+  D156.
+  Mechanism: a pace slower than the beat sizing overflows the window the
+  gates measured (D43); a static shot over 3.5 s is the D48 failure; the
+  platform music libraries are platform-locked and licensed per lane, so
+  music added at upload is the only lane that is licensed everywhere; an
+  AI voice passed off as human breaks the disclosure chain (D138).
+  Source: CREATIVE-PLAN §1.1; VTM §3.1–§3.6, §4, §5.6 (VTM1, VTM4, VTM5,
+  VTM9); [TikTok Music Terms](https://www.tiktok.com/legal/page/global/music-terms-us/en);
+  [TikTok CML terms](https://www.tiktok.com/legal/page/global/commercial-music-library-user-terms/en);
+  [Instagram music guidelines](https://about.instagram.com/blog/announcements/updates-and-guidelines-for-including-music-in-video/);
+  [YouTube Audio Library](https://support.google.com/youtube/answer/3376882?hl=en);
+  [YouTube AI disclosure](https://support.google.com/youtube/answer/14328491?hl=en);
+  [Studio Resonate AI-voice study](https://www.contentgrip.com/studio-resonate-ai-voice-study/);
+  [Dost & Huang 2026 cadence](https://archives.marketing-trends-congress.com/2026/pages/PDF/paper_professor_DOST_HUANG.pdf).
+  [REGULATORY for the music lanes and AI disclosure (research P);
+  VERIFIED — D43/D48 arithmetic; INFERENCE for the 140–200 band (research M/A)]
+  Enforced in: gate 1 (`vsp/rules.py` check_d156).
+  Verification: self-test `v21-creative-good`, `v21-creative-good-ai` (pass)
+  and `d156-not-an-object`, `d156-unknown-vibe`, `d156-unknown-tone`,
+  `d156-unknown-camera-move`, `d156-wpm-outside-140-200`,
+  `d156-wpm-slower-than-beat-sizing`, `d156-max-static-over-3-5`,
+  `d156-music-in-master`, `d156-licensing-missing-platform`,
+  `d156-ai-music-on-tiktok`, `d156-ai-voice-claims-human`,
+  `d156-ai-voice-not-disclosed`, `d156-voice-presenter-mismatch`,
+  `d156-energy-curve-count`, `d156-energy-curve-order`,
+  `d156-energy-out-of-range`, `d156-bad-palette-hex`,
+  `d156-card-over-3-words`, `d156-no-vibe`, `d156-shape-energy-not-integer`
+  (each fails with D156 alone); units `v21-precision-negation-corpus`
+  (negated TikTok notes and a natural-prosody voice spec pass),
+  `v21-repair-with-creative-keys` (stage-6 relayout still repairs a script
+  that carries a direction).
+
+- D157. SHOT-PLAN INTEGRITY (v2.1 bundles — any `- Shot type:` line): every
+  `### Shot` block carries exactly one valid
+  `- Shot type: <id> · <scale> · <move> · <purpose> · energy <1-5> · AI risk <low|med|high>`
+  line (ids from SHOT_SCALES / CAMERA_MOVES / SHOT_PURPOSES); the frame-0
+  shot's purpose is not `cta` or `transition` (the research SHOT_LIBRARY
+  opens on hook, demo, proof, payoff, context, reaction or b-roll shots),
+  it is not a talking head (SHOT_RULES banned_ids_at_frame0) and it shows
+  the product/result or the subject/problem (a prompt noun or a
+  product/result/before/after/problem word in its visual lines, its
+  on-screen card — a text-first opener carries the subject there — or its
+  shot-type id); a face or hands is on screen for ≥ 1.0 s
+  within 0–3.0 s; never 3 consecutive shots of one scale; an unsplit shot
+  over 3.5 s carries a CAMERA_MOVES move other than `static`; for
+  presenter=ai every proof shot carries `- REAL FOOTAGE REQUIRED: <why> —
+  do not generate`; at duration ≤ 15 s the last shot carries a loop
+  marker; the four v2.1 sections carry no `### Shot` heading and no
+  `creative_vocab.BUNDLE_FORBIDDEN` phrase.
+  Definitions. **Face/hands signal** (the gate's `needs`): a shot shows a
+  face (hands) when its shot-type id is a research SHOT_LIBRARY id whose
+  needs list face (hands), or the id carries a face (hand) token
+  (face, selfie, talking-head, reaction, confession, mirror, to-camera,
+  walk-talk, presenter / hand, pov-hands, over-shoulder, unboxing, pour,
+  pickup, typing), or its visual lines (every block line except
+  Dialogue/VO, Re-hook, On-screen text and Delivery) name one (face,
+  presenter, persona, selfie, to camera, reaction, nods, smiles, eyes… /
+  hand(s), fingers, holds, grips, picks up, in hand) — negated forms
+  ("face out of frame", "no hands", "hands only", "presenter's hands" for
+  the face test, "hands-free") do not count (`rules.shot_signals`).
+  **Proof shot**: purpose `proof`, or an EVIDENCE / PAYOFF beat shot, or a
+  DEMO shot whose visual lines mention the result; on those beats the gate
+  skips reaction / emotion / cta / transition / b-roll purposes and shots
+  with the face signal (the AI persona's own verdict shot is generated by
+  construction and cannot be filmed — the proof moment must be a separate,
+  marked insert), the creative_eval audit (`real_footage_marked`) skips
+  neither, so a proof hidden in a face shot still shows up there. **Loop
+  marker**: the last shot repeats frame 0's shot-type id, uses a loop
+  shot-type id (e.g. `loop-return-frame`), or carries a `loop` word in a
+  visual line — the plan-compatible wording is
+  `- Loop: returns to frame 0's framing and motion.`
+  Mechanism: less face time before the skip lifts views of utilitarian
+  products, while a human cue by 3 s lifts early retention; scale rotation
+  and moving long shots are D47/D48 generalised to typed shots; AI-rendered
+  proof is a fabricated result (CREATIVE-PLAN §0.6); loops lift replays on
+  short videos.
+  Source: SC §2.1–§2.7, §4.5, §5.2 SHOT_RULES.hard, §5.5 (S-F0-PRODUCT,
+  S-HUMAN-3S, S-SCALE-RUN, S-D48-PHRASE, R-LOOP);
+  [Hilton et al. 2026](https://link.springer.com/article/10.1007/s11002-026-09839-0);
+  [Emplifi 2026 Reels data](https://emplifi.io/resources/facebook-reels-data/);
+  [Google ABCDs](https://support.google.com/google-ads/answer/14783551?hl=en);
+  [Ling 2021](https://arxiv.org/abs/2111.02452v1);
+  [ABot-PhysWorld 2026](https://arxiv.org/abs/2603.23376);
+  [YouTube Shorts partner deck 2026](https://services.google.com/fh/files/events/partner_center__youtube_shorts_best_practices_and_roadblocks__july_2026.pdf).
+  [VERIFIED — contract + D47/D48; research S/M for frame 0 and faces, M
+  for loops, A for the ≤2-same-scale threshold]
+  Enforced in: gate 2 (`vsp/rules.py` check_d157, parser `rules.shot_blocks`).
+  Verification: unit checks `v21-bundle-passes-gate2` (a synthetic v2.1
+  brief passes gate 2 on both presenter lanes),
+  `v21-gate2-violations-d157-d159-d160` (`d157-untyped-shot`,
+  `d157-bad-shot-type-field`, `d157-frame0-purpose-cta`,
+  `d157-frame0-talking-head`, `d157-frame0-no-subject`,
+  `d157-no-human-by-3s`, `d157-three-same-scale`, `d157-long-static-shot`,
+  `d157-ai-proof-shot-not-real-footage`,
+  `d157-ai-payoff-result-not-real-footage`, `d157-no-loop-at-15s`,
+  `d157-new-section-forbidden-phrase` — each fails with D157 alone),
+  `v21-payoff-and-frame0-openers` (the persona's PAYOFF shot, a frame 0
+  typed `demo` and a text-first opener with the subject on its card pass),
+  `v21-gate2-silent-on-legacy-bundles`.
+
+- D158. NO FAKE URGENCY, SCARCITY OR OFFERS: viewer text (dialogue,
+  re-hooks and on-screen text of the hook stack and beats, plus the
+  caption) carries no false limited-time pressure ("limited-time offer",
+  "for a limited time", "today only", "sale ends", "last chance to buy",
+  "while supplies last", "Hurry!", "hurry up"…), false scarcity or demand
+  ("only 3 left", "selling fast", "12k people are watching"…) or invented
+  offers ("30% off", "use code SAVE10", "free shipping", "was $40 now $25"…)
+  unless the prompt supplies them. Only the offer/urgency FORM counts —
+  ordinary language passes ("mornings in a hurry", "the stain is almost
+  gone", "was 40 min, now 15 min", "people with limited time", "everyone is
+  getting this wrong", "these patches act fast", "the challenge ends in 30
+  days", "half off the ends", "use the code on the lid")
+  (`lexicon.offer_in`: an offer/deadline cue allows urgency and offer
+  phrases; scarcity and demand phrases need a stock/demand figure in the
+  prompt — a discount is not a stock claim). "Sold out" / "best-seller"
+  stay with D136. The same screen runs inside D154 and D155.
+  Mechanism: the FTC dark-pattern taxonomy lists false limited-time
+  offers, baseless countdowns, false low-stock and high-demand messages and
+  fake discounts; an invented offer is the D37 class of fabricated copy.
+  Source: HDD §1.3, §5 RISKY_PHRASES UR-01..UR-04;
+  [FTC dark-patterns report 2022](https://www.ftc.gov/system/files/ftc_gov/pdf/P214800%20Dark%20Patterns%20Report%209.14.2022%20-%20FINAL.pdf);
+  [Meta unacceptable business practices](https://transparency.meta.com/policies/ad-standards/fraud-scams/unacceptable-business-practices);
+  [TikTok ad policy](https://ads.tiktok.com/help/article/tiktok-ads-policy-misleading-and-false-content).
+  [REGULATORY; research P]
+  Enforced in: gate 1 (`vsp/rules.py` check_d158, `vsp/lexicon.OFFER_URGENCY`)
+  + the D154/D155 screens.
+  Verification: self-test `d158-fake-limited-time`, `d158-fake-scarcity`,
+  `d158-fake-discount-caption`, `d158-offer-does-not-allow-scarcity` (fail
+  with D158 alone), `v21-d158-prompt-supplied-offer` (allow-path passes),
+  `d154-variant-fake-urgency`, `d155-caption-fake-urgency`, unit
+  `v21-precision-negation-corpus` (9 ordinary phrases pass, 5 true forms
+  fail); 0 hits on 2,970 generated maker scripts (golden × 5 formats × 2
+  presenters × 3 seeds × 15/30/60 s).
+
+- D159. MUSIC LANE STATED IN THE BRIEF: a bundle with a
+  `## CREATIVE DIRECTION` section states that music is added at upload
+  from the platform's commercial library (an "upload" word plus a
+  commercial-library name: commercial (music) library, CML, Sound
+  Collection, Audio Library); it names no commercial track — heuristic: no
+  quoted title (straight or curly double quotes) on a line about music
+  (music, track, song, sound, audio, bed, playlist, artist, library …),
+  except a quoted string that equals one of `direction.music`
+  search_queries / moods / genres / sfx or sits on a line that says
+  search/query, and never a quoted string followed by an artist credit ("by
+  X", "feat.", "ft.") on any line; no affirmative AI-music recommendation in
+  a clause that names TikTok or no platform ("AI music: Instagram and
+  YouTube organic only; blocked on TikTok" passes); no instruction to
+  bake/mix/add music into the master. Negation is read per sentence
+  ("never mixed into the master" is not an instruction).
+  Mechanism: the CML and the Sound Collection are platform-locked and
+  licensed per lane, the general libraries are personal/non-commercial, so
+  a named track or a baked-in bed is an unlicensed commercial use; TikTok's
+  terms keep AI music out of endorsements.
+  Source: VTM §3.1–§3.6, §5.6 VTM3/VTM4/VTM5;
+  [TikTok CML terms](https://www.tiktok.com/legal/page/global/commercial-music-library-user-terms/en);
+  [TikTok CML help](https://ads.tiktok.com/help/article/commercial-music-library?lang=en);
+  [TikTok Music Terms](https://www.tiktok.com/legal/page/global/music-terms-us/en);
+  [Instagram music guidelines](https://about.instagram.com/blog/announcements/updates-and-guidelines-for-including-music-in-video/);
+  [YouTube upload errors (Shorts library is non-commercial)](https://support.google.com/youtube/answer/10383400?hl=en-GB);
+  [USCO on AI music](https://www.copyright.gov/newsnet/2025/1060.html).
+  [REGULATORY — licence terms; research P; the title heuristic is INFERENCE]
+  Enforced in: gate 2 (`vsp/rules.py` check_d159).
+  Verification: unit checks `v21-bundle-passes-gate2`,
+  `v21-gate2-violations-d157-d159-d160` (`d159-no-upload-lane`,
+  `d159-named-track-with-artist`, `d159-quoted-title`,
+  `d159-ai-music-on-tiktok`, `d159-music-baked-into-master` — each fails
+  with D159 alone), `v21-precision-negation-corpus` (6 hygienic lines pass),
+  `v21-gate2-silent-on-legacy-bundles`.
+
+- D160. AI RENDER-PROMPT HYGIENE (v2.1 bundles): inside `## SHOT PROMPTS`,
+  no prompt asks the model to render on-screen text in-frame — always:
+  "render exactly" and an `ON-SCREEN TEXT (…)` line not marked edit
+  overlay / post / not rendered; in a sentence with no negation and no
+  edit-overlay marker: "Any on-screen text is/uses/should …" styling, "text
+  on screen:", render/draw/write/display/burn … the text/captions/lettering
+  ("On-screen text is an edit overlay, never generated in-frame", "Render
+  in 9:16 with no captions", "Text on screen: none" pass); no `VISUAL PROMPT:` line
+  carries a double-quoted span (dialogue goes after "says:"); the identity
+  lock (script `persona.identity`, else the `## PRESENTER — identity lock`
+  text before its " — ") appears only in prompts of shots that show a face
+  (the D157 face signal).
+  Mechanism: quoted strings and text requests make video models draw
+  garbled text; on-screen text is an edit overlay; a persona description in
+  a product-only insert invites a face into the frame and burns identity
+  consistency.
+  Source: SC §1, §4.2–§4.4, §5.2 SHOT_RULES.ai;
+  [Google Vertex video best practices](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/video/best-practice);
+  [T2V text-rendering benchmark, arXiv 2505.04946](https://arxiv.org/abs/2505.04946);
+  [Gemini Omni docs](https://ai.google.dev/gemini-api/docs/omni);
+  [Sora 2 prompting guide](https://developers.openai.com/cookbook/examples/sora/sora2_prompting_guide/).
+  [VERIFIED — platform documentation; research P/S]
+  Enforced in: gate 2 (`vsp/rules.py` check_d160). creative_eval applies
+  the same screens to the ALTERNATE OPENINGS prompts as an audit
+  (`alt_prompt_problems`).
+  Verification: unit checks `v21-bundle-passes-gate2`,
+  `v21-gate2-violations-d157-d159-d160` (`d160-render-exactly`,
+  `d160-onscreen-text-styling`, `d160-quoted-dialogue`,
+  `d160-identity-lock-on-product-shot` — each fails with D160 alone),
+  `v21-precision-negation-corpus` (5 hygienic lines pass),
+  `v21-gate2-silent-on-legacy-bundles` (the v2.0 prompts' "render exactly"
+  lines stay legal on legacy bundles).
+
+- D161. DISCOVERY KEYWORD PLACEMENT: the discovery `primary_keyword` is
+  spoken or on screen by 3.0 s (hook-stack dialogue/on-screen text, beats
+  starting before 3.0 s — dialogue only when the beat ends by 3.0 s;
+  exact phrase or all content tokens, plural-tolerant), sits in the first
+  60 characters of caption line 1 (exact phrase) and one caption hashtag
+  is the compact keyword (`#milkfrother`, plural-tolerant).
+  Mechanism: search surfaces match speech, early on-screen text, the
+  caption's first line and the keyword tag; placement after 3 s or below
+  the fold is invisible to both viewer and index.
+  Source: DS §2–§5, §8 PLATFORM_PACKAGING keyword_slots and GATE_RULES
+  DISC-01..04; [TikTok creative best practices](https://ads.tiktok.com/help/article/creative-best-practices?lang=en);
+  [TikTok search ads creative](https://ads.tiktok.com/resources/help/article/search-ads-creative);
+  [Instagram search](https://about.instagram.com/blog/announcements/break-down-how-instagram-search-works/);
+  [YouTube Shorts guidance](https://support.google.com/youtube/answer/16090438?hl=en).
+  [CONTESTED — platform guidance P, effect size M; quality, not a gate]
+  Enforced in: rubric (`vsp/rubric.py` R24 via `rubric.keyword_placement`,
+  selection-eligible), creative_eval `keyword_placement_pass`, scorecard
+  row "keyword placement pass (D161)".
+  Verification: unit check `v21-rubric-creative-checks` (fails on absent
+  discovery, passes on the strong synthetic fixture); scorecard smoke.
+
+### Rubric R21–R28 (quality; absent keys fail)
+
+| id | check | tier | weight | audit-only |
+|---|---|---|---|---|
+| R21 | direction present and coherent: D156-clean, avg_shot_s inside the vibe's SHOT_RULES cadence band, max_static_s within the vibe cap, tone.voice in tone.allowed, no story-vlog vibe for an AI presenter (VTM9) | I | 2 | no |
+| R22 | ≥3 hook variants, diverse: distinct visual types, ≥min(3, n) archetypes, distinct first 3 words and overlays | I | 2 | no |
+| R23 | primary hook ≥60 and every alternate ≥50 on the evaluator's own HOOK_SCORE_FEATURES scorer (HDD §4.1; `rubric.hook_score`; self-reported `score`/`features` are ignored) | I | 2 | yes |
+| R24 | D161 keyword placement | I | 2 | no |
+| R25 | discovery complete: 3 platforms with their fields, cover text ≤5 words + frame, AI toggles true for presenter=ai, D155-clean | I | 2 | no |
+| R26 | every variant archetype is paid by the script's payoff (VARIANT_POLICY.payoff_compat; payoff types from format, prompt and PAYOFF text) | O | 1 | yes |
+| R27 | no two openings are near-duplicates (word-trigram Jaccard ≤0.2, keyword tokens removed) | O | 1 | yes |
+| R28 | no clickbait marker (RISKY_PHRASES CB-01..CB-03) in the script's hook, frame-0 overlay, caption line 1 or any variant | I | 2 | yes |
+
+R01–R20 are unchanged (unit check `v21-rubric-creative-checks` freezes
+their tier, weight and audit flag). On the v2.0 maker (no creative keys)
+R21–R27 fail on every script and R28 passes: fast_eval rubric mean 99.9 →
+77.6, audit-only mean → 60; best-of-8 winners unchanged on all 990 golden
+cells (the failures are uniform across candidates). `rubric.score()` also
+returns `legacy_score` (R01–R20 + pitfalls, the v2.0 scale): the
+scorecard's `shippable` uses it, so that metric keeps its meaning across
+result files, and result files record `rubric_version`. Bundle-level
+metrics (`vsp/creative_eval.py`) and the scorecard `creative` block report
+the rest (typed-shot share, cadence in band, human by 3 s, frame-0 match,
+loop, AI real-footage marks, high-AI-risk share, v2.1 sections, alternate-
+opening prompt hygiene, D157/D159/D160 findings).
+
+### Integration notes (for the integrator and the builders)
+
+- Stage-6 repair and `hook_variants`: a D44 repair that strips a
+  parenthetical from the hook leaves variant A holding the old line, so
+  D154 fails the repaired candidate and repair keeps the unrepaired one.
+  `vsp/repair.py` (integrator) must re-sync `hook_variants[0]` — or re-run
+  `vsp.creative.enrich` — after any repair that touches the hook or the
+  frame-0 overlay. Timing relayouts are safe (D156 compares the energy
+  curve by count and order only).
+- Pacing (WS-VIBE): the maker sizes brisk beats at 180 wpm, so
+  `target_wpm` must reach 180 whenever a spoken item has no SLOW_KEY.
+  Research slow-vibe bands copied verbatim ([150, 160], [150, 170]) fail
+  D156 on nearly every script — clamp the upper bound to the highest
+  sized rate.
+- Frame 0 (WS-SHOTS): never type the opening shot `cta` / `transition`;
+  the AI persona's own PAYOFF shot needs no REAL FOOTAGE line, but a
+  product-only result shot does.
+- D158 reads every `--script-json` input: user scripts that write a real
+  urgency/offer form without the prompt supplying it now fail gate 1 —
+  that is the rule, not a regression (fixtures and stored outputs keep
+  their outcomes).
