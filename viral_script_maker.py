@@ -207,7 +207,9 @@ HOOKS = {
    '{category_pl} keep failing? This one didn\'t.',
    'Another {category} that breaks in a week?',
    'Your {category} keeps failing? Here\'s the fix.',
+   'Your {category} keep failing? Here\'s the fix.',
    'Why does your {category} keep failing?',
+   'Why do your {category} keep failing?',
    'Still fighting your {category}? Here\'s the fix.',
    'One {category} flaw ruins the whole thing.',
    'Broken {category} again? Not this one.',
@@ -1804,7 +1806,7 @@ too first today now daily""".split())
 # WS-HOOKS: verbs that read as a fragment at the end of a card ("MILK
 # FROTHER HELD", "KITCHEN FINDS WORK") drop when a noun is left
 _OV_TRAIL_VERB = frozenset("""held showed shows works work passes ruins breaks
-revealed decides""".split())
+revealed decides doing failing keeps keep""".split())
 _OV_STARTERS = frozenset("no every one zero all most each any".split())
 _OV_TIME = frozenset("""day days week weeks night nights hour hours minute minutes
 second seconds month months year years""".split())
@@ -1848,7 +1850,8 @@ def overlay_truncate(s, max_words=3):
         # WS-HOOKS: the label names the scene's noun run ("POV: DESK SETUP",
         # "POV: MILK FROTHER"), not the first two words ("POV: YOUR DESK")
         rest = re.sub(r"^\s*pov\s*:\s*", "", body, flags=re.I)
-        sub = overlay_truncate(rest, max_words - 1) if max_words > 1 and rest else ""
+        sub = overlay_truncate(rest, max_words) if max_words > 1 and rest else ""
+        sub = " ".join(sub.split()[-(max_words - 1):]) if sub and "|" not in sub else ""
         return ("POV: " + sub).strip().upper() if sub else "POV"
     body = _OV_LABEL_PREFIX.sub("", body) or body
     for m in _OV_WORD.finditer(body):
@@ -2535,7 +2538,30 @@ HOOK_TEMPLATE_NEEDS = {
  "{product} fixes {before}. Watch.": ("singular",),
  "Is {product} actually worth it?": ("singular",),
  "Does {product} fix {flaw}?": ("singular",),
+ "Your {category} keeps failing? Here's the fix.": ("singular",),
+ "Your {category} keep failing? Here's the fix.": ("plural",),
+ "Why does your {category} keep failing?": ("singular",),
+ "Why do your {category} keep failing?": ("plural",),
+ "Another {category} that breaks in a week?": ("singular",),
+ "Here's {product} at work, up close.": ("singular",),
+ "POV: your {category} actually works.": ("singular",),
+ "POV: your {category} passes the test.": ("singular",),
+ "{product} test: here's what happened.": ("singular",),
+ "{ndays} days, one {category}, zero failures.": ("singular",),
+ "Stop guessing. Here's the {category} test.": ("singular",),
+ # {identity} renders the maker's placeholder ("skeptic"): the research
+ # requires a real role or credential FROM THE PROMPT (hooks-deep-dive
+ # identity-reveal; FTC 16 CFR 465.2), which parse_prompt never extracts
+ "{identity} here. Honest {category} verdict.": ("prompt_identity",),
+ "A {identity} tests {product}.": ("prompt_identity",),
+ "I'm a {identity}, and I was wrong about {product}.": ("prompt_identity",),
 }
+# a/an/one/this/another {category} and "{category} test/detail/..." read as
+# singular nouns ("One eyelashes flaw", "a earbuds")
+_HOOK_SINGULAR_FORM = re.compile(
+    r"\b(?:a|an|one|this|another|every)\s+\{category\}|"
+    r"\{category\}\s+(?:test|detail|verdict|owners|flaw|scorecard|mistake|log)\b",
+    re.I)
 # archetypes a template can serve, in preference order (default: its family).
 # A line is drawn only when one of them is paid by the script's payoff type
 # (VARIANT_POLICY.payoff_compat + the advice "fix"): after-framed
@@ -2643,7 +2669,7 @@ def _template_archetypes(fam, line):
     low = line.lower()
     if low.rstrip().endswith("?"):
         out.append("question")
-    if re.search(r"\bafter\b", low):
+    if re.search(r"\bthe after\b", low):
         out.append("showcase")
     if "{ndays}" in line:
         out.append("day-counter")
@@ -2737,14 +2763,18 @@ def _hook_template_ok(ctx, fam, line, req, ai, payoff=None, variant=False):
                                           str(ctx.get("routine_label") or ""), re.I):
         return None
     needs = HOOK_TEMPLATE_NEEDS.get(line, ())
-    if "never" in needs:
+    if "never" in needs or "prompt_identity" in needs:
         return None
     if "competitor" in needs and not ctx.get("named_competitor"):
         return None
-    if "singular" in needs and concept == "product":
+    if concept == "product" and ("singular" in needs or "plural" in needs or
+                                 _HOOK_SINGULAR_FORM.search(line)):
         noun = (_hook_nouns(ctx)[0][1] if ctx.get("product") else "")
-        if re.search(r"[^s]s$", noun.lower()):
+        pl = bool(re.search(r"[^s]s$", noun.lower()))
+        if pl and ("singular" in needs or _HOOK_SINGULAR_FORM.search(line)):
             return None      # "This is the resistance bands in action."
+        if not pl and "plural" in needs:
+            return None
     if re.search(r"\bnew\b", low) and not _HOOK_NEWNESS.search(
             str(ctx.get("prompt_text") or ctx.get("_prompt") or "")):
         return None          # newness needs a newness fact in the prompt

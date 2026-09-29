@@ -804,7 +804,8 @@ def _render_candidates(ctx, maker, seed, ai, payoff):
             head = r.split(".")[0]
             ov = _memo(_OV_MEMO, (id(maker.overlay_truncate), head),
                        lambda: maker.overlay_truncate(head))
-            if r in seen or not anchored or screen_text(r, prompt, ai):
+            if r in seen or not anchored or screen_text(r, prompt, ai) or \
+                    not _card_has_content(ov):
                 break
             seen.add(r)
             try:
@@ -816,6 +817,14 @@ def _render_candidates(ctx, maker, seed, ai, payoff):
                             "ov_focus": ov_focus, "template": line, "idx": idx})
             break
     return out
+
+
+def _card_has_content(ov):
+    """A card that names something: a label pair or a word of 3+ letters
+    beyond function words ("AT" from "At $12.99: ..." is no card)."""
+    if "|" in ov or ":" in ov:
+        return True
+    return any(len(w) >= 3 and w not in _STOP for w in toks(ov))
 
 
 def _load_priors():
