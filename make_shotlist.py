@@ -531,12 +531,14 @@ def _split(sh, product=True):
             se = sh["e"]
         framing, camera = plan[i % len(plan)]
         first, last = i == 0, i == k - 1
+        if first and sh.get("explicit"):
+            framing = sh["direction"]        # the maker's own staging leads
         out.append({
             "n": f"{sh['n']}{chr(97 + i)}", "group": sh["n"],
             "t": f"{ss:.1f}\u2013{se:.1f}s", "s": round(ss, 3), "e": round(se, 3),
             "beat": beat + (" (cont.)" if i else ""),
             "direction": framing + ("" if first else " (VO continues)"),
-            "camera": camera,
+            "camera": camera, "explicit": bool(first and sh.get("explicit")),
             "on_screen": sh["on_screen"] if first else "",
             "staging": sh["staging"] if first else [],
             "dialogue": sh["dialogue"] if first else "",
@@ -548,7 +550,9 @@ def _split(sh, product=True):
 
 
 def _is_product_concept(d):
-    return _concept(d.get("prompt") or "") == "product"
+    """Product framing applies to products and showcase roundups (the finds
+    are products); challenges / routines / advice have no product."""
+    return _concept(d.get("prompt") or "") in ("product", "showcase")
 
 
 def _reframe(sh, k, product):
@@ -648,6 +652,7 @@ def build_shots(d):
             # D44: re-hooks are spoken transitions — they belong in the transcript
             vo_lines.append(f"[{e:.1f}s] (spoken transition) {rehook}")
         on_screen, staging = split_on_screen(it.get("on_screen", ""))
+        explicit = bool(it.get("shot_direction") or it.get("direction"))
         direction = it.get("shot_direction") or it.get("direction") or \
             (None if product else CONCEPT_SHOT_DIRECTION.get(btype)) or \
             BEAT_SHOT_DIRECTION.get(btype, DEFAULT_DIRECTION)
@@ -656,7 +661,7 @@ def build_shots(d):
             "n": n, "group": n, "t": f"{s:.1f}\u2013{e:.1f}s",
             "s": round(s, 3), "e": round(e, 3),
             "beat": btype, "direction": clean_meta(_flat(direction)) or DEFAULT_DIRECTION,
-            "camera": SHOT_CAMERA.get(btype, "Camera: static."),
+            "camera": SHOT_CAMERA.get(btype, "Camera: static."), "explicit": explicit,
             "on_screen": on_screen, "staging": staging, "dialogue": dialogue,
             "delivery": clean_meta(delivery_raw), "rehook": rehook,
             "match_cut": _flat(it.get("match_cut", "")),
