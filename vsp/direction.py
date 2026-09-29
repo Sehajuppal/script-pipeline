@@ -481,11 +481,16 @@ def _shape(lv, types, n_hook, dips):
                 lv[i] = hook - 1
                 need -= 1
     if len(set(lv)) < 3:
+        # add a level with a beat that shares its level (never empty one)
+        top = lv[k] if k is not None else 6
         for i in range(n_hook, len(lv)):
-            if types[i] in ("PAYOFF", "CTA"):
+            if types[i] in ("PAYOFF", "CTA") or lv.count(lv[i]) < 2:
                 continue
             if lv[i] - 1 >= 1 and (lv[i] - 1) not in lv:
                 lv[i] -= 1
+                break
+            if lv[i] + 1 < top and (lv[i] + 1) not in lv:
+                lv[i] += 1
                 break
     return lv
 
@@ -1022,7 +1027,8 @@ def _maker():
 
 def _golden():
     with open(os.path.join(REPO, "evals", "golden.jsonl"), encoding="utf-8") as f:
-        return [json.loads(ln) for ln in f if ln.strip()]
+        return [json.loads(ln) for ln in f
+                if ln.strip() and not ln.lstrip().startswith("//")]
 
 
 def _digest(obj):
@@ -1292,6 +1298,24 @@ def selfcheck():
                  else "determinism: FAIL")
     lines.append(f"no-ctx path: concept inference matches ctx on all {n}; same "
                  f"vibe on {agree}/{n}")
+    nfx = 0
+    try:                               # --script-json-like legacy fixtures
+        from vsp import selftest_cases
+        good, cases = selftest_cases.all_cases()
+        fixtures = [good] + [c[1] for c in cases if isinstance(c[1], dict)]
+    except Exception as e:  # noqa: BLE001
+        fixtures = []
+        fails.append(f"fixtures: {type(e).__name__}: {e}")
+    for fx in fixtures:
+        snap = _digest(fx)
+        d = orig(fx, ctx=None, seed=None)
+        nfx += 1
+        if _digest(fx) != snap:
+            fails.append(f"fixture {fx.get('prompt')!r} mutated")
+        fails += [f"fixture {fx.get('prompt')!r}: {e}"
+                  for e in validate(d, fx) + text_problems(d, fx)]
+    lines.append(f"fixtures: {nfx} self-test gate scripts (no ctx, legacy beat "
+                 f"shapes) pass the same checks")
     ts = [c[0] for c in calls]
     mean_ms = 1000.0 * sum(ts) / max(1, len(ts))
     lines.append(f"timing: direct() mean {mean_ms:.2f} ms, max "
