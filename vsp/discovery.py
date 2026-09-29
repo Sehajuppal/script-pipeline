@@ -1299,3 +1299,309 @@ def render_problems(md, script):
     if extra:
         out.append(f"render_md adds D46 link groups {sorted(extra)}")
     return out
+
+
+# ------------------------------------------------------------ selfcheck
+FORMATS = ("demo", "talking-head", "pov-vlog", "transformation", "review")
+PRESENTERS = ("human", "ai")
+_ORGANIZER = re.compile(r"\b(?:organi[sz](?:er|ers|ing|e|ation)|storage|drawers?|"
+                        r"shel(?:f|ves))\b", re.I)
+
+
+def _load_maker():
+    m = _maker_module()
+    if m is not None and hasattr(m, "generate"):
+        return m
+    root = os.path.dirname(_HERE)
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    import viral_script_maker as m  # noqa: E402 — repo-root module
+    return m
+
+
+def _golden_rows():
+    root = os.path.dirname(_HERE)
+    rows = []
+    for name in ("golden", "holdout"):
+        path = os.path.join(root, "evals", f"{name}.jsonl")
+        with open(path, encoding="utf-8") as f:
+            for ln in f:
+                if ln.strip():
+                    g = json.loads(ln)
+                    rows.append((name, g["id"], g["prompt"]))
+    return rows
+
+
+def _tag_problems(script, ctx):
+    """Off-topic / filler / span-mismatch tags in the script caption."""
+    cap = str(script.get("caption") or "")
+    tags = [t.lower() for t in re.findall(r"#\w+", cap)]
+    prompt = str(script.get("prompt") or "")
+    out = []
+    if not 1 <= len(tags) <= 5:
+        out.append(f"{len(tags)} caption hashtags")
+    banned = set(_eng()["d155"]["banned_filler_tags"])
+    out += [f"filler tag {t}" for t in tags if t in banned]
+    if "#amazonfinds" in tags and not re.search(r"\bamazon\b", prompt, re.I):
+        out.append("#amazonfinds without an Amazon prompt")
+    if "#organization" in tags and not _ORGANIZER.search(
+            " ".join(str(ctx.get(k) or "") for k in ("product", "domain", "prompt_text"))):
+        out.append("#organization on a non-organizer")
+    span = str(ctx.get("span_n") or "")
+    for t in tags:
+        m = re.match(r"#(\d+)daychallenge$", t)
+        if m and (ctx.get("concept") != "challenge" or m.group(1) != span):
+            out.append(f"{t} on a {span or 'non'}-day video")
+    return out
+
+
+def selfcheck():
+    """Hermetic: in-process generate() over evals/golden.jsonl +
+    evals/holdout.jsonl x 5 formats x 2 presenters at seed 1 (no network,
+    no writes). Checks D155 (own checker) on every script, gate 1 on the
+    main caption, the keyword in caption line 1's first 60 chars, no
+    off-topic tags (+ the discovery-seo §1 sample defects), R14 comment-word
+    echo, render_md contract, determinism (repeat builds, regenerate, and
+    two PYTHONHASHSEEDs in child processes), build() < 10 ms, no
+    creative_warnings."""
+    import importlib
+    import subprocess
+    import time
+    from vsp import gates as G
+    lines, fails = [], []
+
+    def fail(msg):
+        if len(fails) < 40:
+            fails.append(msg)
+        else:
+            fails.append(None)
+
+    try:
+        vsm = _load_maker()
+    except Exception as e:  # noqa: BLE001
+        return False, [f"FAIL cannot import viral_script_maker: {type(e).__name__}: {e}"]
+    mod = importlib.import_module("vsp.discovery")   # the one enrich() calls
+    orig = mod.build
+    captured = []
+
+    def timed_build(script, ctx=None, seed=None, maker=None):
+        t0 = time.perf_counter()
+        out = orig(script, ctx=ctx, seed=seed, maker=maker)
+        captured.append(((time.perf_counter() - t0) * 1000.0, ctx))
+        return out
+
+    rows = _golden_rows()
+    runs = []
+    mod.build = timed_build
+    try:
+        for set_name, gid, prompt in rows:
+            for fmt in FORMATS:
+                for pr in PRESENTERS:
+                    del captured[:]
+                    s = vsm.generate(prompt, presenter=pr, fmt=fmt, seed=1)
+                    ms, ctx = captured[-1] if captured else (None, None)
+                    runs.append((set_name, gid, prompt, fmt, pr, s, ms, ctx))
+    finally:
+        mod.build = orig
+
+    n = len(runs)
+    stats = {k: {"golden": 0, "holdout": 0} for k in
+             ("spoken3", "onscreen3", "cap60", "hashtag", "cover", "strict_spoken3")}
+    per_set = {"golden": 0, "holdout": 0}
+    times = []
+    for set_name, gid, prompt, fmt, pr, s, ms, ctx in runs:
+        key = f"{gid}|{fmt}|{pr}"
+        per_set[set_name] += 1
+        if s.get("creative_warnings"):
+            fail(f"{key}: creative_warnings {s['creative_warnings']}")
+        d = s.get("discovery")
+        if not isinstance(d, dict) or ctx is None:
+            fail(f"{key}: no discovery")
+            continue
+        for m in check(d, s):
+            fail(f"{key}: {m}")
+        for m in G.gate1(s):
+            fail(f"{key}: gate1 {m}")
+        kw = d["primary_keyword"]
+        line1 = str(s.get("caption") or "").split("\n")[0]
+        if not has_keyword(line1, kw, 60):
+            fail(f"{key}: {kw!r} not in caption line 1's first 60 chars ({line1!r})")
+        for m in _tag_problems(s, ctx):
+            fail(f"{key}: tag {m}")
+        spoken = " ".join(str(it.get(k) or "") for _, _, it in _timed(s)
+                          for k in ("dialogue", "rehook"))
+        mw = re.search(r"\bcomment\s+([A-Z][A-Z0-9]{1,})\b", spoken)
+        if mw and mw.group(1) not in str(s.get("caption") or ""):
+            fail(f"{key}: bait word {mw.group(1)} not echoed in the caption (R14)")
+        for m in render_problems(render_md(d, s), s):
+            fail(f"{key}: {m}")
+        caps = [d["platforms"]["tiktok"]["caption"], d["platforms"]["instagram"]["caption"],
+                d["platforms"]["youtube_shorts"]["description"]]
+        if len(set(caps)) != 3 or s["caption"] in caps:
+            fail(f"{key}: one caption reused across platforms")
+        again = orig(s, ctx=ctx, seed=1, maker=vsm)
+        if json.dumps(again, sort_keys=True) != json.dumps(d, sort_keys=True):
+            fail(f"{key}: build() not deterministic")
+        t = ms
+        if t is not None and t >= 10.0:     # re-time: GC pauses are not cost
+            t = min(ms, *[_time_once(orig, s, ctx, vsm) for _ in range(3)])
+        if t is not None:
+            times.append(t)
+            if t >= 10.0:
+                fail(f"{key}: build() took {t:.1f} ms (>= 10)")
+        pl = d["placement"]
+        stats["spoken3"][set_name] += pl["spoken_by_s"] is not None and pl["spoken_by_s"] <= 3.0
+        stats["onscreen3"][set_name] += (pl["on_screen_by_s"] is not None
+                                         and pl["on_screen_by_s"] <= 3.0)
+        stats["cap60"][set_name] += bool(pl["caption_first_60"])
+        stats["hashtag"][set_name] += bool(pl["hashtag"])
+        stats["cover"][set_name] += bool(pl["cover_text"])
+        early = " ".join(str(it.get("dialogue") or "") for st, e, it in _timed(s)
+                         if e is not None and e <= 3.0)
+        stats["strict_spoken3"][set_name] += has_lemmas(early, kw)
+
+    # discovery-seo §1 sample defects, fixed
+    def run(gid, fmt, pr):
+        return next((r[5] for r in runs if r[1] == gid and r[3] == fmt and r[4] == pr), None)
+    fr = run("milk-frother", "demo", "ai")
+    if fr is not None:
+        tags = re.findall(r"#\w+", fr["caption"])
+        if "#organization" in tags or "#amazonfinds" in tags or "#milkfrother" not in tags:
+            fail(f"defect: milk frother tags {tags}")
+        if fr["discovery"]["comment_word"] != "FROTHER":
+            fail(f"defect: milk frother comment word {fr['discovery']['comment_word']}")
+        lines.append(f"sample milk-frother|demo|ai: tags {' '.join(tags)}; comment "
+                     f"{fr['discovery']['comment_word']}")
+    sp = run("silk-pillowcase", "review", "human")
+    if sp is not None:
+        cw = sp["discovery"]["comment_word"]
+        if cw == "GLOW" or "#silkpillowcase" not in sp["caption"]:
+            fail(f"defect: silk pillowcase comment {cw} / tags")
+        lines.append(f"sample silk-pillowcase|review|human: comment {cw}; tags "
+                     f"{' '.join(re.findall(r'#[A-Za-z0-9_]+', sp['caption']))}")
+    su = run("sugar-21", "pov-vlog", "human")
+    if su is not None:
+        tags = re.findall(r"#\w+", su["caption"])
+        if "#30daychallenge" in tags or "#21daychallenge" not in tags:
+            fail(f"defect: sugar-21 tags {tags}")
+        lines.append(f"sample sugar-21|pov-vlog|human: tags {' '.join(tags)}; comment "
+                     f"{su['discovery']['comment_word']} (bait hard-codes DAY1 in build_beats)")
+
+    # determinism: regenerate a slice in-process, then two hash seeds in
+    # child processes (set/dict order can never leak into the packaging)
+    probe = [(p, f, pr) for (_, gid, p, f, pr, _, _, _) in runs
+             if f == "demo" and gid in ("milk-frother", "sugar-21", "kitchen-finds",
+                                        "morning-routine", "hooks-advice", "h-mount")]
+    ref = {}
+    for p, f, pr in probe:
+        s = vsm.generate(p, presenter=pr, fmt=f, seed=1)
+        base = next(r[5] for r in runs if r[2] == p and r[3] == f and r[4] == pr)
+        blob = json.dumps([s["caption"], s.get("discovery")], sort_keys=True)
+        if blob != json.dumps([base["caption"], base.get("discovery")], sort_keys=True):
+            fail(f"regenerate {p!r} {f} {pr}: output differs")
+        ref[f"{p}|{f}|{pr}"] = blob
+    child = (
+        "import json,sys\nsys.path.insert(0, sys.argv[1])\n"
+        "import viral_script_maker as m\nout = {}\n"
+        "for k in json.loads(sys.argv[2]):\n"
+        "    p, f, pr = k.split('|')\n"
+        "    s = m.generate(p, presenter=pr, fmt=f, seed=1)\n"
+        "    out[k] = json.dumps([s['caption'], s.get('discovery')], sort_keys=True)\n"
+        "print('@@DISC@@' + json.dumps(out))\n")
+    for hs in ("0", "4242"):
+        env = dict(os.environ, PYTHONHASHSEED=hs)
+        try:
+            r = subprocess.run([sys.executable, "-c", child, os.path.dirname(_HERE),
+                                json.dumps(sorted(ref))], capture_output=True,
+                               text=True, env=env, timeout=300)
+            got = json.loads(r.stdout.rsplit("@@DISC@@", 1)[1])
+        except Exception as e:  # noqa: BLE001
+            fail(f"PYTHONHASHSEED={hs} child failed: {type(e).__name__}: {e}")
+            continue
+        diff = [k for k in ref if got.get(k) != ref[k]]
+        if diff:
+            fail(f"PYTHONHASHSEED={hs}: packaging differs for {diff[:3]}")
+
+    times.sort()
+    g, h = per_set["golden"], per_set["holdout"]
+
+    def pct(k, sname, tot):
+        return f"{stats[k][sname]}/{tot} ({100.0 * stats[k][sname] / max(1, tot):.0f}%)"
+    lines.insert(0, f"scripts: {n} (golden {g} + holdout {h}) x seed 1; "
+                    f"build() mean {sum(times) / max(1, len(times)):.2f} ms, "
+                    f"p95 {times[int(0.95 * (len(times) - 1))] if times else 0:.2f} ms, "
+                    f"max {times[-1] if times else 0:.2f} ms")
+    for sname, tot in (("golden", g), ("holdout", h)):
+        lines.insert(1 if sname == "golden" else 2,
+                     f"placement {sname}: spoken<=3s {pct('spoken3', sname, tot)} "
+                     f"[full keyword {pct('strict_spoken3', sname, tot)}], "
+                     f"on-screen<=3s {pct('onscreen3', sname, tot)}, caption first 60 "
+                     f"{pct('cap60', sname, tot)}, hashtag {pct('hashtag', sname, tot)}, "
+                     f"cover {pct('cover', sname, tot)}")
+    lines.append(f"determinism: {len(ref)} regenerated + PYTHONHASHSEED 0/4242 children")
+    real = [f for f in fails if f]
+    more = len(fails) - len(real)
+    lines += [f"FAIL {f}" for f in real]
+    if more:
+        lines.append(f"FAIL ... {more} more")
+    ok = not fails
+    lines.append(("ok" if ok else "NOT OK") + f": D155 / gate1 / keyword line 1 / tags / "
+                 f"R14 / render / determinism / <10 ms / creative_warnings over {n} scripts")
+    return ok, lines
+
+
+def _time_once(fn, s, ctx, vsm):
+    import time
+    t0 = time.perf_counter()
+    fn(s, ctx=ctx, seed=1, maker=vsm)
+    return (time.perf_counter() - t0) * 1000.0
+
+
+# ------------------------------------------------------------------ CLI
+def main(argv=None):
+    import argparse
+    ap = argparse.ArgumentParser(prog="python3 -m vsp.discovery",
+                                 description="Discovery packaging (pipeline v2.1)")
+    sub = ap.add_subparsers(dest="cmd")
+    sub.add_parser("selfcheck", help="hermetic golden+holdout matrix checks")
+    sh = sub.add_parser("show", help="generate a script and print its packaging")
+    sh.add_argument("prompt")
+    sh.add_argument("--format", default="demo", choices=FORMATS)
+    sh.add_argument("--presenter", default="ai", choices=PRESENTERS)
+    sh.add_argument("--seed", type=int, default=1)
+    sh.add_argument("--duration", type=int, default=30)
+    sh.add_argument("--json", action="store_true", help="print script['discovery'] JSON")
+    a = ap.parse_args(argv)
+    from vsp import discovery as canon   # the module enrich() uses, never __main__
+    if a.cmd == "selfcheck":
+        ok, out = canon.selfcheck()
+        print("\n".join(out))
+        return 0 if ok else 1
+    if a.cmd == "show":
+        vsm = canon._load_maker()
+        s = vsm.generate(a.prompt, presenter=a.presenter, fmt=a.format,
+                         duration=a.duration, seed=a.seed)
+        d = s.get("discovery")
+        if d is None:
+            print("no discovery packaging (creative_warnings: "
+                  f"{s.get('creative_warnings')})", file=sys.stderr)
+            return 1
+        if a.json:
+            print(json.dumps(d, indent=2, ensure_ascii=False))
+        else:
+            print("--- SCRIPT CAPTION ---")
+            print(s["caption"])
+            print()
+            print(canon.render_md(d, s))
+        errs = canon.check(d, s)
+        for m in errs:
+            print("D155 ERROR " + m, file=sys.stderr)
+        for m in canon.warnings(d, s):
+            print("note: " + m, file=sys.stderr)
+        return 1 if errs else 0
+    ap.print_help()
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())
