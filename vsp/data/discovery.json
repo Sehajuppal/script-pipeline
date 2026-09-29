@@ -1508,25 +1508,6 @@
     "{topic} mistakes",
     "{topic} explained"
    ]
-  },
-  "practice_tags": {
-   "reading": "#booktok",
-   "walking": "#walkingchallenge",
-   "running": "#runtok",
-   "journaling": "#journaling",
-   "cooking": "#foodtok",
-   "meditating": "#meditation",
-   "lifting": "#gymtok",
-   "training": "#gymtok",
-   "writing": "#writingcommunity",
-   "studying": "#studytok",
-   "stretching": "#mobility",
-   "cleaning": "#cleantok",
-   "saving": "#moneytok",
-   "fasting": "#selfimprovement",
-   "swimming": "#swimming",
-   "biking": "#cycling",
-   "dancing": "#dancechallenge"
   }
  }
 }
