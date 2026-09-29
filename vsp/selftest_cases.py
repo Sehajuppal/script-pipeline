@@ -1,8 +1,14 @@
 """Self-test fixtures — the 17 legacy gate cases, moved verbatim from
 pipeline.py (d8f8759). Each case: (name, script, want_pass, want_msgs).
 
-Append new cases for new gate rules to NEW_CASES (never edit or delete a
+New cases for new gate rules go in new_cases() (never edit or delete a
 legacy case: every legacy case must keep failing with its original message).
+new_cases() tuples may carry a 5th element of options (see its docstring);
+unit_cases() are in-process contract checks run by vsp/selftest.py.
+
+Label note: the legacy "gap-in-timeline" comment says "D75" — that was the
+dead-air rule's number before renumbering; it is D78 in RULES.md (D75 is the
+bird/animal-object pets routing rule).
 """
 
 
@@ -134,10 +140,348 @@ def legacy_cases():
     return good, cases
 
 
+AI_DISCLOSURE = ('Disclosure (G6/Q7): on-screen small "AI persona" label from '
+                 'FRAME 0, separate element from hook text, top safe zone.')
+
+
+def good_ai(good):
+    """The good fixture on the AI lane: presenter ai + disclosure field +
+    caption AI line (D138). Must pass both gates."""
+    return {**good, "presenter": "ai", "disclosure": AI_DISCLOSURE,
+            "caption": "Test caption.\nmade with an AI persona\n#beautytok"}
+
+
+def _with_beat(good, i, **kw):
+    beats = [dict(b) for b in good["beats"]]
+    beats[i] = {**beats[i], **kw}
+    return beats
+
+
 def new_cases(good):
-    """Cases for gate rules added in pipeline v2 (D136+). Registered by
-    vsp/rules.py owners; each must fail with its rule id in the message."""
+    """Cases for gate rules added in pipeline v2 (RULES.md §66).
+
+    Tuple: (name, script, want_pass, want_msgs[, opts]). opts (optional):
+      "only": every failure message in the report must start with this id
+              (the case isolates one rule)
+      "env":  per-case environment overrides; a None value UNSETS the var
+              (e.g. {"VSP_FIXTURE_OK": None} runs gate 2 like production)
+    Every new error rule has at least one failing case whose expected message
+    contains the rule id, plus pass controls for its allow-paths.
+    """
+    ai = good_ai(good)
+    b = good["beats"]
+    cta = {"type": "CTA", "t": "9.0-10.0s", "direction": "Presenter to camera.",
+           "on_screen": "", "dialogue": "Part 2 soon.", "delivery": "Brisk.",
+           "rehook": ""}
+    return [
+        # --- AI lane: the good fixture on presenter=ai passes both gates
+        ("ai-presenter-good", ai, True, []),
+        # D136: social proof the prompt never supplied
+        ("d136-unsourced-social-proof", {**good, "beats": _with_beat(
+            good, 2, dialogue="Sold out twice. One pass, done.")},
+         False, ["D136:"], {"only": "D136"}),
+        # D136 allow-path: the prompt supplies the claim
+        ("d136-prompt-supplied-proof", {**good,
+            "prompt": "test product that sold out twice",
+            "beats": _with_beat(good, 2, dialogue="Sold out twice. One pass, done.")},
+         True, []),
+        # D137: AI persona claims to have used the product
+        ("d137-ai-lived-experience", {**ai, "beats": _with_beat(
+            ai, 2, dialogue="I tried it for a week. Done.")},
+         False, ["D137:"], {"only": "D137"}),
+        # D138: presenter=ai without the disclosure field
+        ("d138-ai-no-disclosure-field", {k: v for k, v in ai.items()
+                                         if k != "disclosure"},
+         False, ["D138:"], {"only": "D138"}),
+        # D138: presenter=ai without a caption AI line
+        ("d138-ai-no-caption-line", {**ai, "caption": "Test caption. #beautytok"},
+         False, ["D138:"], {"only": "D138"}),
+        # D138: a product name containing "AI" is not a disclosure line
+        ("d138-ai-product-name-is-not-disclosure", {**ai, "caption":
+            "The AI note taker, tested.\n#beautytok"},
+         False, ["D138:"], {"only": "D138"}),
+        # D139: generic engagement bait (the keyword CTA in the fixture is fine)
+        ("d139-engagement-bait", {**good, "beats": _with_beat(
+            good, 2, dialogue="Tag a friend who needs this.")},
+         False, ["D139:"], {"only": "D139"}),
+        # D140: more than 5 hashtags
+        ("d140-too-many-hashtags", {**good, "caption":
+            "Test caption. #beautytok #hairtok #makeuptok #grwm #glowup #lashes"},
+         False, ["D140:"], {"only": "D140"}),
+        # D140: generic-only hashtags
+        ("d140-generic-only-hashtags", {**good,
+                                        "caption": "Test caption. #fyp #viral"},
+         False, ["D140:"], {"only": "D140"}),
+        # D141: guarantee claim the prompt never made
+        ("d141-absolute-claim", {**good, "beats": _with_beat(
+            good, 2, dialogue="Guaranteed. One pass and done.")},
+         False, ["D141:"], {"only": "D141"}),
+        # D141 allow-path: the prompt makes the claim
+        ("d141-prompt-supplied-claim", {**good,
+            "prompt": "test product with a lifetime guarantee",
+            "beats": _with_beat(good, 2, dialogue="Guaranteed. One pass and done.")},
+         True, []),
+        # D144: the D109 refill fragment ("NOBODY MENTIONS FLAW")
+        ("d144-overlay-fragment", {**good, "beats": _with_beat(
+            good, 0, on_screen="NOBODY MENTIONS FLAW")},
+         False, ["D144:"], {"only": "D144"}),
+        # D144 (+D17): frame-0 overlay over 3 words
+        ("d144-overlay-too-long", {**good, "beats": _with_beat(
+            good, 0, on_screen="LOOK AT THIS ONE NOW")},
+         False, ["D144:"], {"only": "D144"}),
+        # D31: a raw {slot} reached spoken copy
+        ("d31-raw-template-slot", {**good, "beats": _with_beat(
+            good, 2, dialogue="One pass and {category} is done.")},
+         False, ["D31:"], {"only": "D31"}),
+        # D73: a 10-word verbal hook (whitespace tokens, like pick_hook)
+        ("d73-verbal-hook-over-8", {**good, "hook_stack": [
+            {"type": "HOOK", "dialogue":
+             "Look at this: one pass, one week, zero regrets, honestly."}]},
+         False, ["D73:"], {"only": "D73"}),
+        # D93: the same re-hook twice
+        ("d93-repeated-rehook", {**good, "beats": _with_beat(
+            good, 2, rehook="Here is what it took.")},
+         False, ["D93:"], {"only": "D93"}),
+        # D146: part-2 CTA with no series_plan
+        ("d146-unplanned-part2", {**good, "beats": [dict(x) for x in b] + [cta]},
+         False, ["D146:"], {"only": "D146"}),
+        # D146 control: the same CTA backed by a series_plan passes
+        ("d146-part2-with-series-plan", {**good,
+            "beats": [dict(x) for x in b] + [cta],
+            "series_plan": {"part": 1, "next": "the week-two test"}},
+         True, []),
+        # D142 is a WARNING: a fast on-screen card never fails the gate
+        ("d142-fast-onscreen-warns-only", {**good, "beats": _with_beat(
+            good, 2, on_screen="RESULT AFTER ONE SINGLE PASS: MEASURED, "
+                               "TIMED AND REPEATED TWICE")},
+         True, []),
+        # D151: production gate 2 (no VSP_FIXTURE_OK) rejects FIXTURE reels
+        ("d151-fixture-reels-rejected", good, False, ["D151:"],
+         {"only": "D151", "env": {"VSP_FIXTURE_OK": None}}),
+    ]
+
+
+# ------------------------------------------------------------ unit checks
+# In-process checks for contracts a pipeline run cannot reach (e.g. a brief
+# make_shotlist never emits). Each returns a list of problems ([] = ok).
+
+def _unit_registry_shape():
+    from vsp import gates, rules
+    probs = []
+    seen = set()
+    for r in rules.REGISTRY:
+        if r.stage not in rules.STAGES or r.severity not in rules.SEVERITIES:
+            probs.append(f"{r.id}: bad stage/severity {r.stage}/{r.severity}")
+        if (r.stage, r.id) in seen:
+            probs.append(f"{r.id}: duplicate id in stage {r.stage}")
+        seen.add((r.stage, r.id))
+        if not callable(r.check):
+            probs.append(f"{r.id}: check not callable")
+    if [r.check.legacy for r in rules.LEGACY_SCRIPT_RULES] != list(gates.LEGACY_GATE1):
+        probs.append("gate-1 legacy rules are not the legacy checks in legacy order")
+    if [r.check.legacy for r in rules.LEGACY_BUNDLE_RULES] != list(gates.LEGACY_GATE2):
+        probs.append("gate-2 legacy rules are not the legacy checks in legacy order")
+    for stage in rules.STAGES:
+        ids = [r.id for r in rules.rules_for(stage)]
+        n = len(rules.LEGACY_IDS[stage])
+        if tuple(ids[:n]) != rules.LEGACY_IDS[stage]:
+            probs.append(f"{stage}: legacy rules must run first")
+    if gates.REGISTRY is not rules.REGISTRY:
+        probs.append("vsp.gates.REGISTRY is not vsp.rules.REGISTRY")
+    return probs
+
+
+def _unit_deliverable_in_sync():
+    import make_shotlist
+    from vsp import gates
+    if make_shotlist.DELIVERABLE != gates.DELIVERABLE_BLOCK:
+        return ["make_shotlist.DELIVERABLE differs from the gate's canonical "
+                "copy — the DELIVERABLE block is sacred"]
     return []
+
+
+def _unit_deliverable_strengthened():
+    import make_shotlist
+    from vsp import gates
+    good, _ = legacy_cases()
+    bundle, _, _ = make_shotlist.build_bundle(good, refs=[
+        "- https://www.instagram.com/reel/UNIT-1/ (@unit, 1 likes) — unit"])
+    probs = []
+    if "DELIVERABLE block missing/altered" in gates.gate2(bundle, good):
+        probs.append("intact DELIVERABLE block rejected")
+    tampered = bundle.replace("no trims, no pre-cutting",
+                              "light trims ok, no pre-cutting")
+    if "DELIVERABLE block missing/altered" not in gates.gate2(tampered, good):
+        probs.append("altered DELIVERABLE tail passed gate 2")
+    return probs
+
+
+def _unit_d138_brief_label():
+    import make_shotlist
+    from vsp import gates
+    good, _ = legacy_cases()
+    ai = good_ai(good)
+    refs = ["- https://www.instagram.com/reel/UNIT-1/ (@unit, 1 likes) — unit"]
+    bundle, _, _ = make_shotlist.build_bundle(ai, refs=refs)
+    probs = []
+    if gates.gate2(bundle, ai):
+        probs.append(f"AI brief with the label failed gate 2: {gates.gate2(bundle, ai)}")
+    stripped = "\n".join(ln for ln in bundle.split("\n")
+                         if '"AI persona" label' not in ln)
+    errs = gates.gate2(stripped, ai)
+    if errs != ["D138: AI-persona label instruction missing from brief"]:
+        probs.append(f"label-less AI brief: expected only the D138 message, got {errs}")
+    if gates.gate2(stripped, good):   # human presenter: no label required
+        probs.append("human brief without an AI label failed gate 2")
+    return probs
+
+
+def _unit_warn_never_fails():
+    from vsp import gates
+    good, _ = legacy_cases()
+    s = {**good, "beats": _with_beat(good, 2, on_screen=(
+        "RESULT AFTER ONE SINGLE PASS: MEASURED, TIMED AND REPEATED TWICE"))}
+    f = gates.gate1_findings(s)
+    probs = []
+    if not any(x["rule"] == "D142" and x["severity"] == "warn" for x in f):
+        probs.append("D142 warning not reported by gate1_findings")
+    if gates.gate1(s):
+        probs.append(f"a warning failed gate 1: {gates.gate1(s)}")
+    return probs
+
+
+def _unit_legacy_first():
+    from vsp import gates
+    good, _ = legacy_cases()
+    s = {**good, "beats": _with_beat(good, 2, dialogue=(
+        "Sold out twice. " + " ".join(["word"] * 12)))}
+    msgs = gates.gate1(s)
+    if not (msgs and msgs[0].startswith("D43") and msgs[-1].startswith("D136")):
+        return [f"legacy messages must precede v2 messages, got {msgs}"]
+    return []
+
+
+def _unit_check_crash_fails_closed():
+    from vsp import rules
+    bad = {"prompt": "x", "hook_stack": "not-a-list", "beats": [{"t": 5}],
+           "caption": 7, "niche": "x"}
+    try:
+        f = rules.evaluate("script", bad)
+    except Exception as e:  # noqa: BLE001
+        return [f"evaluate raised on a malformed script: {e!r}"]
+    if not any(x["severity"] == "error" for x in f):
+        return ["malformed script produced no error finding"]
+    return []
+
+
+ROUTE_KEYS = ("sanitized_prompt", "price", "concept", "niche", "fit",
+              "category", "complexity", "votes", "agreement", "confidence",
+              "recommended_presenter", "presenter_reason",
+              "recommended_formats", "lane_warnings", "input_errors",
+              "input_warnings")
+
+
+def _unit_router_contract():
+    import json
+    import os
+    from vsp import config
+    from vsp.router import route
+    prompts = []
+    golden = os.path.join(config.REPO, "evals", "golden.jsonl")
+    if os.path.isfile(golden):
+        with open(golden, encoding="utf-8") as f:
+            prompts = [json.loads(ln)["prompt"] for ln in f if ln.strip()
+                       and not ln.startswith("//")]
+    probs = []
+    edge = [None, "", "   ", "x" * 301, "a {limited} edition bottle",
+            "tiktok shop LED lamp"]
+    for p in prompts + edge:
+        for pres in (None, "ai"):
+            try:
+                r = route(p, presenter=pres, fmt="review", pack=False)
+            except Exception as e:  # noqa: BLE001
+                probs.append(f"route({p!r}) raised {type(e).__name__}: {e}")
+                continue
+            missing = [k for k in ROUTE_KEYS if k not in r]
+            if missing:
+                probs.append(f"route({p!r}) missing keys {missing}")
+            if not 0.0 <= r.get("agreement", -1) <= 1.0 or \
+                    r.get("recommended_presenter") not in ("ai", "human"):
+                probs.append(f"route({p!r}) bad agreement/presenter")
+    if route("", pack=False)["input_errors"] != ["empty prompt"]:
+        probs.append("empty prompt not reported as an input error")
+    if not route("x" * 301, pack=False)["input_errors"]:
+        probs.append("301-char prompt not reported as an input error")
+    r = route("a {limited} edition bottle", pack=False)
+    if "{" in r["sanitized_prompt"] or not r["input_warnings"]:
+        probs.append("braces not stripped with a warning")
+    r = route("tiktok shop LED lamp", presenter="ai", pack=False)
+    if not any("TikTok Shop" in w for w in r["lane_warnings"]):
+        probs.append("TikTok Shop x AI lane warning missing")
+    r = route("ergonomic office chair", pack=False)
+    if r["niche"] == "beauty":
+        probs.append("'chair' routed to beauty (substring hijack not outvoted)")
+    return probs
+
+
+def _unit_research_contract():
+    import json
+    import os
+    import tempfile
+    from datetime import datetime, timedelta, timezone
+    from vsp import research as R
+    probs = []
+    now = datetime(2026, 9, 28, 12, 0, tzinfo=timezone.utc)
+    pack = {"generated_at": (now - timedelta(hours=50)).isoformat(),
+            "sources": {}, "reels_total": 3, "schema_version": 2,
+            "niche_map": {"beauty": ["fashion-beauty"]},
+            "niche_hooks": {"fashion-beauty": [
+                {"category": "comment-bait", "times_seen": 9},     # unmapped
+                {"category": "grwm-hook", "times_seen": 5}]},
+            "fresh_hook_lines": [
+                {"hook": "(visual open, bathroom mirror)", "niche": "fashion-beauty"},
+                {"hook": "null", "niche": "fashion-beauty"},
+                {"hook": "POV: your lashes finally stayed on", "niche": "fashion-beauty"},
+                {"hook": "Hood Cinema!", "niche": "comedy"}]}
+    if R.validate_pack(pack):
+        probs.append(f"valid v2 pack rejected: {R.validate_pack(pack)}")
+    if not R.validate_pack({"generated_at": "x", "reels_total": -1}):
+        probs.append("invalid pack accepted")
+    if R.live_hook_family(pack, "beauty") != "transformation":
+        probs.append("live_hook_family did not walk past an unmapped rank-0 "
+                     "category")
+    lines = [x["hook"] for x in R.niche_fresh_lines(pack, "beauty")]
+    if lines != ["POV: your lashes finally stayed on"]:
+        probs.append(f"niche_fresh_lines kept descriptions/off-niche lines: {lines}")
+    d = tempfile.mkdtemp(prefix="vsp_unit_pack_")
+    try:
+        path = os.path.join(d, "pack.json")
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(pack, f)
+        got, meta = R.load_pack(path, now=now)
+        if got is None or not meta["stale"] or len(meta["sha256"] or "") != 64:
+            probs.append(f"load_pack meta wrong: {meta}")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write("{not json")
+        got, meta = R.load_pack(path, now=now)
+        if got is not None or not meta["errors"]:
+            probs.append("corrupt pack not reported")
+    finally:
+        import shutil
+        shutil.rmtree(d, ignore_errors=True)
+    return probs
+
+
+def unit_cases():
+    return [("registry-shape", _unit_registry_shape),
+            ("router-contract", _unit_router_contract),
+            ("research-pack-contract", _unit_research_contract),
+            ("deliverable-block-in-sync", _unit_deliverable_in_sync),
+            ("deliverable-check-strengthened", _unit_deliverable_strengthened),
+            ("d138-brief-label-instruction", _unit_d138_brief_label),
+            ("d142-warning-never-fails", _unit_warn_never_fails),
+            ("legacy-messages-first", _unit_legacy_first),
+            ("crashing-check-fails-closed", _unit_check_crash_fails_closed)]
 
 
 def all_cases():

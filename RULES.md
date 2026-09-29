@@ -1,6 +1,7 @@
 # VIRAL SCRIPT RULES — compiled from all research programs
 # For: Antigravity / the video pipeline. Enforced by viral_script_maker.py.
-# Last compiled: 2026-09-27 by Marlowe.
+# Last compiled: 2026-09-28 — pipeline v2 contract workstream (§66; section-number cleanup). Previous compile: 2026-09-27 by Marlowe.
+# Gate-enforced rules live in vsp/rules.py (REGISTRY); rule ↔ code coverage: docs/RULE-COVERAGE.md (tools/rule_coverage.py).
 
 ## 9. DEEP-DIVE PATCHES — 2026-09-27 (mind/brain × dossier × human-complexity)
 Appended by the deep-dive coordinator. Each patch: rule, mechanism, source, evidence grade.
@@ -1436,7 +1437,7 @@ gate misfire. No bundle/brief produced.
   filler (same class as cycle 23's WATCHED edu-philosophy note; same
   compound-noun root cause as above).
 
-## §45 — Judge loop, cycle 24 (2026-09-28 04:10 PDT)
+## §45b — Judge loop, cycle 24 (2026-09-28 04:10 PDT)
 
 ### Cycle 24 findings
 Cycle 24 (2026-09-28): "I read 10 pages every day for 30 days", human
@@ -1611,7 +1612,7 @@ The practice-challenge verdict_card's surprise slot shipped "the hardest day
 wasn't day 1 — and the quiet payoff beat the streak itself" — a content-free
 tail that never names an actual delta; the promised payoff was the streak
 restated ("the streak held, all 30 days"). Third cycle of the WATCHED item
-(§45, §47 carry notes) — it repeated on every practice challenge, so it is a
+(§45b, §47 carry notes) — it repeated on every practice challenge, so it is a
 generalizable maker flaw, not a one-script blemish. Rule: the challenge
 payoff card's surprise slot must name a concrete delta the viewer can picture
 (a named hard day survived, a measured change, a named relapse beaten) —
@@ -1658,7 +1659,7 @@ same algorithmic mis-route as a wrong niche.
 [VERIFIED — maker self-violation, gate caught it; code trace: CAPTION_TAGS
 line 450, NICHE_COMMENT_WORD line 420 in viral_script_maker.py]
 
-## §49 — Judge loop, cycle 27 (2026-09-28 07:10 PDT)
+## §49b — Judge loop, cycle 27 (2026-09-28 07:10 PDT)
 
 ### D108 DEMO-TEST FALLBACK IS AN EVENT, NOT A LABEL (2026-09-28, judge loop, cycle 27)
 Seed 934 "heated electric lunch box" (AI transformation) shipped "Test 1: the
@@ -1732,7 +1733,7 @@ script; code trace: D111 check + "dangling-test-number"/"numbered-tests-pair"
 self-test cases in gate1/pipeline.py; --self-test 14/14 + no-clobber green;
 passing fixture on_screen "TEST 1"->"TEST" re-verified through the FULL pipeline]
 
-## §50 — Judge loop, cycle 28 (2026-09-28 08:10 PDT)
+## §50b — Judge loop, cycle 28 (2026-09-28 08:10 PDT)
 
 ### D112 UNFOLLOWED IS A QUITTING VERB (2026-09-28, judge loop, cycle 28)
 "I unfollowed 500 accounts for 30 days" (rotation item 24, story mode,
@@ -1868,7 +1869,7 @@ The AI-persona persuasion dossier now flows into every AI-presenter script autom
 - Brief gains a PERSONA fidelity block (AI presenter only): no redesign across shots or videos (F10), neutral non-sexualized styling (Q1/F6), no beautify drift (Q1/F2 — attractiveness has no direct effect on purchase intent), on-screen "AI persona" label from frame 0 (Q7/F130 — disclosure costs nothing), and the funnel note that AI personas convert indirectly via loyal-core building, not hard-sell (Q10/F56, F49).
 - Already wired before this: F32 hedonic+AI fit warning, G6/Q7 caption disclosure ("made with an AI persona").
 
-## §51 — Judge loop, cycle 29 (2026-09-28 09:10 PDT)
+## §51b — Judge loop, cycle 29 (2026-09-28 09:10 PDT)
 
 ### D116 STAND KEYS IN THE PROOF/MECHANISM MAPS (2026-09-28, judge loop, cycle 29)
 Every unmapped category degrades EVERY positive-proof slot to its default —
@@ -2112,7 +2113,7 @@ output dirs: zero asterisks in dialogue on the fixed runs]
 - Dual follow asks persist: comment bait "Hit follow, comment HAIR" + CTA
   "Follow, part 2" (cycle-10 class).
 
-### 2026-09-28 — judge loop cycle 32 (heated eyelash curler, AI presenter, demo, seed 939; reference class: anastasile 1.9M likes, tyquanglee 800K, wingitwithankush 720K, julianna_claire bathroom 2,852 comments)
+## §54b — 2026-09-28 — judge loop cycle 32 (heated eyelash curler, AI presenter, demo, seed 939; reference class: anastasile 1.9M likes, tyquanglee 800K, wingitwithankush 720K, julianna_claire bathroom 2,852 comments)
 - D124. FRAME-0 VISUAL COLLISION OUTRANKS MOTION (extends G2): G2's scroll-stopper list treats motion as the required one, but the top beauty/product reference class wins with a whole-frame VISUAL ANOMALY, not product-in-motion — anastasile's all-red monochrome color flood (1.9M likes), tyquanglee's jarring shaved-head + clinical cream-patch before-image (800K), wingitwithankush's gender-role flip (720K). Our seed-939 frame-0 was "hands on heated eyelash curler, object in motion" — motion-only, no anomaly. For demo/review formats the frame-0 direction must now pick the visual-anomaly class first: an extreme before-state, a full-frame color/texture break, or a context flip — the product enters on frame 2, never as the whole of frame 1. [VERIFIED — judge-loop observational: the 3 highest-like fashion-beauty references all lead with anomaly-over-motion; seed 939 leads with motion-only]
 - D125. DEMO DIALOGUE NAMES THE OBSERVABLE (meta-narration ban): seed-939's demo beat said "Watch: the curler doing its real job. See that? visible before-and-after proof." — dialogue narrates the demo instead of pointing the eye. "See that?", "watch this", "doing its real job", "the results speak for themselves" are banned as the only pointer: the demo beat must name the concrete observable the viewer is about to see ("Watch the tips lift at twelve seconds, edge to edge", "Compare left lashes to right — same mascara"). Name the change, not the act of watching. [VERIFIED — maker output on seed 939: both demo-beat sentences are meta-pointers with no named observable]
 
@@ -2160,7 +2161,7 @@ consecutive_no_improvement -> 0.
   card instead of display text; demo/review/pov-vlog branches all still
   write sentences into on_screen.
 
-### §56 USER-SUPPLIED: BORROWED-INTEREST HOOK FRAMES (2026-09-28)
+## §56 USER-SUPPLIED: BORROWED-INTEREST HOOK FRAMES (2026-09-28)
 
 - D127. BORROWED-INTEREST HOOK FRAMES (user-supplied 2026-09-28, PENDING LOOP VERIFICATION): a product script may borrow attention by framing the hook through a fictional character, film/TV world, or cultural archetype instead of leading with the product feature — e.g. "THE BRIDGERTON BEDROOM TEST" as the frame-0 card for a sleep product, "MAIN-CHARACTER MONDAY: THE COMMUTE" for a bag. Source: @ameliagonzamonte reel on the "borrowed interest" tactic — a creator's lesson framed through Sabrina Carpenter drew 2M views vs ~10k views framed plainly (200x attention transfer, creator-reported); the celebrity/character is the CASE STUDY the script teaches through, never a passing mention. Guardrail: named REAL celebrities and real brands are OFF-LIMITS without explicit user approval (right-of-publicity / brand risk). Fictional characters, film/TV worlds, and generic cultural archetypes carry zero IP risk and are always permitted. Placement: the borrowed interest lives at frame-0 (the character/archetype + bold claim is the first card, per D124 anomaly-first ordering) and the demo beat teaches through it — e.g. "rate this routine like a Bridgerton dressing scene" rather than "here is the routine." Do not rename the product after the character; the product stays the product, the frame is the lens.
 [USER-SUPPLIED — logged from reel 18094657430562657 (viral.db #1826), not yet stress-tested by either loop; judge loop should treat D127 as a hypothesis to score in future cycles]
@@ -2292,18 +2293,18 @@ apps" not "all social media apps"); 13-case non-challenge regression
 (101/202/301/405/506/607/610/611/612/713/815/939/940) — zero crashes,
 zero raw slots; pipeline.py --self-test green (16 gate cases + no-clobber)]
 
-### §60 USER-SUPPLIED: THE COMBO METHOD + EMOTION-GAP HOOKS (2026-09-28)
+## §60 USER-SUPPLIED: THE COMBO METHOD + EMOTION-GAP HOOKS (2026-09-28)
 
 - D131. THE COMBO METHOD AS THE D124 CONTEXT-FLIP GENERATOR (user-supplied 2026-09-28, PENDING LOOP VERIFICATION): D124 lists "context flip" as a frame-0 anomaly class; the combo method is the GENERATIVE RECIPE for producing it. Pick two things that belong to different worlds (product x an unexpected setting, use, or companion object) and render frame-0 as their IMPOSSIBLE COMBINATION — the viewer must SEE the collision, never hear about it. Source: @adley (Viralish CEO) hook-formula reel — raw ribs being seasoned and cooked on a car engine, the "what the hell is she doing?" / "you shouldn't be doing that" pair. Norm-violation emotion is load-bearing: the anomaly must trigger "you shouldn't be doing that" (or its class-native equivalent: disbelief, outrage, delight), not just visual novelty — curiosity without an emotional response is the weaker half of the hook. For product scripts: the demo/tension beat may stage the combo (e.g. a sleep lamp pitched inside a camping tent; a hair wax stick used mid-commute in a car) and frame-0 is the combination shot, with the product identified by the lock. No stunt may damage the product or read as unsafe.
 [USER-SUPPLIED — logged from reel 18096937736110728 (viral.db #1827), verified via direct video frames; not yet stress-tested by either loop; judge loop should treat D131 as a hypothesis to score in future cycles]
 
-### §61 D132: D37 MUST SCAN THE CAPTION, NOT JUST THE BEATS (2026-09-28)
+## §61 D132: D37 MUST SCAN THE CAPTION, NOT JUST THE BEATS (2026-09-28)
 
 - D132. The D37 invented-price gate scanned only `beats` — a "$39" injected into the CAPTION sailed through gate 1 (gauntlet cycle 18 mutation probe on the hair-wax-stick fixture: full pipeline PASS pre-fix). The caption ships verbatim to the viewer, so a fabricated price there is fabricated copy, same as in spoken dialogue — arguably higher-leverage, since caption text renders as a persistent truth claim. Fix: gate 1's D37 scan covers `beats` + `caption` (prompt still carries the D37 allow-path: a price IN the prompt is consent).
 [VERIFIED — mutation re-run: the "$39"-in-caption probe now fails gate 1 with D37 firing alone; the "$49 in prompt + $49 in caption" allow-path still passes gate 1 and the full pipeline; unmutated hair-wax-stick fixture md5-identical pre/post (d6a07c5e72e36a0eb5342d6491cedbc9) and still passes the full pipeline; --self-test 17/17 gate cases + no-clobber green including the new "invented-price-caption" case]
 
 
-### §62 D133: LANTERN JOINS THE PROOF MAPS (2026-09-28)
+## §62 D133: LANTERN JOINS THE PROOF MAPS (2026-09-28)
 
 - D133. "lantern" shipped unmapped in all four proof maps, and the seed-947
 output showed the exact D95/D116/D118/D128-class double degrade (fifth
@@ -2332,7 +2333,7 @@ standing seeds (101/202/301/405/506/607/610/611/612/713/815/939/940/
 936/937/938/946/928/929/934/935) zero crashes, zero raw slots;
 pipeline.py --self-test green (17 gate cases + no-clobber)]
 
-### §63 D134: OUTDOORS NICHE (2026-09-28)
+## §63 D134: OUTDOORS NICHE (2026-09-28)
 
 - D134. "portable camping lantern" fell through to niche=default → generic
 #viral #fyp #ugc (the D11-family fall-through, fourteenth occurrence —
@@ -2358,7 +2359,7 @@ their niches, "hiking backpack with cooler" → outdoors; regression on 21
 standing seeds zero crashes, zero raw slots; pipeline.py --self-test
 green (17 gate cases + no-clobber)]
 
-### §64 D135: PROOF OVERLAYS MUST SPEAK THE HOOK'S DAY-COUNT (2026-09-28)
+## §64 D135: PROOF OVERLAYS MUST SPEAK THE HOOK'S DAY-COUNT (2026-09-28)
 
 - D135. The transformation maker drew `ndays` once into ctx (D40) so the hook
 contract ("DAY 1 vs DAY 30"), the evidence dialogue (AI lane: "their Day 1,
@@ -2379,7 +2380,7 @@ human regression seed 819 (nd=14): "DAY 1 | DAY 14" across card, frame-0,
 contract; pipeline.py --self-test green (17 gate cases + no-clobber);
 hair-wax-stick fixture md5-identical pre/post]
 
-### §65 ATTENTION ENGINEERING DOCTRINE: HOOK + EVERY SHOT (2026-09-28, manual — PENDING LOOP VERIFICATION)
+## §65 ATTENTION ENGINEERING DOCTRINE: HOOK + EVERY SHOT (2026-09-28, manual — PENDING LOOP VERIFICATION)
 
 User order: "learn how you can engineer attention, in the hook and also in the
 shots." Synthesized from 350 video-anatomy records in viral.db, today's three
@@ -2423,3 +2424,349 @@ misses nothing, it was decoration, and decoration is noise.
 times. Open the next loop BEFORE closing the current one — the handoff, not
 the closure, is what holds the viewer. The final button closes the opening
 loop (≤8 words) so the reel loops cleanly.
+
+## §66 — PIPELINE v2 (2026-09-28)
+
+Appended by the pipeline-v2 contract workstream (SO-2, branch ws/contract).
+Evidence base: `evals/results/baseline.json` (990 runs of d8f8759),
+`evals/results/foundation.json` (990 runs of the foundation commit) and the
+three research reports in `docs/research/` — every external source below is
+linked from them (short-form-virality.md = SFV, labs-techniques.md = LT,
+oss-pipelines.md = OSS). Entry format as in the loops: rule, mechanism,
+source, evidence grade, enforced-in, verification. Grades: VERIFIED /
+CONTESTED / INFERENCE as in §9, plus REGULATORY (primary legal or platform-
+policy text: binding whatever the effect size) and PROPOSED (awaiting
+judge-loop ratification). "Scorecard" = `evals/scorecard.py run` on the
+FOUNDATION maker with these gates (label contract-wip, 990 runs, 2026-09-28):
+fire counts on the old maker are the generation team's to-do list, not
+regressions. Gate rules live in `vsp/rules.py` (REGISTRY: the legacy checks
+first, in d8f8759 order, then these); every v2 gate message starts with its
+id. "PENDING INTEGRATION" = no code on ws/contract yet (D60: draft until
+code-traceable; `tools/rule_coverage.py --check` nags once it is).
+
+### New rules D136–D153
+
+- D136. NO UNSOURCED SOCIAL PROOF: viewer text (dialogue, re-hooks and
+  on-screen text of the hook stack and beats, plus the caption) never carries
+  star ratings ("4.9★"), order/review/customer counts ("12,000+ orders"),
+  "sold out" or "best-seller" unless the prompt supplies the same claim (the
+  D37 allow-path: a claim in the prompt is consent).
+  Mechanism: an invented receipt is a fabricated review signal — viewers
+  audit it as fact (§6) — and the maker's `{proof}` slot renders exactly
+  these strings with no source.
+  Source: FTC Consumer Reviews and Testimonials rule,
+  [16 CFR 465](https://www.ecfr.gov/current/title-16/chapter-I/subchapter-D/part-465);
+  [FTC warning letters, Dec 2025](https://www.ftc.gov/news-events/news/press-releases/2025/12/ftc-warns-10-companies-about-possible-violations-agencys-new-consumer-review-rule);
+  [TikTok ad policy — misleading and false content](https://ads.tiktok.com/help/article/tiktok-ads-policy-misleading-and-false-content)
+  (SFV §3, §6). [REGULATORY]
+  Enforced in: gate 1 (`vsp/rules.py` check_d136, `vsp/lexicon.SOCIAL_PROOF`)
+  + maker (`{proof}` slot, SO-1).
+  Verification: self-test `d136-unsourced-social-proof` (fails with D136
+  alone), `d136-prompt-supplied-proof` (allow-path passes); scorecard 0/990
+  (proof-first is never drawn today — the gate guards the slot).
+
+- D137. AN AI PERSONA NEVER CLAIMS LIVED EXPERIENCE: presenter=ai viewer text
+  carries no first-person use/experience claims — "I woke/slept/tried/used/
+  bought/noticed…", "I've been using…", "I use it", "my skin/hair/face/back/
+  sleep…", "changed/saved my life/mornings". The AI lane is curator-framed
+  (D39: "one creator's 7-day log").
+  Mechanism: a testimonial from a presenter who never existed and never used
+  the product misrepresents both.
+  Source: [16 CFR 465.2](https://www.ecfr.gov/current/title-16/chapter-I/subchapter-D/part-465)
+  (testimonials that misrepresent that the testimonialist exists or used the
+  product; up to $53,088 per violation); SFV §6 disclosure block, item 6.
+  [REGULATORY]
+  Enforced in: gate 1 (check_d137, `lexicon.AI_FIRST_PERSON`) + maker
+  (AI-lane rewrites, SO-1).
+  Verification: self-test `d137-ai-lived-experience`; scorecard 186/990, all
+  AI runs (186/495 = 38%): "I noticed" 80, "I tried" 73, "my face" 15,
+  "I've tried" 12, "I woke" 8, "I slept" 8, "I used" 2 — identical to the
+  rubric's R06 count.
+
+- D138. AI DISCLOSURE IS CARRIED END TO END: a presenter=ai script carries a
+  non-empty `disclosure` field that names the AI, and the caption carries an
+  AI disclosure line (a line with "AI" plus a disclosure cue, e.g. "made with
+  an AI persona" — a product name containing "AI" is not a disclosure); the
+  render brief (gate 2) carries the frame-0 "AI persona" label instruction.
+  Mechanism: §4's quiet-but-never-omitted disclosure has to survive every
+  hand-off (script → caption → brief); the label is a render instruction, so
+  it is gated where the render instruction is written.
+  Source: [EU AI Act Art. 50](https://commission.europa.eu/news-and-media/news/safer-and-more-transparent-ai-2026-08-02_en)
+  (from 2 Aug 2026); [New York synthetic-performer ad law](https://www.crowell.com/en/insights/client-alerts/synthetic-performers-real-consequences-implications-of-trailblazing-new-york-ai-ad-law)
+  (from 9 Jun 2026); [China labeling measures](https://www.chinalawtranslate.com/en/ai-labeling/);
+  [TikTok AIGC label](https://support.tiktok.com/en/using-tiktok/creating-videos/ai-generated-content)
+  (SFV §3, §6). [REGULATORY]
+  Enforced in: gate 1 (check_d138) + gate 2 (check_d138_brief).
+  Verification: self-test `d138-ai-no-disclosure-field`,
+  `d138-ai-no-caption-line`, `ai-presenter-good` (passes both gates); unit
+  check `d138-brief-label-instruction` (a label-less AI brief fails with
+  exactly "D138: AI-persona label instruction missing from brief"; a human
+  brief needs no label); scorecard 0/990 (the maker emits both today).
+
+- D139. NO GENERIC ENGAGEMENT BAIT: no "like if", "tag a friend/someone",
+  "comment YES", "type yes", "share this with", "double tap", "smash that",
+  "like and subscribe", "drop a like/heart/🔥". The keyword→DM comment CTA
+  (B4a: "hit follow, comment LAMP …") is not bait: it names a product keyword
+  and a payload.
+  Mechanism: the platforms demote explicit like/tag/share asks and strip
+  recommendation eligibility.
+  Source: [Meta engagement-bait guidelines](https://transparency.meta.com/features/approach-to-ranking/content-distribution-guidelines/engagement-bait/);
+  [Instagram recommendation eligibility](https://creators.instagram.com/recommendations-and-originality?locale=en_US)
+  (SFV §3, top-25 rule 14). [REGULATORY — platform policy]
+  Enforced in: gate 1 (check_d139, `lexicon.GENERIC_BAIT`).
+  Verification: self-test `d139-engagement-bait`; the fixture's "comment
+  TEST" keyword CTA passes; scorecard 0/990.
+
+- D140. HASHTAGS: 1–5 PER CAPTION, NEVER GENERIC-ONLY: the caption carries 1–5
+  hashtags and at least one outside `lexicon.GENERIC_TAGS` (#fyp #viral #ugc
+  #foryou #trending …).
+  Mechanism: Instagram caps posts at 5 hashtags; a generic-only set carries
+  no niche signal — it is the D11-family fall-through (CAPTION_TAGS
+  ["default"]) surfacing in the caption.
+  Source: [Instagram 5-hashtag limit, Dec 2025](https://www.socialmediatoday.com/news/instagram-implements-new-limits-on-hashtag-use/808309/)
+  (SFV §3). [REGULATORY — platform limit; VERIFIED — maker self-violation]
+  Enforced in: gate 1 (check_d140) + maker (tag maps, SO-1).
+  Verification: self-test `d140-too-many-hashtags`,
+  `d140-generic-only-hashtags`; the legacy good fixture (one tag, #beautytok)
+  passes; scorecard 150/990 = the 5 prompts the maker leaves on niche=default
+  (portable door lock, silk pillowcase, electric milk frother, the braces
+  bottle, "why your hooks fail" — 30 runs each).
+
+- D141. NO ABSOLUTE OR GUARANTEE CLAIMS: no "guaranteed", "cure(s)",
+  "miracle", "#1"/"number one", "cheapest", "lowest price", "best … ever",
+  "100% effective/proven/safe/natural", "risk-free", "clinically proven"
+  unless the prompt makes the same claim (allow-path by claim key: a prompt
+  "with a lifetime guarantee" allows "Guaranteed.").
+  Mechanism: absolute claims are the ad-policy rejection class and an
+  unsubstantiated-claims liability.
+  Source: [TikTok ad policy](https://ads.tiktok.com/help/article/tiktok-ads-policy-misleading-and-false-content)
+  (bans "#1"-type absolutes); [TikTok Shop content policy, 22 May 2026](https://ppc.land/tiktok-shops-tightening-grip-new-rules-that-could-freeze-your-account/)
+  ("lowest price" / misleading claims) (SFV §3). [REGULATORY — platform policy]
+  Enforced in: gate 1 (check_d141, `lexicon.ABSOLUTE`).
+  Verification: self-test `d141-absolute-claim`, `d141-prompt-supplied-claim`
+  (allow-path passes); scorecard 0/990.
+
+- D142. PAYOFF CARD COMPRESSED FORM (PROPOSED — resolves the D103 vs D62/D83
+  open item; for judge-loop ratification): the payoff card carries the D83
+  elements (named test, expected flop, surprise) in ≤12 tokens, and every
+  on-screen card reads at ≤20 characters/second over its display window (the
+  frame-0 overlay is displayed from 0 s to the end of the verbal hook, at
+  least 3.0 s).
+  Mechanism: a 28-word VERDICT card (~150 characters) needs ≥7.5 s at 20 cps —
+  longer than any beat window and the 7 s per-card maximum; the compressed
+  card keeps D83 ("the card never restates the spoken line") without breaking
+  D103.
+  Source: [Netflix timed-text style guide](https://partnerhelp.netflixstudios.com/hc/en-us/articles/217350977-English-USA-Timed-Text-Style-Guide)
+  (≤20 cps, 0.83–7 s per card); SFV cross-check ("a 28-word verdict card …
+  needs at least 7.5 s"); OSS §3. [PROPOSED]
+  Enforced in: maker (payoff cards, SO-1); gated by D103 (>12 words, error)
+  and the gate-1 D142 cps check (WARNING — never fails a gate until
+  ratified).
+  Verification: self-test `d142-fast-onscreen-warns-only` (a 21 cps card
+  passes with a warning), unit check `d142-warning-never-fails`; 744/990
+  foundation scripts carry a D142 warning (payoff cards at 36–50 cps — the
+  same scripts D103 fails); maker side: see integration scorecard.
+
+- D143. TIMELINE FROM CONTENT: beat windows are sized to their words at the
+  gate's own rate (3.0 w/s brisk, 2.5 slow, ×1.15 slack; re-hook words
+  included), tiled from 3.0 s to the duration with no gap or overlap, the
+  PAYOFF placed in the D7 band, and the hook's payoff_contract written from
+  the actual PAYOFF start; over-budget lines are trimmed at sentence
+  boundaries or swapped for a fitting variant. Supersedes D65 (below).
+  Mechanism: the baseline's timeline failures (D43 609, D74 549, D78 252,
+  D94 243 of 990 runs) share one root cause — windows were fixed fractions
+  of the duration, never sized to the words in them.
+  Source: evals/results/baseline.json (docs/UPGRADE-PLAN.md §1).
+  [VERIFIED — 990-run baseline]
+  Enforced in: maker (`vsp/timing.py` layout, SO-1/integration); gated by
+  D43/D55/D74/D78/D94 (unchanged).
+  Verification: see integration scorecard.
+
+- D144. THE FRAME-0 OVERLAY IS A HOOK PHRASE: the frame-0 on-screen text (the
+  VISUAL TRIGGER card) is ≤3 words and either a contiguous phrase of the
+  verbal hook or a label form ("BEFORE | AFTER", "DAY 1 | DAY 7", "TEST") —
+  never a stitched fragment like "NOBODY MENTIONS FLAW" (D109's tail refill)
+  or "BUYING COFFEE DAYS".
+  Mechanism: the muted viewer reads the card as the hook; a fragment reads
+  as a typo and breaks the hook's promise at frame 0.
+  Source: hooks playbook §4 (≤3-word frame-0 text; §1 of this file); D17,
+  D17b, D109; baseline 58.4% fallback-hook rate (docs/UPGRADE-PLAN.md §1).
+  [VERIFIED — maker self-violation, 688/990 foundation runs]
+  Enforced in: gate 1 (check_d144, `lexicon.overlay_is_clean`) + maker
+  (overlay_truncate, SO-1).
+  Verification: self-test `d144-overlay-fragment`, `d144-overlay-too-long`;
+  scorecard 688/990 ("NOBODY MENTIONS FLAW" 582, "BUYING COFFEE DAYS" /
+  "THIRTY DAYS INSTAGRAM" / "THIRTY DAYS SUGAR" 30 each, "THINGS SENSE" 16)
+  — identical to the rubric's R08 count.
+
+- D145. HOOK PROVENANCE IS HONEST: `hook_family` / `hook_source` report what
+  actually rendered — a fallback ("Nobody mentions the X flaw.") or a pinned
+  day-counter hook is named as such, never reported under the family that
+  was drawn and discarded.
+  Mechanism: the scorecard and the judge loop attribute wins to hook
+  families; a fallback reported as "curiosity-gap" poisons every
+  family-level metric (58.4% of baseline scripts shipped the fallback).
+  Source: docs/UPGRADE-PLAN.md §1, §5. [VERIFIED — baseline]
+  Enforced in: maker (SO-1) — PENDING INTEGRATION.
+  Verification: see integration scorecard.
+
+- D146. A PART-2 CTA NEEDS A SERIES PLAN: a CTA beat that promises a part 2
+  ("Follow, part 2: …") requires a non-empty `series_plan` in the script.
+  Mechanism: a sequel the pipeline never schedules is an unpaid loop (D45
+  class) — the viewer follows for content that never ships.
+  Source: D89 (part-2 CTA template), D45 (no unpaid loops).
+  [VERIFIED — maker self-violation, 882/990]
+  Enforced in: gate 1 (check_d146, `lexicon.PART2`) + maker (`series_plan`,
+  SO-1).
+  Verification: self-test `d146-unplanned-part2` (fails),
+  `d146-part2-with-series-plan` (passes); scorecard 882/990 (the CTAS
+  "Follow, part 2: {next}." template) — identical to the rubric's R20 count.
+
+- D147. INPUT ROUTER (stage 1): every prompt is routed before generation.
+  Guardrails: empty or >300 characters = input error; template braces and
+  control characters are stripped with a warning; regulated claim categories
+  (supplement, CBD, weight loss, cure, treat, alcohol, nicotine) are flagged.
+  Three voters — the maker's parse_prompt, an independent word-boundary
+  lexicon, the research-pack niche vocabulary — vote concept and niche;
+  agreement <2/3 is a route warning (`--strict-route` fails on it).
+  Presenter advice follows §4 F32 (AI for utilitarian, human for hedonic),
+  §9 B15 (high complexity → AI is fine) and D137 (challenges and routines
+  are lived experience → human); TikTok Shop × AI presenter is a lane
+  warning.
+  Mechanism: the maker only ever classified its own output (AGENT-BRIEF open
+  item), so substring hijacks ("ergonomic office chair" → beauty via "hair")
+  and default-niche fall-throughs stayed invisible until the caption
+  shipped.
+  Source: AGENT-BRIEF "Known open items"; [TikTok Shop quality rules](https://ppc.land/tiktok-shops-quality-rules-ban-ai-voices-and-still-images-from-lives/)
+  (visible people, AI voices banned in LIVE; SFV §3 + cross-check).
+  [VERIFIED — golden-set routing table in docs/ws-contract-notes.md]
+  Enforced in: pipeline stage 1 (`vsp/router.py`).
+  Verification: self-test unit check `router-contract` (33 golden prompts +
+  edge inputs never raise; "office chair" is outvoted away from beauty);
+  pipeline wiring: see integration scorecard.
+
+- D148. RESEARCH PACK PINNING (stage 2): the pack is schema-validated before
+  use, its sha256 goes into the run manifest, and a pack older than 48 h is a
+  stale warning (`--require-fresh-research` fails on it); a pack that fails
+  validation is never used. research_bridge.py packs carry
+  `schema_version: 2` and a `niche_map`; a DB schema mismatch warns and the
+  build continues; the last good pack is kept when the DB is unavailable.
+  Mechanism: the pack refreshes daily, so "same seed = same script" fails
+  across days unless it is pinned, and an unvalidated pack can silently feed
+  the maker nothing.
+  Source: LT §1 (research-pack guardrail: schema-valid, ≤48 h, hash logged)
+  and §7.3 (daily refresh breaks replay unless the pack hash is pinned).
+  [INFERENCE — engineering practice]
+  Enforced in: pipeline stage 2 (`vsp/research.py`; builder
+  `research_bridge.py`).
+  Verification: self-test unit check `research-pack-contract`;
+  research_bridge exercised on the fixture DB, a schema-mismatched DB, a
+  non-SQLite file and a missing DB (docs/ws-contract-notes.md); pipeline
+  wiring: see integration scorecard.
+
+- D149. BEST-OF-N: the pipeline generates N candidates (default 8) from
+  derived sub-seeds — candidate 0 is the raw seed, so the legacy output is
+  always in the pool; the winner is the best rubric selection score among
+  gate-1 passes; audit-only rubric checks never select.
+  Source: [Snell et al.](https://arxiv.org/abs/2408.03314) (compute-optimal
+  sampling + verification); imperfect verifiers cap resampling
+  ([Stroebl et al.](https://arxiv.org/abs/2411.17501)) — hence held-out
+  audit checks (LT §2.1). [VERIFIED — literature; ceiling CONTESTED]
+  Enforced in: pipeline (`vsp/select.py`, SO-3).
+  Verification: see integration scorecard.
+
+- D150. REPAIR LOOP: when no candidate passes gate 1, only deterministic
+  rule-keyed repairs run (keyed on the gate message's rule id), at most 3
+  rounds, every repair logged; still failing = loud failure. A repair never
+  touches a gate.
+  Source: [Self-Refine](https://arxiv.org/abs/2303.17651); self-correction
+  without external feedback often fails
+  ([Huang et al.](https://arxiv.org/abs/2310.01798)) — the gates are the
+  external feedback (LT §1.2, §2.4). [VERIFIED — literature]
+  Enforced in: pipeline (`vsp/repair.py`, SO-3).
+  Verification: see integration scorecard.
+
+- D151. FIXTURE REFERENCE REELS NEVER SHIP: gate 2 rejects a brief whose
+  reference-reel URLs contain "FIXTURE" (the hermetic fixture DB's marker)
+  unless VSP_FIXTURE_OK=1 (self-test and evals only).
+  Mechanism: the fixture DB exists so gate 2 can run hermetically; a fixture
+  reference in a production brief would anchor the quality bar on fake data.
+  Source: vsp/fixtures.py. [VERIFIED — by construction]
+  Enforced in: gate 2 (check_d151).
+  Verification: self-test `d151-fixture-reels-rejected` (runs gate 2 without
+  VSP_FIXTURE_OK and fails with D151 alone); scorecard 0/990 (the harness
+  sets VSP_FIXTURE_OK=1).
+
+- D152. EXPORT CONTRACT: every passing run exports captions (SRT, WebVTT,
+  Remotion caption JSON), shotlist.csv and a schema-valid script.json.
+  Source: [WebVTT](https://www.w3.org/TR/webvtt1/);
+  [@remotion/captions](https://www.remotion.dev/docs/captions/caption);
+  Netflix/BBC timing limits (OSS §3). [INFERENCE — interchange practice]
+  Enforced in: pipeline (`vsp/captions.py`, `vsp/exporters.py`,
+  `vsp/schema.py`, SO-3) — PENDING INTEGRATION.
+  Verification: see integration scorecard.
+
+- D153. MANIFEST + TRACE ON EVERY RUN: every run writes manifest.json (code
+  and pack hashes, seeds, candidate scores, gate results, repairs, output
+  hashes) and trace.jsonl (one record per stage, shaped like the OTel GenAI
+  evaluation-result event); `--replay manifest.json` must reproduce the
+  script hash.
+  Source: LT §7.1–7.2; [OTel GenAI events](https://github.com/open-telemetry/semantic-conventions-genai/blob/main/docs/gen-ai/gen-ai-events.md).
+  [INFERENCE — engineering practice]
+  Enforced in: pipeline (`vsp/manifest.py`, `vsp/trace.py`, SO-3) — PENDING
+  INTEGRATION.
+  Verification: see integration scorecard.
+
+### Existing rules made gate-enforced (2026-09-28 — no new numbers, cycle-4 precedent)
+
+- D17 (+D17b) — 2026-09-28: the ≤3-word frame-0 overlay is asserted by gate 1
+  through D144 (words counted like `lexicon.overlay_is_clean`: pipes and
+  arrows are separators, not words). Self-test `d144-overlay-too-long`.
+- D31 — 2026-09-28: a raw "{" or "}" anywhere in viewer text (dialogue,
+  re-hooks, on-screen, caption) fails gate 1 ("D31: raw template slot …").
+  Self-test `d31-raw-template-slot`. Scorecard 36/990: the review payoff card
+  renders "{category_s}" on the 6 showcase/challenge prompts (maker slot
+  leak — SO-1 to-do).
+- D73 — 2026-09-28: every verbal-hook line (VERBAL HOOK items, and the bare
+  HOOK item of hand-built fixtures) is ≤8 words, counted exactly like
+  pick_hook's D61/D73 filters — whitespace tokens, so a standalone em dash
+  counts, as it does in the maker (D54 note). Self-test
+  `d73-verbal-hook-over-8`. Scorecard 0/990 (the maker's filter holds; the
+  gate catches hand-finished JSON — two old outputs/ scripts fail it).
+- D93 — 2026-09-28: the same re-hook (normalized with `lexicon.norm`)
+  appearing twice in one script fails gate 1. The gate enforces the exact-
+  duplicate form; promise-level echoes in different words stay judge-loop
+  territory. Self-test `d93-repeated-rehook`. Scorecard 0/990.
+- Registry cross-coverage: the D37 gate rule covers D37 + D132 (caption
+  scan); D44 covers D44 + D58 + D126; D144 covers D144 + D17.
+- STRENGTHENED, never weakened: gate 2's DELIVERABLE check now requires the
+  FULL DELIVERABLE block verbatim, not just its first sentence (same message
+  "DELIVERABLE block missing/altered", same position). Unit checks
+  `deliverable-block-in-sync`, `deliverable-check-strengthened`.
+
+### Rulebook housekeeping (2026-09-28 — no historical content changed)
+
+- D65. DE-OVERLAP PASS (retro-defined here: the code tag has existed since
+  2026-09-27 — prompt-pipeline regression, seeds 902–906 — but RULES.md never
+  carried the entry): after build_beats laid beats at fixed-fraction anchors
+  (edu at edu_base, demo at D×0.38, evidence at D×0.68, payoff at D×0.72),
+  the maker walks the beats in timeline order and pushes any beat that
+  starts inside the previous beat's window to start where the previous one
+  ends — geometry only, no content change. It fixed D55 overlaps but pushed
+  timelines past duration (D74) and never re-timed the payoff contract (D94,
+  §43 seed 805). SUPERSEDED by D143 (content-sized layout). Code: the
+  "D65 (2026-09-27, prompt-pipeline regression): DE-OVERLAP PASS" comment in
+  viral_script_maker.build_beats. [VERIFIED — code trace + §43 analysis]
+- Section numbers: the second occurrences of §45, §49, §50 and §51 (judge-loop
+  cycles 24, 27, 28, 29, interleaved with the same-numbered gauntlet
+  sections) are now §45b, §49b, §50b and §51b; D105's "(§45, §47 carry
+  notes)" now reads §45b. The unnumbered judge-loop cycle 32 section is
+  §54b. §56 and §60–§65 were ### headings nested under their predecessors
+  and are now ## sections.
+- Tag aliases: code comments tagged "D47 (judge loop, cycle 13)" in
+  viral_script_maker.py mean RULES D51 (routine/daily-vlog concept class;
+  D52 = the pinned day-counter hook). RULES D47 is SHOT-SCALE ROTATION
+  (gate 2). The self-test comment "D75" on the gap-in-timeline case is the
+  old number of D78 (dead-air gap); RULES D75 is the bird/animal-object pets
+  routing rule. Code tags are left as they are (history);
+  tools/rule_coverage.py reports both aliases.

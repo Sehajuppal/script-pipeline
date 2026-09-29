@@ -8,10 +8,20 @@ only be green on one machine. Now every child run gets:
   VSP_VIRAL_DB  -> <tmp>/fixture viral.db (vsp/fixtures.py)
   VSP_FIXTURE_OK=1                       (FIXTURE reels allowed, D151)
 and the runner asserts the repo's outputs/ tree is byte-for-byte unchanged.
+
+Cases (vsp/selftest_cases.py) are (name, script, want_pass, want_msgs) —
+the 17 legacy tuples are untouched — optionally with a 5th element of
+options for pipeline-v2 cases:
+  {"only": "D136"}              every failure message must start with D136
+  {"env": {"VSP_FIXTURE_OK": None}}  per-case env override (None = unset)
+unit_cases() are in-process contract checks (registry order, DELIVERABLE
+sync, a brief make_shotlist can never emit, ...), run after the pipeline
+cases.
 """
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -19,7 +29,7 @@ import tempfile
 
 from vsp import config
 from vsp.fixtures import build_fixture_db
-from vsp.selftest_cases import all_cases
+from vsp.selftest_cases import all_cases, unit_cases
 
 
 def _tree_digest(root):
@@ -42,6 +52,25 @@ def _run(cmd, env):
                           env=env)
 
 
+_GATE_LINE = re.compile(r"^gate [12] \((?:script|brief)\): FAIL — (.*)$", re.M)
+
+
+def _gate_messages(stdout):
+    """Failure messages from the report's gate lines ('; '-joined)."""
+    return [m.strip() for line in _GATE_LINE.findall(stdout)
+            for m in line.split("; ") if m.strip()]
+
+
+def _case_env(env, opts):
+    out = dict(env)
+    for k, v in (opts.get("env") or {}).items():
+        if v is None:
+            out.pop(k, None)
+        else:
+            out[k] = str(v)
+    return out
+
+
 def run(pipeline_path, keep=False):
     tmp = tempfile.mkdtemp(prefix="pipe_selftest_")
     repo_outputs = os.path.join(config.REPO, "outputs")
@@ -53,19 +82,37 @@ def run(pipeline_path, keep=False):
                PYTHONIOENCODING="utf-8")
     good, cases = all_cases()
     fails = []
-    for name, script, want_pass, want_msgs in cases:
+    for case in cases:
+        name, script, want_pass, want_msgs = case[:4]
+        opts = case[4] if len(case) > 4 else {}
         p = os.path.join(tmp, name + ".json")
         with open(p, "w", encoding="utf-8") as f:
             json.dump(script, f)
         r = _run([sys.executable, pipeline_path,
-                  script.get("prompt", "x"), "--script-json", p], env)
+                  script.get("prompt", "x"), "--script-json", p],
+                 _case_env(env, opts))
         ok = (r.returncode == 0) == want_pass
         if not want_pass:
             ok = ok and all(m in r.stdout for m in want_msgs)
+            if opts.get("only"):
+                stray = [m for m in _gate_messages(r.stdout)
+                         if not m.startswith(opts["only"])]
+                if stray:
+                    ok = False
+                    want_msgs = list(want_msgs) + [f"ONLY {opts['only']}; "
+                                                   f"stray: {stray}"]
         if not ok:
             fails.append(f"{name}: expected "
                          f"{'pass' if want_pass else 'fail(' + ','.join(want_msgs) + ')'}, "
                          f"got exit {r.returncode}\n{r.stdout[:400]}{r.stderr[-400:]}")
+    # in-process contract checks (no files written)
+    units = unit_cases()
+    for name, fn in units:
+        try:
+            probs = fn()
+        except Exception as e:  # noqa: BLE001 — a crashing check is a failure
+            probs = [f"crashed: {type(e).__name__}: {e}"]
+        fails += [f"unit {name}: {pr}" for pr in probs]
     # D79: --script-json must never rewrite the input file, even when the
     # input lives under outputs/<prompt-slug>/ (cycle-3 incident that
     # overwrote outputs/hair-wax-stick/script.json). Now inside the tmp
@@ -100,6 +147,6 @@ def run(pipeline_path, keep=False):
     if fails:
         print("SELF-TEST FAILED:\n" + "\n".join(fails))
         return 1
-    print(f"self-test: all {len(cases)} gate cases + no-clobber behave "
-          f"correctly (hermetic: repo outputs/ untouched)")
+    print(f"self-test: all {len(cases)} gate cases + {len(units)} unit checks "
+          f"+ no-clobber behave correctly (hermetic: repo outputs/ untouched)")
     return 0
