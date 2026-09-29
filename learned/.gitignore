@@ -1,0 +1,6 @@
+# raw scorecard JSONs written by `python3 -m vsp.improve` (MBs each; the
+# compact evidence next to them is tracked). The scorecard's copy_repo also
+# skips any directory named "results", so these never ride along in A/B copies.
+evals/results/
+promote/results/
+verify/results/
