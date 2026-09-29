@@ -116,9 +116,14 @@ except ValueError as e:              # a lane/consent error: fail loudly
 3. **Render spec fps.** "1080x1920, 30fps" should add "Omni renders 24 fps: conform to 30 by frame duplication, never optical-flow interpolation" (or set 24 fps masters for Omni bundles).
 4. **Palette in every prompt.** "Palette: electric blue, hot pink, acid lime, black" fights "soft warm bedside-lamp light". Move the palette to wardrobe/props or the grade; render.json leaves it out.
 5. **The 10-item NEGATIVE PROMPT block and the whole-brief read.** Omni has no negative field; per-shot 2-4 negatives work better. The brief should say the SHOT PROMPTS are superseded by render.json for Omni.
-6. **"Photorealistic AI woman" in persona identity locks.** The word "AI" may push Omni toward a synthetic look; disclosure belongs to the caption, the toggles and the frame-0 label. Suggest "a photorealistic woman …" in personas.json (render.py keeps the lock verbatim for D160 parity).
+6. **"Photorealistic AI woman" in persona identity locks.** The word "AI" may push Omni toward a synthetic look; disclosure belongs to the caption, the toggles and the frame-0 label. *Done at integration:* render.py drops "AI" before the person noun in every image and video prompt (`_omni_identity`: face shots, the presenter sheet, frame 0). `identity.presenter_text` and `personas.json` keep the lock verbatim (D160 parity, append-only registry). The render selfcheck asserts 0 AI-lane prompts still carry the word.
 7. **Alternate openings "3 s or less".** Omni's floor is 3 s; say "one 3 s clip".
-8. **Micro-shake vs F133.** direction drops "handheld" for AI personas (faked shake on an AI render). render.py follows this workstream's spec: "handheld with natural micro-shake" for the UGC vibes on non-static shots, in both lanes (42 of 165 AI golden scripts). Flip `UGC_VIBES` handling if the integrator prefers F133.
+8. **Micro-shake vs F133.** direction drops "handheld" for AI personas (faked shake on an AI render). *Resolved for F133 at integration:*
+   - AI-lane prompts get no "handheld with natural micro-shake" line.
+   - A planned `handheld` move is written "slow dolly" in AI-lane prompts, and `speed-ramp` "fast push-in that slows sharply" (`MOVE_PROMPT_AI`). This covers shots, fallbacks and the frame-0 still.
+   - Human-lane AI B-roll keeps the shake so it matches the phone footage.
+   - Before the fix, 160 of 165 AI golden scripts still said "handheld" in an Omni prompt. The selfcheck now asserts 0.
+   - A handheld *product* ("a handheld milk frother") is not a camera move and stays.
 
 ## Known unknowns
 

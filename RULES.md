@@ -3373,8 +3373,10 @@ Integration notes:
   validation; `antigravity/AGENTS.md` non-negotiables 3–7.
   Verification: `python3 -m vsp.render selfcheck` (410 scripts: lanes,
   human lane 0 ai shots, AI-lane real-footage shots all real, creator_clone
-  without consent raises) and self-test e2e `e2e-trend-steering-replay`
-  (exit 2 without `--consent-ref`).
+  without consent raises; AI-lane image and video prompts carry 0 handheld
+  or micro-shake camera words and 0 "AI" before the person, while
+  `identity.presenter_text` keeps the persona lock verbatim) and self-test
+  e2e `e2e-trend-steering-replay` (exit 2 without `--consent-ref`).
 
 - D163. TREND DATA COMPLIANCE:
   - **Automated collection** uses official APIs only: Instagram Graph API

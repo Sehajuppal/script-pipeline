@@ -40,10 +40,10 @@ captions, subtitles, logos or watermarks. {2-4 shot-specific negatives} {one clo
 sentence per input image}
 ```
 
-- **Subject.** The presenter identity lock, verbatim, only when the shot shows a face. The hands reference ("the presenter's hands, the sleeve of the ... just in frame") when it shows only hands. The product text when it shows only the product. Never the persona text in a product-only shot: it invites a face.
+- **Subject.** The presenter identity lock (`identity.presenter_text`), only when the shot shows a face, pasted unchanged except for one thing: drop the word "AI" before the person ("a photorealistic AI woman ..." becomes "a photorealistic woman ..."), because it invites a synthetic, CGI look. The disclosure lives in the platform AI labels, the caption line and the frame-0 "AI persona" overlay, never in the picture prompt. The hands reference ("the presenter's hands, the sleeve of the ... just in frame") when it shows only hands. The product text when it shows only the product. Never the persona text in a product-only shot: it invites a face.
 - **One move, one action.** Scale, angle and a single camera move open the prompt. One action in the present tense, already happening at the first frame. Never "then", never two beats, never a cross-shot reference such as "same as shot 2".
 - **Setting and light.** The run's setting and one named source (a warm bedside lamp, soft window light from one side), never just "good lighting". Image-to-video prompts describe motion only: the still carries the setting.
-- **Micro-shake** only for the handheld-phone vibes, and never on a static shot.
+- **Micro-shake** only for the handheld-phone vibes in a human creator's video (faceless AI B-roll that must match their phone footage), and never on a static shot. **Never on an AI-persona job** (`presenter_mode "ai"`): a faked shake on a generated person is a detectable synthetic flaw and reads as eerie. There the camera words stay smooth: a planned handheld move is written "slow dolly" and a speed ramp "fast push-in that slows sharply".
 - **Negatives**, 2 to 4: face → "No face morphing."; hands → "Five natural fingers on each hand, no fused fingers."; product → "No invented logo or label text."; plus "No face in frame." / "No hands or people in frame." / "One speaker only." as they apply.
 
 ## Tags and images

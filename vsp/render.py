@@ -157,6 +157,24 @@ INITIALISMS = {"LED", "USB", "UV", "TV", "AI", "DIY", "SPF", "PSA", "POV", "FAQ"
 MOVE_PROMPT = dict(SP.MOVE_WORDS, orbit="slow tracking arc",
                    **{"speed-ramp": "fast handheld push-in that slows sharply",
                       "pull-out": "slow dolly out"})
+# F133 (D162): no faked handheld shake on an AI-persona render, so the AI lane
+# names a smooth move from Google's camera vocabulary (research
+# video-generation-omni.md §1.5) instead of the handheld words; the shot's
+# planned `move` id is unchanged
+MOVE_PROMPT_AI = dict(MOVE_PROMPT, handheld="slow dolly",
+                      **{"speed-ramp": "fast push-in that slows sharply"})
+_SHAKE_WORDS = re.compile(r"(?i)\bhand-?held\b|micro-shake")
+
+
+def _shake_words(prompt):
+    """The camera-shake wording of one prompt: the move in the opening
+    "{scale}, {angle}, {move}:" clause, and any micro-shake request. A
+    handheld PRODUCT ("a handheld milk frother") is not a camera move."""
+    p = str(prompt or "")
+    m = _HDR_RE.match(p)
+    cine = (p[m.end():] if m else p).split(":", 1)[0]
+    hit = _SHAKE_WORDS.search(cine) or re.search(r"(?i)micro-shake", p)
+    return hit.group(0) if hit else None
 # Present-tense action per shot type, already in motion at the first frame.
 # kind decides the subject: face -> identity lock, hands -> hands reference,
 # product -> product text, place -> the setting, scene -> the problem,
@@ -446,6 +464,13 @@ def context(script, voice_lane=None, ai_broll=False):
     return {
         "lane": c["lane"], "concept": c["concept"], "is_product": is_product,
         "vibe": c["vibe"], "identity": _clean(identity),
+        # what Omni and the image model are asked to draw: the persona lock
+        # without the word "AI" ("a photorealistic AI woman" invites a
+        # synthetic, CGI look, and detectable synthetic flaws drive
+        # eeriness, F133); disclosure stays in the platform labels, the
+        # caption line and the frame-0 overlay, and presenter_text keeps
+        # the lock verbatim (D160 parity with the brief)
+        "subject_face": _omni_identity(_clean(identity)),
         "hands": (f"the presenter's hands, the sleeve of the {outfit} just in frame"
                   if outfit else "the presenter's hands"),
         "product": _product_text(ms, script, is_product),
@@ -466,11 +491,33 @@ def context(script, voice_lane=None, ai_broll=False):
     }
 
 
+_AI_PERSON = re.compile(r"(?i)\b(?:(an?)\s+)?(photorealistic\s+)?AI[\s-]+(?=(?:woman|man|"
+                        r"guy|person|presenter|creator|persona|host|influencer|avatar|"
+                        r"character|actor|actress)\b)")
+
+
+def _omni_identity(text):
+    """The identity lock as a picture description: "a photorealistic AI
+    woman in her late 20s ..." -> "a photorealistic woman in her late 20s
+    ...", "An AI presenter" -> "A presenter" (only the adjective "AI" before
+    a person noun is dropped; the article follows the word that is left)."""
+    text = text or ""
+
+    def fix(m):
+        art, adj = m.group(1), m.group(2) or ""
+        if not art:
+            return adj
+        nxt = (adj or text[m.end():]).lstrip()[:1].lower()
+        new = "an" if nxt and nxt in "aeiou" else "a"
+        return (new.capitalize() if art[0].isupper() else new) + " " + adj
+    return _AI_PERSON.sub(fix, text)
+
+
 # ----------------------------------------------------------- the prompt
-def _cine(shot):
+def _cine(shot, ai_lane=False):
     s = SP.SCALE_WORDS.get(shot.get("scale"), "medium shot")
     a = SP.ANGLE_WORDS.get(shot.get("angle"), "eye level")
-    mv = MOVE_PROMPT.get(shot.get("move"), "static camera")
+    mv = (MOVE_PROMPT_AI if ai_lane else MOVE_PROMPT).get(shot.get("move"), "static camera")
     return f"{_cap(s)}, {a}, {mv}"
 
 
@@ -617,7 +664,7 @@ def omni_prompt(shot, ctx):
             kind, f"{ctx['p']} in the first frame")
         joiner = " " if kind in ("face", "hands") else ", "
     elif kind == "face":
-        subject, joiner = ctx["identity"] + _tag_of(inputs, "presenter_sheet"), " "
+        subject, joiner = ctx["subject_face"] + _tag_of(inputs, "presenter_sheet"), " "
     elif kind == "hands":
         subject, joiner = ctx["hands"], ", "
     elif kind == "product":
@@ -628,7 +675,8 @@ def omni_prompt(shot, ctx):
         subject, joiner = ctx["problem"], " "
     else:
         subject, joiner = ctx["setting"], ", "
-    body = f"{_cine(shot)}: {subject}{joiner}{act}" if subject else f"{_cine(shot)}: {act}"
+    cine = _cine(shot, ctx["lane"] == "ai")
+    body = f"{cine}: {subject}{joiner}{act}" if subject else f"{cine}: {act}"
     if not i2v:
         if kind == "place" or tid in NO_SETTING:
             body += f", lit by {ctx['light']}"
@@ -1166,7 +1214,7 @@ def _ref(ref_id, ctx, first_shot):
                         "under-18 person and never a photo of a real person. Reuse the same "
                         "sheet in every call."),
                 "prompt": (f"Photorealistic character reference sheet of a fictional adult: "
-                           f"{ctx['identity']}. Front view and three-quarter view, head and "
+                           f"{ctx['subject_face']}. Front view and three-quarter view, head and "
                            "shoulders, plus one full-length standing pose, neutral relaxed "
                            "expression, plain light-grey background, soft even light, natural "
                            "skin texture, no beauty filter. The person must not resemble any "
@@ -1201,10 +1249,10 @@ def _ref(ref_id, ctx, first_shot):
     needs = set(first_shot.get("needs") or [])
     person = bool({"face", "hands"} & needs)
     synth = (person and ctx["lane"] == "ai") or not ctx["is_product"]
-    cine = _cine(first_shot)
+    cine = _cine(first_shot, ctx["lane"] == "ai")
     still = ", ".join(cine.split(", ")[:2]).lower()
     kind, act = _action(first_shot.get("shot_type") or "", first_shot, ctx)
-    subj = {"hands": ctx["hands"], "face": ctx["identity"]}.get(kind) or \
+    subj = {"hands": ctx["hands"], "face": ctx["subject_face"]}.get(kind) or \
         (ctx["product"] or ctx["subject"])
     out = {"kind": "frame0", "synthetic": synth,
            "source": ("image model from presenter_sheet and the product photos" if synth and person
@@ -2133,6 +2181,13 @@ def _unit_checks():
                            (150, {"0.9": 140, "1.0": 150, "1.1": 165, "1.2": 180}, 1.0)):
         if speed_for(tgt, cal) != want:
             errs.append(f"speed_for({tgt}, {cal}) = {speed_for(tgt, cal)}, want {want}")
+    for src, want in (("a photorealistic AI woman in her late 20s",
+                       "a photorealistic woman in her late 20s"),
+                      ("An AI presenter by the window", "A presenter by the window"),
+                      ("the AI-host, an AI man", "the host, a man"),
+                      ("an AI-generated look, an AI camera", "an AI-generated look, an AI camera")):
+        if _omni_identity(src) != want:
+            errs.append(f"_omni_identity({src!r}) = {_omni_identity(src)!r}, want {want!r}")
     good = ("Close-up, eye level, slow push-in: the lamp, glowing, in a bedroom, lit by a warm "
             "bedside lamp. Vertical 9:16 smartphone footage. Single continuous shot, no scene "
             "cuts. Sound: quiet room tone. No dialogue, no voiceover. No music. No on-screen "
@@ -2187,6 +2242,23 @@ def _assertions(key, s, r, vp, stats):
                 errs.append(f"{key}: real_footage shot {sh['n']} is {sh['mode']}")
     if r["presenter_mode"] == "human" and r["counts"]["ai"]:
         errs.append(f"{key}: human lane without ai_broll has {r['counts']['ai']} ai shots")
+    if r["presenter_mode"] == "ai":
+        lock = (s.get("persona") or {}).get("identity")
+        if lock and r["identity"]["presenter_text"] != _clean(lock):
+            errs.append(f"{key}: identity.presenter_text is not the persona lock")
+        prompts = [x for x in [sh["prompt"] for sh in shots] +
+                   [(sh.get("ai_fallback") or {}).get("prompt") for sh in shots] +
+                   [x.get("prompt") for x in r["refs"]] if x]
+        said = [x for x in prompts if _AI_PERSON.search(x)]
+        shaky = [x for x in prompts if _shake_words(x)]
+        stats["ai_word_prompts"] += len(said)
+        stats["ai_shake_prompts"] += len(shaky)
+        if said:
+            errs.append(f"{key}: {len(said)} image/video prompts still say 'AI' before the "
+                        f"person: {said[0][:80]!r}")
+        if shaky:
+            errs.append(f"{key}: {len(shaky)} AI-lane prompts ask for a handheld shake "
+                        f"(F133): {_shake_words(shaky[0])!r}")
     if (vp["engine"] is None) != (r["voice_lane"] == "real_voice"):
         errs.append(f"{key}: voice plan engine does not follow the lane")
     stats["lipsync"] += r["counts"]["lipsync"]
@@ -2496,7 +2568,8 @@ def _selfcheck(t0):
                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
                                     cwd=REPO, env=dict(env, PYTHONHASHSEED=hs))
     stats = {k: 0 for k in ("frame0_i2v", "loops", "loops_generated", "ai_real_footage",
-                            "lipsync", "broll_ai", "clone")}
+                            "lipsync", "broll_ai", "clone", "ai_word_prompts",
+                            "ai_shake_prompts")}
     runs = 0
     sub_digest = []
     jobs = [(g["prompt"], g["id"], 30) for g in golden] + \
@@ -2548,7 +2621,9 @@ def _selfcheck(t0):
                  f"(generated {stats['loops_generated']}), AI-lane real-footage shots "
                  f"{stats['ai_real_footage']} all real, lip-sync shots {stats['lipsync']}, human "
                  f"lane 0 ai shots (ai_broll: {stats['broll_ai']}), creator_clone "
-                 f"{stats['clone']} + no-consent ValueError")
+                 f"{stats['clone']} + no-consent ValueError; AI-lane prompts saying 'AI' "
+                 f"before the person {stats['ai_word_prompts']}, asking for a handheld "
+                 f"shake {stats['ai_shake_prompts']}")
     for k, v in (("frame0_i2v", 1), ("loops_generated", 1), ("ai_real_footage", 1),
                  ("lipsync", 1), ("broll_ai", 1), ("clone", 1)):
         if stats[k] < v:

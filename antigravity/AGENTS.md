@@ -125,7 +125,7 @@ A clip ships only when every check that applies passes. Probe failures (cuts, le
 
 ## 10. What "best possible result" means
 
-- **It looks filmed on a phone, not generated.** Handheld micro-shake where the prompt asks for it, one named light source with natural fall-off, natural skin texture with no beauty filter, a lived-in set with one ordinary imperfection, real phone-lens depth. Reject a glossy, stock-footage or CGI look.
+- **It looks filmed on a phone, not generated.** Handheld micro-shake only where the prompt asks for it (never on an AI-persona job: a faked shake on a generated person reads as eerie), one named light source with natural fall-off, natural skin texture with no beauty filter, a lived-in set with one ordinary imperfection, real phone-lens depth. Reject a glossy, stock-footage or CGI look.
 - **The same person and the same product everywhere.** The presenter sheet and the identity text in every face shot, real product photos in every product shot, one seed for the run. Compare every take with the references; drift is a defect.
 - **One action per clip,** already in motion at the first frame and finished inside the window. No second action, no cut.
 - **Timed to the voice.** The VO is made first, the windows follow it, lip-synced mouths land within the sync tolerance, and B-roll never talks over the VO.
