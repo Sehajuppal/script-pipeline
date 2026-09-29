@@ -276,16 +276,25 @@ def payoff_type(script=None, ctx=None):
 
 
 def _concept_of(script):
+    """The maker's concept for a script: its own parse of the prompt when the
+    maker is importable, else what the payoff card and family show."""
+    m = _maker()
+    prompt = re.sub(r"\s+", " ", re.sub(r"[{}]", "", str(script.get("prompt") or ""))).strip()
+    if m is not None and prompt:
+        try:
+            return m.parse_prompt(prompt).get("concept") or "product"
+        except Exception:  # noqa: BLE001
+            pass
     fam = str(script.get("hook_family") or "")
     card = " ".join(str(b.get("on_screen") or "") for b in script.get("beats") or []
                     if isinstance(b, dict) and b.get("type") == "PAYOFF")
     if fam == "challenge" or re.search(r"\bstopping\b|\bfor \d+ days\b",
                                        str(script.get("prompt") or ""), re.I):
         return "challenge"
-    if fam == "listicle" or "FULL LIST" in card:
-        return "showcase"
     if "FIRST 3 SECONDS" in card:
         return "advice"
+    if fam == "listicle" or "FULL LIST" in card:
+        return "showcase"
     if fam == "day-counter" and re.search(r"\broutine\b", str(script.get("prompt") or ""), re.I):
         return "routine"
     return "product"
@@ -650,9 +659,9 @@ def _subject(ctx, maker):
 
 
 def _day_n(line, ctx):
-    m = _DAYN_RX.search(line or "")
-    if m:
-        return m.group(1) or m.group(2)
+    ns = [int(m.group(1) or m.group(2)) for m in _DAYN_RX.finditer(line or "")]
+    if ns:
+        return str(max(ns))
     for k in ("ndays", "span_n", "streak"):
         if ctx.get(k):
             return str(ctx[k])
@@ -693,6 +702,8 @@ def _vt_options(arc, line, overlay, ctx, ai):
     d = data()
     feas = d["maker"]["concept_visual_types"].get(ctx.get("concept", "product"),
                                                   d["maker"]["concept_visual_types"]["product"])
+    if ctx.get("challenge_type") == "practice" or ctx.get("concept") == "routine":
+        feas = [v for v in feas if v != "problem-state"]   # a streak being built
     if "|" in (overlay or ""):
         return ["before-after-split"] if "before-after-split" in feas else []
     order = list(d["PAIRINGS"].get(arc, []))
@@ -748,20 +759,32 @@ def _render_candidates(ctx, maker, seed, ai, payoff):
             if r in seen or not anchored or screen_text(r, prompt, ai):
                 break
             seen.add(r)
-            out.append({"family": fam, "archetype": arc, "verbal": r, "overlay": ov,
-                        "ov_focus": ov_focus, "template": line, "idx": idx})
+            try:
+                alts = [a for a in maker._template_archetypes(fam, line) if a in compat]
+            except Exception:  # noqa: BLE001
+                alts = []
+            for a in [arc] + [a for a in alts if a != arc]:
+                out.append({"family": fam, "archetype": a, "verbal": r, "overlay": ov,
+                            "ov_focus": ov_focus, "template": line, "idx": idx})
             break
     return out
 
 
-def _prior_means(niche, arc, vt):
-    """Learned tie-break only (docs/CREATIVE-PLAN.md §1.5): posterior means
-    with n >= 3, neutral 0.5 otherwise."""
+def _load_priors():
     try:
         from vsp import priors as P
-        pri = P.load_priors()
-        if not pri:
-            return 0.5, 0.5
+        return P.load_priors()
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _prior_means(pri, niche, arc, vt):
+    """Learned tie-break only (docs/CREATIVE-PLAN.md §1.5): posterior means
+    with n >= 3 (vsp.priors.mean_for), neutral 0.5 otherwise."""
+    if not pri:
+        return 0.5, 0.5
+    try:
+        from vsp import priors as P
         a = P.mean_for(pri, "archetype", niche, arc)
         v = P.mean_for(pri, "visual_type", niche, vt)
         return (0.5 if a is None else a), (0.5 if v is None else v)
@@ -818,11 +841,13 @@ def _variants(script, ctx, seed, maker):
                 continue
             raw += (-1.0 if f["direction"] == "-" else 1.0) * w[fid] * feats[fid]
         c["raw0"] = raw
+        c["paid"] = feats["open_loop_paired"] >= 0
         c["vts"] = _vt_options(c["archetype"], c["verbal"], c["overlay"], ctx, ai)
+        c["pair"] = set(d["PAIRINGS"].get(c["archetype"], ()))
         c["tri"] = trigrams(c["verbal"], set(info["kw"]))
-    chosen = _select(A, cands, info, ctx, script, strict=True)
-    if len(chosen) < MIN_VARIANTS:
-        chosen = _select(A, cands, info, ctx, script, strict=False)
+    # D35/D5: an opening whose loop the payoff does not pay never ships
+    cands = [c for c in cands if c["paid"] and c["vts"]]
+    chosen = _select(A, cands, info, ctx)
     if len(chosen) < MIN_VARIANTS:
         return None
     out = []
@@ -845,12 +870,24 @@ def _variants(script, ctx, seed, maker):
     return out
 
 
-def _select(A, cands, info, ctx, script, strict):
+# selection levels, tried in order for every slot: (new archetype only, max
+# trigram Jaccard, cluster cap, alternate floor). 0 = VARIANT_POLICY (a new
+# archetype, Jaccard <= 0.2, <= 2 per cluster) at HOOK-08's alternate floor
+# (score >= 0.50); 1 = an archetype may repeat while >= 3 stay distinct
+# (§1.2); 2 = near-miss wording / weaker lines, only to reach 4 openings
+# (VARIANT_POLICY: 3 alternates)
+ALT_MIN_SCORE = 0.50
+_LEVELS = ((True, MAX_JACCARD, True, ALT_MIN_SCORE),
+           (False, MAX_JACCARD, True, ALT_MIN_SCORE),
+           (False, 1.0 / 3 + 1e-9, False, 0.0))
+
+
+def _select(A, cands, info, ctx):
     """Maximal marginal relevance over (candidate, visual type): λ·score +
-    (1-λ)·(1 - max trigram Jaccard), plus a bonus for a new archetype /
-    cluster / card. Hard: distinct visual types and first three words
-    (§1.2); strict also: Jaccard <= 0.2, <= 2 per cluster, new archetypes.
-    Learned priors break ties only (n >= 3)."""
+    (1-λ)·(1 - max trigram Jaccard) + a bonus for a new archetype and a new
+    card. Always distinct visual types and first three words (§1.2); the
+    archetype's own pairings (hooks-deep-dive §2.5) before other frames;
+    learned priors break ties only (n >= 3)."""
     d = data()
     w_vt, w_nov, bsum = d["_feat_w"]["visual_type_strength"], d["_feat_w"]["novelty"], \
         d["_bonus_sum"]
@@ -859,44 +896,56 @@ def _select(A, cands, info, ctx, script, strict):
             "overlay": A["overlay"], "tri": trigrams(A["verbal"], drop)}]
     used = set()
     niche = ctx.get("niche")
+    pri = _load_priors()
     while len(sel) < MAX_VARIANTS:
-        best, best_key = None, None
-        arcs = [s["archetype"] for s in sel]
-        f3s = {first3(s["verbal"]) for s in sel}
-        vts = {s["vt"] for s in sel}
-        ovs = {s["overlay"] for s in sel}
+        arcs = [x["archetype"] for x in sel]
+        f3s = {first3(x["verbal"]) for x in sel}
+        vts = {x["vt"] for x in sel}
+        ovs = {x["overlay"] for x in sel}
         clusters = {}
-        for s in sel:
-            cl = cluster_of(s["archetype"])
+        for x in sel:
+            cl = cluster_of(x["archetype"])
             clusters[cl] = clusters.get(cl, 0) + 1
-        for c in cands:
-            if c["idx"] in used or first3(c["verbal"]) in f3s:
-                continue
-            jac = max(jaccard(c["tri"], s["tri"]) for s in sel)
-            new_arc = c["archetype"] not in arcs
-            cl = cluster_of(c["archetype"])
-            if strict and (jac > MAX_JACCARD or not new_arc or
-                           clusters.get(cl, 0) >= MAX_PER_CLUSTER):
-                continue
-            for vt in c["vts"]:
-                if vt in vts:
+        best = None
+        for lvl, (new_only, max_jac, cap, floor) in enumerate(_LEVELS):
+            if lvl == 2 and len(sel) >= 4:
+                break          # near-miss wording only to reach 4 openings
+            best_key = None
+            for c in cands:
+                if c["idx"] in used or first3(c["verbal"]) in f3s:
                     continue
-                vh = d["VISUAL_HOOKS"][vt]
-                vts_x = float(vh["prior"]) * (1.0 if c["archetype"] in vh["best_archetypes"] else 0.6)
-                raw = c["raw0"] + w_vt * vts_x + w_nov * (1.0 - jac)
-                score = max(0.0, min(1.0, raw / bsum))
-                mmr = MMR_LAMBDA * score + (1 - MMR_LAMBDA) * (1.0 - jac) + \
-                    0.05 * new_arc + 0.02 * (c["overlay"] not in ovs)
-                pa, pv = _prior_means(niche, c["archetype"], vt)
-                key = (round(mmr, 2), round(pa, 4), round(pv, 4), -c["idx"], vt)
-                if best_key is None or key > best_key:
-                    best, best_key = dict(c, vt=vt), key
+                jac = max(jaccard(c["tri"], x["tri"]) for x in sel)
+                new_arc = c["archetype"] not in arcs
+                if jac > max_jac or (new_only and not new_arc):
+                    continue
+                if cap and clusters.get(cluster_of(c["archetype"]), 0) >= MAX_PER_CLUSTER:
+                    continue
+                if not new_arc and len(set(arcs)) < 3 and len(sel) >= 3:
+                    continue   # a 4th+ opening keeps >= 3 distinct archetypes
+                free = [v for v in c["vts"] if v not in vts]
+                paired = [v for v in free if v in c["pair"]]
+                for vt in (paired or free):
+                    vh = d["VISUAL_HOOKS"][vt]
+                    vx = float(vh["prior"]) * (1.0 if c["archetype"] in vh["best_archetypes"]
+                                               else 0.6)
+                    raw = c["raw0"] + w_vt * vx + w_nov * (1.0 - jac)
+                    score = max(0.0, min(1.0, raw / bsum))
+                    if score < floor:
+                        continue
+                    mmr = MMR_LAMBDA * score + (1 - MMR_LAMBDA) * (1.0 - jac) + \
+                        0.05 * new_arc + 0.02 * (c["overlay"] not in ovs)
+                    pa, pv = _prior_means(pri, niche, c["archetype"], vt)
+                    key = (round(mmr, 2), round(pa, 4), round(pv, 4), -c["idx"], vt)
+                    if best_key is None or key > best_key:
+                        best, best_key = dict(c, vt=vt), key
+            if best is not None:
+                break
         if best is None:
             break
         used.add(best["idx"])
         sel.append(best)
     # §1.2: >= 3 distinct archetypes once there are 4+ variants
-    while len(sel) >= 4 and len({s["archetype"] for s in sel}) < 3:
+    while len(sel) >= 4 and len({x["archetype"] for x in sel}) < 3:
         sel.pop()
     return sel
 
@@ -948,3 +997,426 @@ def classify(line, family=None, payoff=None):
     if family in CV.HOOK_ARCHETYPES:
         return family
     return cands[0]
+
+
+# ------------------------------------------------------------- checker
+_LINK_FORBIDDEN = CV.BUNDLE_FORBIDDEN
+
+
+def _norm_words(text):
+    return L.norm(text).split()
+
+
+def check_variants(hv, script, ctx=None):
+    """The docs/CREATIVE-PLAN.md §1.2 hard rules (gate D154) -> [problems].
+    Independent of how the variants were chosen: ids, the primary, the
+    distinctness rules, every screen of the primary hook on every variant
+    (D73 8 words, D144 card, D37, D136, D139, D141, D158, D137 + human_only
+    archetypes for an AI presenter, requires_price/proof), payoff
+    compatibility, and the frame-0 / audio / caption fields."""
+    p = []
+    if not isinstance(hv, list) or not MIN_VARIANTS <= len(hv) <= MAX_VARIANTS:
+        return [f"hook_variants: need {MIN_VARIANTS}-{MAX_VARIANTS} variants, got "
+                f"{len(hv) if isinstance(hv, list) else type(hv).__name__}"]
+    if any(not isinstance(v, dict) for v in hv):
+        return ["hook_variants: every variant is an object"]
+    ids = [v.get("id") for v in hv]
+    if ids != list(IDS[:len(hv)]):
+        p.append(f"ids {ids} are not A, B, C… in order")
+    prim = [v.get("id") for v in hv if v.get("is_primary") is True]
+    if prim != ["A"] or any(v.get("is_primary") not in (True, False) for v in hv):
+        p.append(f"exactly one is_primary, variant A (got {prim})")
+    vt_item, vh_item = _hook_items(script)
+    A = hv[0]
+    if vh_item is None or A.get("verbal") != " ".join(str(vh_item.get("dialogue") or "").split()):
+        p.append("A.verbal != the script's VERBAL HOOK dialogue")
+    if vt_item is None or A.get("overlay") != str(vt_item.get("on_screen") or ""):
+        p.append("A.overlay != the VISUAL TRIGGER on_screen")
+    if vt_item is not None and A.get("visual_type") != visual_type_of_direction(
+            vt_item.get("direction")):
+        p.append(f"A.visual_type {A.get('visual_type')!r} does not describe the frame-0 "
+                 f"direction")
+    vts = [v.get("visual_type") for v in hv]
+    if len(set(vts)) != len(vts):
+        p.append(f"visual_type values repeat: {vts}")
+    f3 = [first3(v.get("verbal")) for v in hv]
+    if len(set(f3)) != len(f3):
+        p.append(f"first three words repeat: {f3}")
+    arcs = [v.get("archetype") for v in hv]
+    if len(hv) >= 4 and len(set(arcs)) < 3:
+        p.append(f"{len(hv)} variants but only {len(set(arcs))} archetypes")
+    prompt = str(script.get("prompt") or "")
+    ai = str(script.get("presenter") or "").strip().lower() == "ai"
+    pt = payoff_type(script, ctx)
+    compat = data()["_compat"].get(pt, [])
+    arch = data()["ARCHETYPES"]
+    feat_ids = [f["id"] for f in data()["HOOK_SCORE_FEATURES"]]
+    link_caption = CV.link_groups_in(script.get("caption") or "")
+    for v in hv:
+        vid = v.get("id")
+        a, vt = v.get("archetype"), v.get("visual_type")
+        verbal, ov, cap = (str(v.get(k) or "") for k in ("verbal", "overlay", "caption_line"))
+        if a not in CV.HOOK_ARCHETYPES:
+            p.append(f"{vid}: archetype {a!r} is not a HOOK_ARCHETYPES id")
+        if vt not in CV.VISUAL_TYPES:
+            p.append(f"{vid}: visual_type {vt!r} is not a VISUAL_TYPES id")
+        if not v.get("family"):
+            p.append(f"{vid}: no family")
+        if not verbal or len(verbal.split()) > 8:
+            p.append(f"{vid}: verbal is {len(verbal.split())} words (D73: 1-8)")
+        n_ov = len(_norm_words(ov))
+        if not ov or (n_ov > 3 and "|" not in ov):
+            p.append(f"{vid}: overlay {ov!r} is not 1-3 words")
+        ok, why = L.overlay_is_clean(ov, verbal)
+        if not ok:
+            p.append(f"{vid}: overlay {ov!r}: {why} (D144)")
+        for label, text in (("verbal", verbal), ("overlay", ov), ("caption_line", cap)):
+            for prob in screen_text(text, prompt, ai):
+                if label == "overlay" and prob.startswith("R02"):
+                    continue
+                p.append(f"{vid}.{label}: {prob}")
+        if not cap:
+            p.append(f"{vid}: no caption_line")
+        flags = CV.HOOK_ARCHETYPES.get(a) or {}
+        if ai and (flags.get("human_only") or (arch.get(a) or {}).get("ai_safe") is False):
+            p.append(f"{vid}: human_only archetype {a} for an AI presenter (D137)")
+        if flags.get("requires_price") and not L.PRICE.search(prompt):
+            p.append(f"{vid}: {a} needs a price in the prompt (D37)")
+        if flags.get("requires_proof") and not L.first_match(L.SOCIAL_PROOF, prompt):
+            p.append(f"{vid}: {a} needs proof in the prompt (D136)")
+        if flags.get("requires_offer") and not prompt_has_offer(prompt):
+            p.append(f"{vid}: {a} needs an offer in the prompt (D158)")
+        if a not in compat:
+            p.append(f"{vid}: archetype {a} is not paid by the {pt} payoff (D35)")
+        vis = str(v.get("visual") or "")
+        if not vis.startswith("Frame 0"):
+            p.append(f"{vid}: visual does not start with 'Frame 0'")
+        for text, what in ((vis, "visual"), (str(v.get("audio") or ""), "audio")):
+            if not text:
+                p.append(f"{vid}: no {what}")
+            if '"' in text or "\u201c" in text:
+                p.append(f"{vid}: quoted dialogue in {what} (D160)")
+            if any(f in text for f in _LINK_FORBIDDEN):
+                p.append(f"{vid}: forbidden bundle phrase in {what}")
+            if CV.link_groups_in(text) - link_caption:
+                p.append(f"{vid}: a new D46 link group in {what}")
+        sc = v.get("score")
+        if not isinstance(sc, (int, float)) or not 0.0 <= sc <= 1.0:
+            p.append(f"{vid}: score {sc!r} not in [0, 1]")
+        feats = v.get("features")
+        if not isinstance(feats, dict) or sorted(feats) != sorted(feat_ids):
+            p.append(f"{vid}: features are not the 19 HOOK_SCORE_FEATURES")
+        if not isinstance(v.get("reasons"), list) or not v.get("reasons"):
+            p.append(f"{vid}: no reasons")
+    return p
+
+
+# ----------------------------------------------------------- render_md
+def render_md(hv, script):
+    """hooks.md: the variant table, each opening's frame 0 / audio / caption
+    line / score reasons, and the test protocol, metrics and Bayesian stop
+    rule of hooks-deep-dive VARIANT_POLICY."""
+    pol = data()["VARIANT_POLICY"]
+    script = script or {}
+    hv = [v for v in (hv or []) if isinstance(v, dict)]
+    out = ["## HOOK VARIANTS — alternate openings", ""]
+    out.append(f"Prompt: {script.get('prompt', '')} · format {script.get('format', '')} · "
+               f"presenter {script.get('presenter', '')} · payoff "
+               f"{payoff_type(script, None)}")
+    out.append("")
+    out.append(f"Variant A is the master's own opening; {max(0, len(hv) - 1)} alternates "
+               "change only the first 3 seconds (frame 0, card, spoken hook). Everything "
+               "from 3.0 s stays fixed, so a test isolates the hook. Scores rank openings "
+               "within this script (hooks-deep-dive §4); they are not virality forecasts.")
+    out.append("")
+    out.append("| ID | Role | Archetype | Frame 0 | Card (0.0 s) | Hook (0.5–3.0 s) | Score |")
+    out.append("|---|---|---|---|---|---|---|")
+    for v in hv:
+        role = "primary" if v.get("is_primary") else "alternate"
+        out.append(f"| {v.get('id')} | {role} | {v.get('archetype')} | {v.get('visual_type')} "
+                   f"| {v.get('overlay')} | {v.get('verbal')} | "
+                   f"{int(round(100 * float(v.get('score') or 0)))} |")
+    out.append("")
+    for v in hv:
+        out.append(f"#### {v.get('id')} — {v.get('archetype')} / {v.get('visual_type')} "
+                   f"(score {int(round(100 * float(v.get('score') or 0)))})")
+        out.append(f"- Visual: {v.get('visual')}")
+        out.append(f"- Audio: {v.get('audio')}")
+        out.append(f"- Caption line 1: {v.get('caption_line')}")
+        rs = "; ".join(str(r) for r in (v.get("reasons") or [])[:3])
+        out.append(f"- Why: {rs}")
+        out.append("")
+    tp, mt, th, st = pol["testing_protocol"], pol["metrics"], pol["thresholds"], pol["stats"]
+    out += ["## Test protocol", "",
+            f"- Paid (Meta / TikTok ad groups): {tp['paid']}. TikTok recommends 3–5 "
+            "creatives per ad group; one variant = one creative.",
+            f"- Instagram Trial Reels: {tp['instagram_trial_reels']}.",
+            f"- Other organic slots: {tp['organic_other']}.",
+            f"- Looks: {tp['looks']}.",
+            "- Log per post: " + ", ".join(tp["log"]) + ". The caption's first line "
+            "(each variant's caption line) links a post back to its variant.",
+            "", "## Metrics", "",
+            f"- Instagram: {mt['primary']['instagram']} (reels_skip_rate = share of views "
+            f"skipped within 3 s; healthy below {th['instagram_skip_rate']['healthy_below']:.0%}, "
+            f"failing above {th['instagram_skip_rate']['failing_above']:.0%}; trackers, no "
+            "official benchmark).",
+            f"- Meta paid: {mt['primary']['meta_paid']} — the 3-second hold (kill below "
+            f"{th['hook_rate_paid']['kill_below']['meta']:.0%}, median "
+            f"{th['hook_rate_paid']['median']['meta']:.0%}, top decile "
+            f"{th['hook_rate_paid']['top_decile']['meta']:.0%}).",
+            f"- TikTok paid: {mt['primary']['tiktok_paid']}; organic: "
+            f"{mt['primary']['tiktok_organic']}.",
+            f"- YouTube Shorts: {mt['primary']['youtube_shorts']}.",
+            "- Guardrails: " + ", ".join(mt["guardrails"]) + f" — {mt['guardrail_rule']}.",
+            "", "## Stop rule (Bayesian)", "",
+            f"- Model: {st['model']}.",
+            f"- Prior: {st['prior']}.",
+            f"- Decide: {st['decision']}.",
+            f"- Minimum: {st['min_n_per_variant']} views per variant before any decision "
+            f"(a 5-point lift at a 30% hold needs about "
+            f"{st['power_guide']['lift_5pp_at_30pct']} per variant, a 10-point lift about "
+            f"{st['power_guide']['lift_10pp_at_30pct']}).",
+            f"- Futility: {st['futility']}.",
+            f"- Early kill: {st['early_kill']}.",
+            f"- Learning: {st['prior_update']}; vsp.feedback writes the archetype and "
+            "visual_type priors, which only ever break ties.", ""]
+    return "\n".join(out)
+
+
+# ----------------------------------------------------------- selfcheck
+_EXPECTED_SLOTS = frozenset("""after before category category_pl common expensive flaw
+identity mistake moment ndays persona_note price product proof situation thing
+timespan""".split())
+FORMATS = ("demo", "talking-head", "pov-vlog", "transformation", "review")
+PRESENTERS = ("human", "ai")
+
+
+def _repo_root():
+    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def _prompts(name):
+    path = os.path.join(_repo_root(), "evals", name)
+    with open(path, encoding="utf-8") as f:
+        return [json.loads(ln) for ln in f if ln.strip() and not ln.startswith("//")]
+
+
+def selfcheck():
+    """Hermetic, in-process (no network, no file writes, priors off):
+    research tables, the maker's hook metadata, and generate() over
+    evals/golden.jsonl + evals/holdout.jsonl x 5 formats x 2 presenters at
+    seed 1 — every script carries 3-5 variants passing check_variants, A is
+    the actual hook, byte-identical twice, < 15 ms per variants() call on
+    average, no creative_warnings, the primary still passes gate 1."""
+    import time
+    lines, fails = [], []
+
+    def chk(name, cond, detail=""):
+        lines.append(("ok   " if cond else "FAIL ") + name +
+                     (f" — {detail}" if detail and not cond else ""))
+        if not cond:
+            fails.append(name)
+
+    saved = {k: os.environ.get(k) for k in ("VSP_NO_PRIORS",)}
+    os.environ["VSP_NO_PRIORS"] = "1"
+    try:
+        _selfcheck_body(chk, time)
+    except Exception as e:  # noqa: BLE001 — a crashing check fails closed
+        import traceback
+        chk("selfcheck ran", False, f"{type(e).__name__}: {e} "
+            f"{traceback.format_exc()[-400:]}")
+    finally:
+        for k, v in saved.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+    return (not fails), lines
+
+
+def _selfcheck_body(chk, time):
+    d = data()
+    arcs = d["ARCHETYPES"]
+    chk("archetypes: 19 ids = creative_vocab.HOOK_ARCHETYPES",
+        sorted(arcs) == sorted(CV.HOOK_ARCHETYPES))
+    chk("archetypes: 115 research templates",
+        sum(len(a["templates"]) for a in arcs.values()) == 115)
+    chk("visual hooks: 11 ids = creative_vocab.VISUAL_TYPES",
+        sorted(d["VISUAL_HOOKS"]) == sorted(CV.VISUAL_TYPES))
+    ws = [float(f["weight"]) for f in d["HOOK_SCORE_FEATURES"]]
+    chk("score features: 19, weights sum 1.0, bonus sum 0.81",
+        len(ws) == 19 and abs(sum(ws) - 1.0) < 1e-9 and abs(d["_bonus_sum"] - 0.81) < 1e-9)
+    chk("risky phrases: 20 compiled", len(d["_risky"]) == 20)
+    import viral_script_maker as vsm
+    from vsp.gates import gate1
+    chk("maker: HOOK_SLOTS unchanged (pack loader / evolve contract)",
+        frozenset(vsm.HOOK_SLOTS) == _EXPECTED_SLOTS, str(sorted(vsm.HOOK_SLOTS)))
+    chk("maker: every HOOKS family is a HOOK_ARCHETYPES id",
+        all(f in CV.HOOK_ARCHETYPES for f in vsm.HOOKS), str(sorted(vsm.HOOKS)))
+    mc = {k: sorted(v) for k, v in vsm.HOOK_PAYOFF_COMPAT.items()}
+    chk("maker: HOOK_PAYOFF_COMPAT == hooks.json payoff_compat",
+        mc == {k: sorted(v) for k, v in d["_compat"].items()})
+    # human_only (D137): never for presenter=ai
+    ctx = vsm.parse_prompt("electric milk frother")
+    ctx.update(fmt="review", presenter="ai", named_competitor="the name brand")
+    leaks = [t for t in vsm.HOOK_HUMAN_ONLY
+             if vsm._hook_template_ok(ctx, "bold-claim", t, None, True) is not None]
+    leaks += [f"{f}: {t}" for f in ("story-time", "confession") for t in vsm.HOOKS[f]
+              if vsm._hook_template_ok(ctx, f, t, None, True) is not None]
+    chk("maker: human_only templates / families never pass for presenter=ai", not leaks,
+        "; ".join(leaks[:3]))
+    # price once, with its currency
+    pc = vsm.parse_prompt("a $12 LED sunrise alarm lamp")
+    pc.update(fmt="review", presenter="human")
+    r = vsm._render_hook_line(pc, None, "{Domain} finds under ${price}.", None)
+    r2 = vsm._render_hook_line(pc, None, "At {price}: the {category} verdict.", None)
+    chk("maker: {price} renders once with its currency",
+        r.count("$12") == 1 and "$$" not in r and r2.count("$12") == 1, f"{r} / {r2}")
+    # price / proof / newness only from the prompt
+    np_ctx = vsm.parse_prompt("silk pillowcase")
+    np_ctx.update(fmt="review", presenter="human")
+    gated = [t for t in ("{product} is {price}. Worth it?", "Proof first: {proof}.",
+                         "New {category} just dropped. First look.")
+             if vsm._hook_template_ok(np_ctx, "question", t, None, False) is not None]
+    chk("maker: price / proof / 'new' templates need the prompt's input", not gated,
+        "; ".join(gated))
+    new_ctx = vsm.parse_prompt("new silk pillowcase")
+    new_ctx.update(fmt="demo", presenter="human")
+    chk("maker: a newness fact in the prompt unlocks 'new' templates",
+        vsm._hook_template_ok(new_ctx, "newness", "New {category} just dropped. First look.",
+                              None, False) == "newness")
+    # score_hook: deterministic, bounded, explained
+    s1 = score_hook("Stop buying milk frothers on looks alone.", "BUYING MILK FROTHERS",
+                    "problem-state", {"prompt": "electric milk frother", "presenter": "ai",
+                                      "format": "demo"}, ctx=dict(ctx, fmt="demo"),
+                    archetype="negative-command")
+    s2 = score_hook("Stop buying milk frothers on looks alone.", "BUYING MILK FROTHERS",
+                    "problem-state", {"prompt": "electric milk frother", "presenter": "ai",
+                                      "format": "demo"}, ctx=dict(ctx, fmt="demo"),
+                    archetype="negative-command")
+    chk("score_hook: deterministic, in [0,1], 19 features, reasons",
+        s1 == s2 and 0 <= s1[0] <= 1 and len(s1[1]) == 19 and s1[2], str(s1[0]))
+    bait = score_hook("You won't believe this lamp!!", "LAMP", "text-first",
+                      {"prompt": "lamp", "presenter": "human", "format": "demo"})
+    chk("score_hook: clickbait and hype cost points", bait[0] < s1[0] and
+        bait[1]["clickbait_marker"] == 1.0, str(bait[0]))
+    chk("risky: fake urgency needs the prompt's offer",
+        risky_hits("Last chance, ends tonight", "a lamp") == ["UR-01"] and
+        risky_hits("Last chance, ends tonight", "a lamp, 20% off sale ends tonight") == [])
+    # the in-process sweep
+    rows = []
+    for name in ("golden.jsonl", "holdout.jsonl"):
+        for g in _prompts(name):
+            rows.append((name, g["id"], g["prompt"]))
+    times = []
+    real = sys.modules[__name__].variants
+    import importlib
+    mod = importlib.import_module("vsp.hooks")   # what vsp.creative calls
+
+    def timed(script, ctx=None, seed=None, maker=None):
+        t0 = time.perf_counter()
+        try:
+            return real(script, ctx=ctx, seed=seed, maker=maker)
+        finally:
+            times.append(time.perf_counter() - t0)
+
+    bad, nondet, warns, g1, missing, counts, not_a = [], [], [], [], [], {}, []
+    if mod is not None:
+        mod.variants = timed
+    try:
+        for name, pid, prompt in rows:
+            for fmt in FORMATS:
+                for pr in PRESENTERS:
+                    key = f"{pid}|{fmt}|{pr}"
+                    s = json.loads(json.dumps(vsm.generate(prompt, presenter=pr, fmt=fmt,
+                                                           duration=30, seed=1)))
+                    s2 = json.loads(json.dumps(vsm.generate(prompt, presenter=pr, fmt=fmt,
+                                                            duration=30, seed=1)))
+                    if json.dumps(s, sort_keys=True) != json.dumps(s2, sort_keys=True):
+                        nondet.append(key)
+                    if s.get("creative_warnings"):
+                        warns.append(f"{key}: {s['creative_warnings']}")
+                    hv = s.get("hook_variants")
+                    if not hv:
+                        missing.append(key)
+                        continue
+                    counts[len(hv)] = counts.get(len(hv), 0) + 1
+                    probs = check_variants(hv, s)
+                    if probs:
+                        bad.append(f"{key}: {probs[0]}")
+                    _vt, vh = _hook_items(s)
+                    if hv[0].get("verbal") != (vh or {}).get("dialogue"):
+                        not_a.append(key)
+                    if gate1(s):
+                        g1.append(f"{key}: {gate1(s)[0][:90]}")
+    finally:
+        if mod is not None:
+            mod.variants = real
+    n = len(rows) * len(FORMATS) * len(PRESENTERS)
+    chk(f"sweep: {n} scripts (golden + holdout x 5 formats x 2 presenters, seed 1) "
+        f"all carry hook_variants", not missing, "; ".join(missing[:3]))
+    chk("sweep: every script passes the §1.2 rules (check_variants)", not bad,
+        "; ".join(bad[:3]) + (f" (+{len(bad) - 3})" if len(bad) > 3 else ""))
+    chk("sweep: A == the actual hook (VERBAL HOOK dialogue)", not not_a, "; ".join(not_a[:3]))
+    chk("sweep: byte-identical twice", not nondet, "; ".join(nondet[:3]))
+    chk("sweep: no creative_warnings", not warns, "; ".join(warns[:2]))
+    chk("sweep: primary hooks still pass gate 1", not g1, "; ".join(g1[:2]))
+    avg = 1000 * sum(times) / max(1, len(times))
+    chk(f"sweep: variants() averages {avg:.1f} ms over {len(times)} calls (< 15 ms)",
+        avg < 15.0)
+    chk("sweep: variant counts " + ", ".join(f"{k}: {v}" for k, v in sorted(counts.items())),
+        all(MIN_VARIANTS <= k <= MAX_VARIANTS for k in counts))
+    # --script-json path: no ctx -> derived from the prompt; never raises
+    s = json.loads(json.dumps(vsm.generate("electric milk frother", presenter="ai",
+                                           fmt="demo", seed=3)))
+    s.pop("hook_variants", None)
+    hv = variants(s, seed=3)
+    chk("no ctx: variants derived from the prompt pass §1.2",
+        bool(hv) and not check_variants(hv, s), "; ".join(check_variants(hv, s)[:2])
+        if hv else "None")
+    chk("no ctx: a script without a hook stack gives None (never raises)",
+        variants({"prompt": "x"}) is None and variants(None) is None)
+    md = render_md(hv, s)
+    chk("render_md: table, protocol, metrics, Bayesian stop rule",
+        all(k in md for k in ("| ID |", "## Test protocol", "Trial Reels", "reels_skip_rate",
+                              "3-second", "## Stop rule (Bayesian)", "P(v is best)")) and
+        not any(f in md for f in CV.BUNDLE_FORBIDDEN))
+
+
+def _cli(argv=None):
+    import argparse
+    ap = argparse.ArgumentParser(prog="python3 -m vsp.hooks",
+                                 description="hook variants (docs/CREATIVE-PLAN.md §1.2)")
+    sub = ap.add_subparsers(dest="cmd")
+    sub.add_parser("selfcheck", help="hermetic self-check")
+    sh = sub.add_parser("show", help="generate a script and print its hooks.md")
+    sh.add_argument("prompt")
+    sh.add_argument("--format", default="demo",
+                    choices=list(FORMATS))
+    sh.add_argument("--presenter", default="ai", choices=list(PRESENTERS))
+    sh.add_argument("--seed", type=int, default=1)
+    sh.add_argument("--duration", type=int, default=30)
+    sh.add_argument("--json", action="store_true", help="print the variants as JSON")
+    a = ap.parse_args(argv)
+    if a.cmd == "selfcheck":
+        ok, lines = selfcheck()
+        print("\n".join(lines))
+        print(f"vsp.hooks selfcheck: {'OK' if ok else 'FAILED'}")
+        return 0 if ok else 1
+    if a.cmd == "show":
+        sys.path.insert(0, _repo_root())
+        import viral_script_maker as vsm
+        s = vsm.generate(a.prompt, presenter=a.presenter, fmt=a.format,
+                         duration=a.duration, seed=a.seed)
+        hv = s.get("hook_variants")
+        if a.json:
+            print(json.dumps(hv, indent=1, ensure_ascii=False))
+        else:
+            print(render_md(hv, s) if hv else "(no hook variants)")
+        return 0
+    ap.print_help()
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(_cli())

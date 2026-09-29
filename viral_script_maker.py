@@ -1796,9 +1796,14 @@ need held won changed really actually even still never always again first
 better best most every least everyone everything nothing something someone
 anyone look looks looking got get gets watch wait happened happens instead
 done doing asleep tell tells told know knows explained
-keeps failing revealed reveals asks ask think decides misjudged""".split())
+keeps failing revealed reveals asks ask think decides misjudged ruins ruin
+breaks break held showed shows works work passes fixes fix missing winning""".split())
 _OV_TRAIL = frozenset("""wrong alone anyway again honestly instead yet already
 too first today now daily""".split())
+# WS-HOOKS: verbs that read as a fragment at the end of a card ("MILK
+# FROTHER HELD", "KITCHEN FINDS WORK") drop when a noun is left
+_OV_TRAIL_VERB = frozenset("""held showed shows works work passes ruins breaks
+revealed decides""".split())
 _OV_STARTERS = frozenset("no every one zero all most each any".split())
 _OV_TIME = frozenset("""day days week weeks night nights hour hours minute minutes
 second seconds month months year years""".split())
@@ -1838,12 +1843,12 @@ def overlay_truncate(s, max_words=3):
     toks, last = [], 0
     body = text
     if re.match(r"\s*pov\s*:", body, re.I):
-        # D22 listicle grammar: the POV label is part of the card
-        ws = _OV_WORD.findall(body)[:max_words]
-        ws = [w.strip(".'\u2019") for w in ws]
-        while len(ws) > 1 and ws[-1].lower() in _OV_FUNC:
-            ws = ws[:-1]
-        return ("POV: " + " ".join(ws[1:])).strip().upper() if len(ws) > 1 else "POV"
+        # D22 listicle grammar: the POV label is part of the card.
+        # WS-HOOKS: the label names the scene's noun run ("POV: DESK SETUP",
+        # "POV: MILK FROTHER"), not the first two words ("POV: YOUR DESK")
+        rest = re.sub(r"^\s*pov\s*:\s*", "", body, flags=re.I)
+        sub = overlay_truncate(rest, max_words - 1) if max_words > 1 and rest else ""
+        return ("POV: " + sub).strip().upper() if sub else "POV"
     body = _OV_LABEL_PREFIX.sub("", body) or body
     for m in _OV_WORD.finditer(body):
         gap = body[last:m.start()]
@@ -1911,7 +1916,8 @@ def overlay_truncate(s, max_words=3):
                                   and t["low"] not in _OV_TIME and t["low"] not in _OV_FUNC
                                   and not _ov_is_num(t["low"])))
     for r in pool:
-        while len(r) > 1 and _strong(r[:-1]) and r[-1]["low"] in _OV_TRAIL:
+        while len(r) > 1 and _strong(r[:-1]) and (r[-1]["low"] in _OV_TRAIL
+                                                  or r[-1]["low"] in _OV_TRAIL_VERB):
             r.pop()
     best = max(range(len(pool)), key=lambda i: (_strong(pool[i]), _content(pool[i]),
                                                 min(len(pool[i]), max_words), i))
@@ -2513,6 +2519,8 @@ HOOK_TEMPLATE_NEEDS = {
  # the transformation payoff's own spoken line ("Day 1 vs day 7."): the
  # hook would say the same sentence twice (rubric P3)
  "Day 1 vs day {ndays}.": ("never",),
+ # a streak's story beat: no product payoff pays "almost quit"
+ "Day {ndays} and I almost quit.": ("never",),
  "One {category} test, two results.": ("competitor",),
  "This is {product} in action.": ("singular",),
  "Here's {product} doing its job.": ("singular",),
