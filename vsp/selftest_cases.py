@@ -777,6 +777,154 @@ def _unit_v21_silent_on_legacy():
     return probs
 
 
+# ------------------------------------------ WS-EVAL: rubric / eval / schema
+LEGACY_RUBRIC = (  # R01-R20 (id, tier, weight, audit) — frozen, never edited
+    ("R01", "E", 3, False), ("R02", "E", 3, False), ("R03", "E", 3, False),
+    ("R04", "I", 2, False), ("R05", "E", 3, False), ("R06", "E", 3, False),
+    ("R07", "E", 3, False), ("R08", "I", 2, False), ("R09", "I", 2, False),
+    ("R10", "I", 2, False), ("R11", "I", 2, False), ("R12", "O", 1, True),
+    ("R13", "I", 2, False), ("R14", "O", 1, False), ("R15", "I", 2, True),
+    ("R16", "E", 3, False), ("R17", "O", 1, True), ("R18", "I", 2, False),
+    ("R19", "I", 2, False), ("R20", "O", 1, False))
+CREATIVE_AUDIT = ("R23", "R26", "R27", "R28")
+
+
+def strong_creative_fixture(good):
+    """The good fixture rewritten so that every R21-R28 creative check
+    passes: the keyword 'test product' is spoken + on screen by 3.0 s, in
+    caption line 1 and a hashtag; four strong, diverse, payoff-compatible
+    openings (the evaluator's own hook scorer: A 78, B 65, C 73, D 64)."""
+    hook = "Test product: the one step people skip."
+    s = {**good, "hook_stack": [{"type": "HOOK", "dialogue": hook}],
+         "caption": "Test product: the one step people skip.\n#testproduct #beautytok",
+         "beats": [dict(b) for b in good["beats"]]}
+    s["beats"][0]["on_screen"] = "TEST PRODUCT"
+    s["beats"][2] = {**s["beats"][2], "type": "PAYOFF",
+                     "dialogue": "Verdict: the test product works in one pass."}
+    s["direction"] = creative_direction(s)
+    hv = creative_variants(s)
+    hv[0].update(verbal=hook, overlay="TEST PRODUCT", archetype="curiosity-gap",
+                 visual_type="product-in-action", caption_line=hook.split(":")[0])
+    hv[2].update(overlay="REALLY WORK", visual_type="text-first")
+    s["hook_variants"] = hv
+    s["discovery"] = creative_discovery(s)
+    return s
+
+
+def _unit_rubric_creative():
+    """R01-R20 unchanged; R21-R28 fail on absent keys (R28 scores the
+    script's own openings), pass on the strong fixture; R23 is audit-only
+    and ignores the variants' self-reported score / features."""
+    from vsp import gates, rubric
+    good, _ = legacy_cases()
+    probs = []
+    table = {c[0]: (c[2], c[3], c[4]) for c in rubric.CHECKS}
+    for cid, tier, w, audit in LEGACY_RUBRIC:
+        if table.get(cid) != (tier, w, audit):
+            probs.append(f"{cid} changed: {table.get(cid)}")
+    ids = [c[0] for c in rubric.CHECKS]
+    if ids[:20] != [x[0] for x in LEGACY_RUBRIC] or ids[20:] != [
+            "R21", "R22", "R23", "R24", "R25", "R26", "R27", "R28"]:
+        probs.append(f"rubric check order {ids}")
+    if [c for c in CREATIVE_AUDIT if not table[c][2]] or \
+            [c for c in ("R21", "R22", "R24", "R25") if table[c][2]]:
+        probs.append("audit flags of R21-R28 changed")
+
+    def res(s):
+        return {c["id"]: c for c in rubric.score(s)["checks"]}
+
+    r = res(good)
+    bad = [c for c in ("R21", "R22", "R23", "R24", "R25", "R26", "R27")
+           if r[c]["pass"] is not False]
+    if bad or r["R28"]["pass"] is not True:
+        probs.append(f"absent creative keys: {[(c, r[c]['pass']) for c in r if c >= 'R21']}")
+    strong = strong_creative_fixture(good)
+    if gates.gate1(strong):
+        probs.append(f"strong creative fixture fails gate 1: {gates.gate1(strong)}")
+    r = res(strong)
+    bad = [(c, r[c]["detail"]) for c in r if c >= "R21" and r[c]["pass"] is not True]
+    if bad:
+        probs.append(f"strong creative fixture fails {bad}")
+    weak = creative_fixture(good)
+    gamed = {**weak, "hook_variants": [
+        {**v, "score": 1.0, "features": {k: 1.0 for k, _, _ in rubric.FEATURE_WEIGHTS},
+         "reasons": ["gamed"]} for v in weak["hook_variants"]]}
+    if res(gamed)["R23"]["pass"] is not False or res(weak)["R23"]["detail"] != \
+            res(gamed)["R23"]["detail"]:
+        probs.append("R23 reads the variants' self-reported score/features")
+    sc, feats, why = rubric.hook_score("Hey guys, you won't believe this!!",
+                                       "", "text-first", "question", strong)
+    if sc >= rubric.HOOK_ALT_MIN or not feats["clickbait_marker"] or \
+            not feats["filler_greeting"]:
+        probs.append(f"hook_score missed filler/clickbait penalties: {sc} {feats}")
+    return probs
+
+
+def _unit_creative_eval():
+    """vsp.creative_eval on the synthetic v2.1 brief (all metrics on), on a
+    legacy make_shotlist brief (zeros, no crash) and summarize([])."""
+    import json
+    import make_shotlist
+    from vsp import creative_eval as CE
+    good, _ = legacy_cases()
+    probs = []
+    s = v21_script(good, True)
+    row = CE.evaluate_files(s, None, v21_bundle(s))
+    want = {"variant_count": 4, "distinct_visual_types": 4, "shots_typed": 5,
+            "shot_typed_share": 1.0, "shot_plan_pass": True, "human_by_3s": True,
+            "frame0_product_result": True, "loop_ok": True,
+            "real_footage_marked": True, "sections_present": 4,
+            "alt_openings_match": True, "alt_prompt_problems": 0,
+            "cadence_in_band": True, "vibe": "raw-ugc",
+            "findings": {"D157": [], "D159": [], "D160": []}}
+    got = {k: row.get(k) for k in want}
+    if got != want:
+        probs.append(f"v2.1 row {got} != {want}")
+    bundle, _, _ = make_shotlist.build_bundle(good, refs=[UNIT_REEL])
+    leg = CE.evaluate_files(good, None, bundle)
+    if leg["variant_count"] or leg["keyword_placement_pass"] or \
+            (not leg["shots_typed"] and leg["shot_plan_pass"]):
+        probs.append(f"legacy row not zeros: {leg}")
+    summ = CE.summarize([row, leg, CE.evaluate_files(None, None, None)])
+    json.dumps(summ)
+    if summ["runs"] != 3 or summ["shot_plan_pass"]["k"] < 1 or \
+            CE.summarize([])["hook_variants_per_script"] != 0.0:
+        probs.append(f"summarize: {summ}")
+    return probs
+
+
+def _unit_schema_creative():
+    """The schema's creative $defs accept the synthetic fixtures (both lanes),
+    reject bad enums/consts, and their enums are creative_vocab's ids."""
+    from vsp import creative_vocab as CV
+    from vsp import schema
+    good, _ = legacy_cases()
+    probs = []
+    for s in (creative_fixture(good), creative_fixture(good_ai(good)),
+              strong_creative_fixture(good)):
+        errs = schema.validate(s)
+        if errs:
+            probs.append(f"valid creative fixture rejected: {errs[:3]}")
+    bad = creative_fixture(good)
+    bad = {**bad, "direction": {**bad["direction"], "vibe": "grunge"},
+           "hook_variants": bad["hook_variants"][:2]}
+    errs = schema.validate(bad)
+    if not any("vibe" in e for e in errs) or not any("minItems" in e for e in errs):
+        probs.append(f"bad creative keys accepted: {errs}")
+    d = schema.SCRIPT_SCHEMA["$defs"]
+    if d["direction"]["properties"]["vibe"]["enum"] != list(CV.VIBES) or \
+            d["hook_variant"]["properties"]["visual_type"]["enum"] != list(CV.VISUAL_TYPES) or \
+            d["hook_variant"]["properties"]["archetype"]["enum"] != list(CV.HOOK_ARCHETYPES):
+        probs.append("schema enums drifted from vsp/creative_vocab.py")
+    try:
+        with open(schema.SCHEMA_PATH, encoding="utf-8") as f:
+            if f.read() != schema.schema_text():
+                probs.append("schema/script.schema.json is stale (python3 -m vsp.schema --write)")
+    except OSError as e:
+        probs.append(f"schema file unreadable: {e}")
+    return probs
+
+
 def unit_cases():
     return [("registry-shape", _unit_registry_shape),
             ("router-contract", _unit_router_contract),
@@ -795,7 +943,10 @@ def unit_cases():
             # v2.1 brief (D157 / D159 / D160)
             ("v21-bundle-passes-gate2", _unit_v21_bundle_passes),
             ("v21-gate2-violations-d157-d159-d160", _unit_v21_violations),
-            ("v21-gate2-silent-on-legacy-bundles", _unit_v21_silent_on_legacy)]
+            ("v21-gate2-silent-on-legacy-bundles", _unit_v21_silent_on_legacy),
+            ("v21-rubric-creative-checks", _unit_rubric_creative),
+            ("v21-creative-eval-metrics", _unit_creative_eval),
+            ("v21-schema-creative-defs", _unit_schema_creative)]
 
 
 def all_cases():
@@ -1919,6 +2070,76 @@ def _e2e_loud_failure(h):
     return probs
 
 
+# ---------------------------------------- WS-EVAL: v2.1 creative modules e2e
+CREATIVE_MODULES = (("vsp.direction", "direction"),
+                    ("vsp.hooks", "hook_variants"),
+                    ("vsp.discovery", "discovery"))
+CREATIVE_PROMPTS = ("portable door lock", "electric milk frother", "silk pillowcase")
+_CREATIVE_GEN_CODE = r"""
+import json, sys
+sys.path.insert(0, sys.argv[1])
+import viral_script_maker as vsm
+out = []
+for prompt in json.loads(sys.argv[2]):
+    for pr in ("human", "ai"):
+        for fmt, du in (("demo", 30), ("review", 15)):
+            for sd in (1, 2):
+                s = vsm.generate(prompt, presenter=pr, fmt=fmt, duration=du, seed=sd)
+                out.append(json.loads(json.dumps(s)))
+sys.stdout.write("\n@@CREATIVE@@" + json.dumps(out))
+"""
+
+
+def _e2e_creative_keys(h):
+    """When vsp.direction / vsp.hooks / vsp.discovery exist (find_spec),
+    every generated script carries their keys, passes D154-D156 and has no
+    creative_warnings — both the normal CLI run's script.json and a direct
+    maker matrix (3 prompts x 2 presenters x demo/30 s + review/15 s x 2
+    seeds) in a hermetic child. Skipped (noted) when none exists."""
+    import importlib.util
+    import json
+    import os
+    from vsp import rules
+    present = []
+    for mod, key in CREATIVE_MODULES:
+        try:
+            spec = importlib.util.find_spec(mod)
+        except (ImportError, ValueError):
+            spec = None
+        if spec is not None:
+            present.append((mod, key))
+    if not present:
+        h.state.setdefault("notes", []).append(
+            "e2e-creative-keys skipped (no vsp.direction/hooks/discovery)")
+        return []
+    r = h.py(_CREATIVE_GEN_CODE, args=(h.repo, json.dumps(list(CREATIVE_PROMPTS))))
+    blob = r.stdout.rsplit("@@CREATIVE@@", 1)
+    if r.returncode != 0 or len(blob) != 2:
+        return [f"creative matrix child failed: exit {r.returncode}\n"
+                f"{r.stdout[-300:]}{r.stderr[-500:]}"]
+    scripts = json.loads(blob[1])
+    if "normal" in h.state:
+        scripts.append(_load(os.path.join(h.state["normal"], "script.json")))
+    probs = []
+    for s in scripts:
+        tag = f"{s.get('prompt')!r} {s.get('presenter')}/{s.get('format')}/" \
+              f"{s.get('duration_s')}s seed {s.get('seed')}"
+        miss = [key for _, key in present if key not in s]
+        if miss:
+            probs.append(f"{tag}: no {miss} although "
+                         f"{[m for m, k in present if k in miss]} exist")
+        if s.get("creative_warnings"):
+            probs.append(f"{tag}: creative_warnings {s['creative_warnings'][:2]}")
+        ctx = rules.build_ctx(s)
+        for fn in (rules.check_d154, rules.check_d155, rules.check_d156):
+            msgs = fn(s, None, ctx)
+            if msgs:
+                probs.append(f"{tag}: {msgs[:2]}")
+    h.state.setdefault("notes", []).append(
+        f"e2e-creative-keys: {len(scripts)} scripts x {[m for m, _ in present]}")
+    return probs[:12] + ([f"+{len(probs) - 12} more"] if len(probs) > 12 else [])
+
+
 def e2e_checks():
     return [("e2e-normal-run", _e2e_normal),
             ("e2e-candidates-1-seed-parity", _e2e_parity),
@@ -1929,8 +2150,12 @@ def e2e_checks():
             ("e2e-priors-deterministic", _e2e_priors),
             ("e2e-repair-stage-6", _e2e_repair),
             ("e2e-failing-run-is-loud", _e2e_loud_failure),
-            ("e2e-stage-1-input-errors", _e2e_input_errors)]
+            ("e2e-stage-1-input-errors", _e2e_input_errors),
+            # WS-EVAL (pipeline v2.1): skipped until the modules exist
+            ("e2e-creative-keys", _e2e_creative_keys)]
 
 
 # modules other workstreams own; each may expose selfcheck() -> (ok, lines)
-OPTIONAL_SELFCHECKS = ("vsp.ingest", "vsp.feedback", "vsp.improve")
+# (v2.1: the creative-layer modules, run when present like the v2 ones)
+OPTIONAL_SELFCHECKS = ("vsp.ingest", "vsp.feedback", "vsp.improve",
+                       "vsp.direction", "vsp.hooks", "vsp.discovery", "vsp.shotplan")

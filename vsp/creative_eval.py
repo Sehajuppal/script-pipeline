@@ -99,7 +99,6 @@ def evaluate_files(script, shots, bundle_text):
     hv = s.get("hook_variants") if isinstance(s.get("hook_variants"), list) else []
     hv = [v for v in hv if isinstance(v, dict)]
     d = s.get("direction") if isinstance(s.get("direction"), dict) else {}
-    disc = s.get("discovery") if isinstance(s.get("discovery"), dict) else {}
     tone = d.get("tone") if isinstance(d.get("tone"), dict) else {}
     row = {"keys": {k: k in s for k in ("direction", "hook_variants", "discovery")},
            "variant_count": len(hv),
