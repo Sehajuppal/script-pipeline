@@ -1202,6 +1202,11 @@ def _select(A, cands, info, ctx, fw_drop=frozenset(), maker=None, mode=0):
             "tri_fw": trigrams_fw(A["verbal"], fw_drop),
             "ck": card_key(A["overlay"], maker), "f3": first3(A["verbal"])}]
     pay = frozenset(info.get("payload") or ())
+    # v2.2 D164: a trend recipe's archetypes and frame-0 visual earn a small
+    # MMR bonus among openings that already pass every diversity rule
+    tr = ctx.get("trend") if isinstance(ctx.get("trend"), dict) else {}
+    t_arcs = {a for a in (tr.get("hook_archetypes") or []) if isinstance(a, str)}
+    t_vt = tr.get("frame0_visual_type")
     used = set()
     niche = ctx.get("niche")
     pri = _load_priors()
@@ -1262,7 +1267,8 @@ def _select(A, cands, info, ctx, fw_drop=frozenset(), maker=None, mode=0):
                     if score < floor or (len(sel) >= 4 and score < ALT_FIFTH_MIN):
                         continue
                     mmr = MMR_LAMBDA * score + (1 - MMR_LAMBDA) * (1.0 - jac) + \
-                        0.05 * new_arc + 0.02 * own_card
+                        0.05 * new_arc + 0.02 * own_card + \
+                        0.03 * (c["archetype"] in t_arcs) + 0.02 * (vt == t_vt)
                     pa, pv = _prior_means(pri, niche, c["archetype"], vt)
                     key = (round(mmr, 2), round(pa, 4), round(pv, 4), -c["idx"], vt)
                     if best_key is None or key > best_key:

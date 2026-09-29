@@ -63,7 +63,7 @@ YT_DAILY_SEARCH = 100
 YT_DAY_OFFSET_H = 8             # quota day = Pacific (fixed UTC-8)
 SHORT_MAX_S = 180
 BASELINE_UPLOADS = 15
-YT_RETENTION_DAYS = S.YT_RETENTION_DAYS
+YT_RETENTION_DAYS = S.YT_RETENTION_DAYS    # D163: YouTube 30-day refresh-or-purge
 
 
 class ImportFailed(ValueError):

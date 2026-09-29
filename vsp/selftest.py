@@ -207,7 +207,10 @@ def run(pipeline_path, keep=False):
                VSP_OUTPUTS=os.path.join(tmp, "outputs"),
                VSP_VIRAL_DB=build_fixture_db(os.path.join(tmp, "viral.db")),
                VSP_FIXTURE_OK="1", PYTHONDONTWRITEBYTECODE="1",
-               PYTHONIOENCODING="utf-8", VSP_LEARNED_DIR=learned)
+               PYTHONIOENCODING="utf-8", VSP_LEARNED_DIR=learned,
+               # v2.2: no trends dataset unless a case passes --trends-dir
+               # (a real ~/viral-trends-db never reaches the self-test)
+               VSP_TRENDS_DIR=os.path.join(tmp, "no-trends-dataset"))
     for k in ("VSP_NO_HOOK_PACKS", "VSP_NO_PRIORS"):
         env.pop(k, None)
     good, cases = all_cases()

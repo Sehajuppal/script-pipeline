@@ -3325,3 +3325,104 @@ rule was removed or loosened; `tools/rule_coverage.py --check` passes.
     product keywords
   - cozy-calm cadence under its band
   - creator-specific advice content
+
+
+## §70 — PIPELINE v2.2: TREND INTELLIGENCE + RENDER HAND-OFF (2026-09-29)
+
+Built for the agent-run setup: Hermes on Meta Muse scans trends; a Google
+Antigravity agent renders with Gemini Omni and voices with Cartesia.
+Evidence:
+- [research/video-generation-omni.md](docs/research/video-generation-omni.md)
+- [research/voice-cartesia.md](docs/research/voice-cartesia.md)
+- [research/trend-discovery-rules.md](docs/research/trend-discovery-rules.md)
+  (every trend constant with its grade)
+
+Integration notes:
+- [ws-trends-notes.md](docs/ws-trends-notes.md)
+- [ws-render-notes.md](docs/ws-render-notes.md)
+
+### New rules D162–D164
+
+- D162. RENDER HAND-OFF LANE INTEGRITY: every run writes `render.json` +
+  `voice_plan.json` + `render.md`. The script's presenter decides the lane.
+  - presenter=ai → `presenter_mode ai`, voice lane `ai_persona`, every AI
+    label on (TikTok `is_aigc`, Instagram AI label, YouTube altered or
+    synthetic content), the D138 caption line and the frame-0 label; its
+    `real_footage` proof shots stay `mode real` (filmed, never generated).
+  - presenter=human → `real_voice`, and every shot needing a face or hands
+    is `mode real`: a human-lane bundle never gets a synthesised person or
+    voice. `--ai-broll` allows only faceless product B-roll, and turns the
+    labels on.
+  - `creator_clone` requires `--consent-ref`: the pipeline refuses the run
+    (exit 2) and `vsp.render` raises otherwise.
+  - Omni prompts never carry quotes, rule ids, palette lists or in-frame
+    text requests; B-roll never speaks.
+  - Lip-sync is planned only for lines of 6 s or less; the ITU-R BT.1359
+    tolerance of +45/−125 ms is checked downstream.
+  - Gemini Omni cannot take an external audio track, so the plan is:
+    native line → lip-sync pass → audio replaced.
+  - No faked handheld shake on an AI-persona render (F133).
+  Mechanism: AI-generated realistic people and voices require platform
+  labels and must not pass as human-made (Google's generative-AI use policy;
+  FTC 16 CFR 465 on fake testimonials); a human creator's video with a
+  synthetic stand-in would be exactly that.
+  Source: research/video-generation-omni.md §1.9, §3, §6; research/voice-cartesia.md
+  §3.3, §6, §7.5. [P platform/legal + A policy]
+  Enforced in: `vsp/render.py` (build + `check_render` / `check_voice_plan`),
+  pipeline stage 9 (lane/consent errors fail the stage) and argument
+  validation; `antigravity/AGENTS.md` non-negotiables 3–7.
+  Verification: `python3 -m vsp.render selfcheck` (410 scripts: lanes,
+  human lane 0 ai shots, AI-lane real-footage shots all real, creator_clone
+  without consent raises) and self-test e2e `e2e-trend-steering-replay`
+  (exit 2 without `--consent-ref`).
+
+- D163. TREND DATA COMPLIANCE:
+  - **Automated collection** uses official APIs only: Instagram Graph API
+    Hashtag Search + Business Discovery (vsp.ingest → `vsp.trends
+    import-ingest`), and the YouTube Data API with quota accounting.
+  - **TikTok** is limited to Creative Center lists copied by hand, because
+    its terms ban automated collection.
+  - **Agent observation** stays at human scale: at most 30 posts per
+    platform per day, found through official sources or shared by the user,
+    and recorded as the agent's own analysis.
+  - **Stored:** permalinks, public metrics, a hook excerpt of 12 words or
+    fewer, and our own analysis. Never media, CDN URLs or whole captions.
+    Instruction-like text is flagged as data (rule 8).
+  - **Retention:** YouTube API rows expire after 30 days unless refreshed.
+    Deletion on request is by `purge`. The dataset lives in a private
+    repo, on branch `data`.
+  Mechanism: Meta's Automated Data Collection terms, TikTok's ToS and
+  YouTube's Developer Policies allow only these paths. The creators are
+  mostly small accounts, so their public data is still personal data.
+  Source: research/instagram-data-access.md; research/trend-discovery-rules.md. [P]
+  Enforced in: `vsp/trends/schema.py` (validation), `vsp/trends/importers.py`
+  (retention, quota), the `vsp-trends` skill, AGENTS.md rule 7.
+  Verification: `python3 -m vsp.trends selfcheck` (validation rejections,
+  purge, quota, retention).
+
+- D164. TREND STEERING IS A TIE-BREAK:
+  - A trend recipe (`--trend auto|<id>`) never overrides a gate, a quality
+    component or the hook-strength tier. Within the top-quality tie, the
+    recipe's hook archetypes decide first, then the learned prior, then the
+    keyword preference, then the niche family.
+  - Its vibe enters the direction before the lane rules, so every lane
+    constraint still applies.
+  - Its archetypes and frame-0 visual earn a small MMR bonus among openings
+    that already pass every diversity rule.
+  - Its format and duration apply only when the user gave none.
+  - Without a dataset, script.json is byte-identical to v2.1.
+  - A steered run writes `trend.json` and pins it in the manifest args, so
+    `--replay` re-applies the same recipe. A shipped recipe is marked used,
+    which lowers its novelty next time.
+  - Self-test, scorecards and `vsp.improve` run trend-free (`VSP_TRENDS_DIR`
+    points to an empty path).
+  Mechanism: a trend is market evidence, not a quality guarantee; letting
+  it outrank quality would ship weaker hooks on stale or thin evidence.
+  Source: research/trend-discovery-rules.md (evidence × velocity × novelty ×
+  feasibility; small/medium-creator outliers weighted). [M/A]
+  Enforced in: `viral_script_maker.pick_hook` / `generate(trend=)`,
+  `vsp/direction.resolve_vibe(trend=)`, `vsp/hooks._select`, `pipeline.py`
+  (`resolve_trend`, `--trend-json`), `vsp/trends/steer.py`.
+  Verification: self-test e2e `e2e-trend-steering-replay` (recipe carried
+  into script/manifest/render.json, use recorded, replay reproduces);
+  `vsp.improve verify` against v2.1 (scorecards unchanged without trends).

@@ -56,6 +56,7 @@ DB = config.viral_db_path()  # kept for callers that read pipeline.DB
 ARTIFACTS = ("script.json", "bundle.md", "brief.md", "validation-report.md",
              "captions.srt", "captions.vtt", "captions.json", "shotlist.csv",
              "shots.json", "direction.md", "hooks.md", "posting.md",
+             "trend.md", "trend.json", "render.json", "voice_plan.json", "render.md",
              "manifest.json", "trace.jsonl", "gate-report.json")
 # v2.1 creative layer docs (stage 9): written when the script carries the key
 CREATIVE_DOCS = (("direction.md", "direction", "vsp.direction", "Creative direction"),
@@ -254,6 +255,7 @@ class Run:
         self.crashed = False
         self.input_rejected = False
         self.tr = None
+        self.trend, self.trend_note = None, None   # v2.2: set by main()
 
     # ------------------------------------------------------------ report
     def line(self, n, status, detail=""):
@@ -430,7 +432,8 @@ class Run:
             try:
                 s = vsm.generate(a.prompt, presenter=a.presenter, fmt=a.format,
                                  duration=a.duration, seed=seed,
-                                 use_research=self.use_research, persona=a.persona)
+                                 use_research=self.use_research, persona=a.persona,
+                                 trend=self.trend)
                 prov = getattr(vsm, "learned_provenance", dict)()
             except Exception:
                 crash_tb.append(traceback.format_exc())
@@ -675,6 +678,8 @@ class Run:
                            traceback.format_exc())
                 self.stop(1, "stage 9 failed")
             docs = self.write_creative_docs()
+            docs += self.write_trend_doc()
+            docs += self.write_render_handoff()
             sp.set(files=len(self.exports) + len(docs), cues=len(cues), lint=len(lint))
         self.warn("captions", lint)
         summary = self.creative_summary()
@@ -708,6 +713,61 @@ class Run:
                 written.append(fname)
         return written
 
+    def write_trend_doc(self):
+        """v2.2 (D164): trend.md — the recipe this script rides (evidence,
+        what to copy, what to change, licensed audio only). Only when a
+        recipe steered the run."""
+        if not self.trend or self.from_json:
+            return []
+        try:
+            from vsp.trends import steer as vst
+            text = vst.brief_md(self.trend)
+        except Exception as e:  # noqa: BLE001 — advisory
+            self.warnings.append(f"export: trend.md not written ({type(e).__name__}: {e})")
+            return []
+        if not (text or "").strip():
+            return []
+        _write(os.path.join(self.outdir, "trend.md"),
+               f"# Trend recipe — {self.a.prompt}\n\n" + text.rstrip() + "\n")
+        return ["trend.md"]
+
+    def write_render_handoff(self):
+        """v2.2 (D162): render.json + voice_plan.json + render.md for the
+        Antigravity render agent (Gemini Omni + Cartesia; antigravity/). A
+        lane/consent error fails stage 9 loudly; check problems are
+        warnings. The trend recipe (if any) rides along for the editor."""
+        from vsp import render as vrender
+        a = self.a
+        try:
+            names = vrender.write(
+                self.outdir, self.script, self.shots,
+                script_sha=_sha256_file(os.path.join(self.outdir, "script.json")),
+                voice_lane=a.voice_lane, ai_broll=bool(a.ai_broll),
+                consent_ref=a.consent_ref, voice_id=a.voice_id)
+        except ValueError as e:
+            self.crash(9, f"render hand-off: {e}")
+            self.stop(1, "stage 9 failed")
+        rp = os.path.join(self.outdir, "render.json")
+        try:
+            with open(rp, encoding="utf-8") as f:
+                r = json.load(f)
+            with open(os.path.join(self.outdir, "voice_plan.json"), encoding="utf-8") as f:
+                vp = json.load(f)
+            probs = vrender.check_render(r, self.script) + vrender.check_voice_plan(vp, self.script)
+            if self.trend:
+                t = self.trend
+                r["trend"] = {k: t.get(k) for k in (
+                    "recipe_id", "title", "operator", "stage", "trend_keys",
+                    "beats_note", "audio_note", "text_note", "participation_note",
+                    "originality", "risk")}
+                with open(rp, "w", encoding="utf-8") as f:
+                    json.dump(r, f, indent=1, ensure_ascii=False)
+                    f.write("\n")
+        except (OSError, ValueError) as e:
+            probs = [f"render hand-off unreadable: {e}"]
+        self.warn("render", probs)
+        return list(names)
+
     def creative_summary(self):
         """One line for the stage-9 report: vibe/tone, the openings, the
         search keyword."""
@@ -726,6 +786,9 @@ class Run:
         disc = s.get("discovery") if isinstance(s.get("discovery"), dict) else {}
         if disc.get("primary_keyword"):
             parts.append(f"keyword {disc['primary_keyword']!r}")
+        tr = s.get("trend") if isinstance(s.get("trend"), dict) else {}
+        if tr.get("recipe_id"):
+            parts.append(f"trend {tr['recipe_id']} ({tr.get('operator')}, {tr.get('stage')})")
         return "; ".join(parts)
 
     # ------------------------------------------------------------ finish
@@ -771,7 +834,10 @@ class Run:
                 "hook_archetype": prim.get("archetype"),
                 "visual_type": prim.get("visual_type"),
                 "variant_ids": [v.get("id") for v in hv] or None,
-                "primary_keyword": disc.get("primary_keyword")}
+                "primary_keyword": disc.get("primary_keyword"),
+                # v2.2: the trend recipe that steered the script (D164)
+                "trend_recipe_id": ((s.get("trend") or {}).get("recipe_id")
+                                    if isinstance(s.get("trend"), dict) else None)}
 
     def gate_report(self, code, status):
         cands = []
@@ -863,6 +929,17 @@ class Run:
                 self.tr.close()
             except Exception:  # noqa: BLE001
                 pass
+        if (code == 0 and self.trend and not self.from_json
+                and not getattr(self.a, "trend_json", None)):
+            # v2.2 (D164): a shipped recipe loses novelty for the next picks
+            # (a --trend-json replay never marks it twice)
+            try:
+                from vsp.trends import steer as vst
+                vst.mark_used(self.trend.get("recipe_id"), dataset_dir=self.a.trends_dir,
+                              script_sha=_sha256_file(os.path.join(self.outdir,
+                                                                   "script.json")))
+            except Exception as e:  # noqa: BLE001 — advisory, never fails a run
+                self.warnings.append(f"trends: mark_used failed ({type(e).__name__}: {e})")
         if self.a.json:
             winner = None
             if self.selected:
@@ -898,10 +975,12 @@ def main():
     ap.add_argument("prompt", nargs="?",
                     help="product prompt (not needed with --self-test)")
     ap.add_argument("--presenter", default="human", choices=["ai", "human"])
-    ap.add_argument("--format", default="demo",
-                    choices=["demo", "talking-head", "pov-vlog", "transformation", "review"])
-    ap.add_argument("--duration", type=int, default=30,
-                    help="target video length in seconds (5-180, default 30)")
+    ap.add_argument("--format", default=None,
+                    choices=["demo", "talking-head", "pov-vlog", "transformation", "review"],
+                    help="default demo (or the trend recipe's format when --format is not given)")
+    ap.add_argument("--duration", type=int, default=None,
+                    help="target video length in seconds (5-180, default 30, or the "
+                         "trend recipe's when --duration is not given)")
     ap.add_argument("--seed", type=int, default=701)
     ap.add_argument("--persona", default=None,
                     help="house AI persona from personas.json (default: maya for --presenter ai)")
@@ -927,6 +1006,27 @@ def main():
                          "(recorded in the manifest; never changes the winner)")
     ap.add_argument("--json", action="store_true",
                     help="print one JSON summary to stdout instead of the report")
+    # v2.2 trend intelligence (vsp.trends) and the render hand-off (vsp.render)
+    ap.add_argument("--trend", default="auto", metavar="auto|none|RECIPE_ID",
+                    help="steer ties with a trend recipe from the trends dataset "
+                         "(default auto: the best fitting recent recipe; a no-op "
+                         "without a dataset; D164)")
+    ap.add_argument("--trends-dir", default=None,
+                    help="trends dataset (default $VSP_TRENDS_DIR or ~/viral-trends-db)")
+    ap.add_argument("--trend-json", default=None,
+                    help="a recorded trend.json (replay pin; overrides --trend)")
+    ap.add_argument("--voice-lane", default=None,
+                    choices=["ai_persona", "creator_clone", "real_voice"],
+                    help="render hand-off voice lane (default: ai_persona for "
+                         "--presenter ai, real_voice for human; D162)")
+    ap.add_argument("--ai-broll", action="store_true",
+                    help="human lane: let the render agent generate faceless "
+                         "product B-roll (turns the AI labels on)")
+    ap.add_argument("--consent-ref", default=None,
+                    help="consent record id, required for --voice-lane creator_clone")
+    ap.add_argument("--voice-id", default=None,
+                    help="Cartesia voice id for voice_plan.json (else the plan "
+                         "says how to pick one)")
     argv = sys.argv[1:]
     a = ap.parse_args(argv)
     args_record = dict(vars(a))   # before any mutation (manifest + --replay)
@@ -937,6 +1037,19 @@ def main():
         sys.exit(replay_main(a.replay, as_json=a.json))
     if not a.prompt and not a.script_json:
         ap.error("a prompt is required (or --script-json PATH / --self-test)")
+    if a.voice_lane == "creator_clone" and not a.consent_ref:
+        ap.error("--voice-lane creator_clone needs --consent-ref (the creator's "
+                 "recorded consent to clone their voice; D162)")
+    # v2.2: the trend recipe is resolved before routing, so a recipe's
+    # format/duration apply when the user left them unset (explicit wins)
+    steer, trend_note = (None, "n/a (--script-json)") if a.script_json else resolve_trend(a)
+    if steer:
+        if a.format is None and steer.get("format"):
+            a.format = steer["format"]
+        if a.duration is None and steer.get("duration_s"):
+            a.duration = int(steer["duration_s"])
+    a.format = a.format or "demo"
+    a.duration = 30 if a.duration is None else a.duration
     if not 5 <= a.duration <= 180:
         ap.error("--duration must be between 5 and 180 seconds")
     if not 1 <= a.candidates <= MAX_CANDIDATES:
@@ -987,9 +1100,54 @@ def main():
         p = os.path.join(outdir, f)
         if os.path.isfile(p):
             os.remove(p)
+    if not a.script_json:
+        # replay pin: --replay re-applies this exact recipe (or none), never
+        # whatever the dataset holds on the replay day
+        if steer:
+            tj = os.path.join(outdir, "trend.json")
+            with open(tj, "w", encoding="utf-8") as f:
+                json.dump(steer, f, indent=1, ensure_ascii=False, sort_keys=True)
+                f.write("\n")
+            args_record["trend"], args_record["trend_json"] = None, tj
+        else:
+            args_record["trend"], args_record["trend_json"] = "none", None
     r = Run(a, args_record, argv, outdir, script=script)
-    r.report += [f"# Validation report — {a.prompt}", header, ""]
+    r.trend, r.trend_note = steer, trend_note
+    r.report += [f"# Validation report — {a.prompt}", header, f"trend: {trend_note}", ""]
     r.execute()
+
+
+def resolve_trend(a):
+    """-> (steer dict | None, note) for this run (D164). --trend-json (a
+    recorded trend.json, the replay pin) wins; --trend none -> None; else
+    vsp.trends.steer.for_run (auto: the best fitting recipe of the latest
+    batch; or a recipe id). Read-only, never raises, None without a dataset."""
+    if a.trend_json:
+        try:
+            with open(a.trend_json, encoding="utf-8") as f:
+                st = json.load(f)
+        except (OSError, ValueError) as e:
+            return None, f"--trend-json unreadable ({e})"
+        if isinstance(st, dict) and st.get("recipe_id"):
+            return st, f"{st['recipe_id']} (pinned by --trend-json)"
+        return None, "none (pinned by --trend-json)"
+    t = str(a.trend or "auto").strip()
+    if t.lower() == "none":
+        return None, "off (--trend none)"
+    try:
+        from vsp.trends import steer as vst
+        st = vst.for_run(a.prompt, presenter=a.presenter, fmt=a.format,
+                         dataset_dir=a.trends_dir,
+                         recipe_id=None if t.lower() == "auto" else t)
+    except Exception as e:  # noqa: BLE001 — trends are advisory
+        return None, f"trend lookup failed ({type(e).__name__}: {e})"
+    if not st:
+        return None, ("no fitting recipe (no dataset, a stale batch, or none "
+                      "feasible)" if t.lower() == "auto"
+                      else f"recipe {t} not found or not feasible for --presenter "
+                           f"{a.presenter}")
+    return st, (f"{st['recipe_id']} — {st.get('title')} ({st.get('operator')}, "
+                f"{st.get('stage')}, score {st.get('score')})")
 
 
 def _slug(prompt):

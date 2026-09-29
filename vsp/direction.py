@@ -317,8 +317,10 @@ def _lanes(v, fit, duration, presenter, niche, shop, trail=None):
 
 
 def resolve_vibe(concept, fmt, niche, fit, presenter, duration, prompt,
-                 pack=None, priors=None, shop=False):
-    """-> (vibe, secondary, reason trail list)."""
+                 pack=None, priors=None, shop=False, trend=None):
+    """-> (vibe, secondary, reason trail list). trend = a vsp.trends
+    recipe dict: its vibe replaces the rule pick before the lanes run, so
+    every lane constraint still applies (D164)."""
     D = data()["DEFAULT_VIBE"]
     trail, replaced = [], []
     vibe = None
@@ -362,6 +364,11 @@ def resolve_vibe(concept, fmt, niche, fit, presenter, duration, prompt,
             trail.append(f"research pack pattern {pp[0]} ({pp[1]:.0%} of "
                          f"{pp[2]}) -> {new}")
             vibe = new
+    tv = (trend or {}).get("vibe") if isinstance(trend, dict) else None
+    if tv in CV.VIBES and tv != vibe:
+        replaced.append(vibe)
+        trail.append(f"trend recipe {trend.get('recipe_id')} -> {tv}")
+        vibe = tv
     primary = _lanes(vibe, fit, duration, presenter, niche, shop, trail)
     # secondary: the first other candidate that survives the same lanes
     cands = list(reversed(replaced)) + [fn.get(niche),
@@ -763,7 +770,7 @@ def _build(script, ctx, seed, pack, priors):
     vibe, secondary, trail = resolve_vibe(
         concept, fmt, niche, fit, presenter, duration,
         _clean_prompt(script.get("prompt")), pack=pack, priors=priors,
-        shop=shop)
+        shop=shop, trend=(ctx or {}).get("trend"))
     if presenter == "ai" and fit == "hedonic":
         trail.append("hedonic product + AI persona: vibe kept, humans convert "
                      "better (F32)")

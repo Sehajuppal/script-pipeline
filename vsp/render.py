@@ -87,6 +87,8 @@ MAX_IMAGES = 10
 MODES = ("ai", "real", "edit", "reuse")
 TASKS = ("text_to_video", "image_to_video", "reference_to_video")
 NATIVE_AUDIO = ("keep_ambience", "drop")
+# D162: render hand-off lane integrity (presenter <-> voice lane <-> disclosure;
+# a human-lane person is never synthesised; a clone needs consent_ref)
 LANES = ("ai_persona", "creator_clone", "real_voice")
 LIPSYNC_METHODS = ("native-then-lipsync-pass", "creator-take-then-lipsync-pass")
 UGC_VIBES = ("raw-ugc", "story-vlog", "hype-energy", "playful-comedic",
@@ -452,7 +454,10 @@ def context(script, voice_lane=None, ai_broll=False):
         "category": _clean(short or "product"),
         "setting": _clean(setting),
         "light": _named_light(look.get("lighting"), niche_light, setting),
-        "shake": c["vibe"] in UGC_VIBES,
+        # F133 / vsp.direction: no faked handheld shake on an AI-persona
+        # render (detectable synthetic flaws drive eeriness); faceless AI
+        # B-roll in a human creator's video may match the phone footage
+        "shake": c["vibe"] in UGC_VIBES and c["lane"] != "ai",
         "voice_tpl": ("in {a} {tone}, conversational "
                       f"{({'feminine': 'female', 'masculine': 'male'}).get(g, 'natural')} voice"),
         "tone": tone,

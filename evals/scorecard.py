@@ -243,7 +243,9 @@ def cmd_run(a):
     copy_repo(repo_src, repo)
     home, db = fixture_home(os.path.join(tmp, "home"))
     env = dict(os.environ, HOME=home, VSP_VIRAL_DB=db, VSP_FIXTURE_OK="1",
-               PYTHONDONTWRITEBYTECODE="1", PYTHONIOENCODING="utf-8")
+               PYTHONDONTWRITEBYTECODE="1", PYTHONIOENCODING="utf-8",
+               # v2.2: scorecards are reproducible — no trend recipe steers them
+               VSP_TRENDS_DIR=os.path.join(tmp, "no-trends-dataset"))
     caps = capabilities(a.python, repo, env)
     if not caps["help_ok"]:
         print("warning: pipeline --help failed (target may not import on "

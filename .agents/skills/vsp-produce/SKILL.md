@@ -1,7 +1,7 @@
 ---
 name: vsp-produce
 description: Produce a shoot-ready viral short-form script bundle for a product
-version: 2.1.0
+version: 2.2.0
 platforms: [linux, macos]
 metadata:
   hermes:
@@ -18,6 +18,14 @@ challenge ("I quit sugar for 21 days"), a routine, a showcase ("things in my
 kitchen that just make sense") or an advice topic.
 
 ## Procedure
+0. Check what is working now: read today's trends digest
+   (`$VSP_TRENDS_DIR/digests/<today>.md`, from the `vsp-trends` skill) and
+   preview the recipe the run will ride:
+   `python3 -m vsp.trends steer "<prompt>" --presenter ai|human`.
+   `--trend auto` (the default) applies the best fitting recent recipe as a
+   tie-break: hook archetype, vibe, variant preferences, and the recipe's
+   format/duration when you give none. Use `--trend <recipe_id>` to pick
+   one, or `--trend none` for a plain run.
 1. Pick the presenter. Run the router first if unsure:
    `python3 -m vsp.router "<prompt>"` → read `recommended_presenter` and
    `lane_warnings`. AI personas suit utilitarian products; humans suit
@@ -27,13 +35,22 @@ kitchen that just make sense") or an advice topic.
    `python3 pipeline.py "<prompt>" --presenter ai|human --format demo|talking-head|pov-vlog|transformation|review --duration 30 --seed <N> --json`
    Quote prompts containing `$` in single quotes. Only include a price if the
    user gave one.
-3. Read the JSON: `status`, `outdir`, `artifacts`, `warnings`.
+   The video will be fully generated in Antigravity (Gemini Omni +
+   Cartesia) → always `--presenter ai`.
+3. Read the JSON: `status`, `outdir`, `artifacts`, `warnings`, and the
+   report's `trend:` line (which recipe steered it, or why none did).
 4. Deliver from `outdir`:
    - `brief.md`: the video agent's prompt. It includes the shot list; every shot has a `- Shot type:` line.
    - `direction.md`: vibe, tone, pacing, music and look for the editor.
    - `hooks.md`: the alternate openings.
    - `posting.md`: keyword, per-platform caption, hashtags, YouTube title, cover and the AI-content toggles.
    - `script.json`, `captions.srt` and `shotlist.csv`.
+   - `trend.md`: which trend it rides, the small-creator evidence, what to
+     copy and what must change. Present only when a recipe steered the run.
+   - `render.json`, `voice_plan.json`, `render.md`: the hand-off to the
+     Antigravity render agent. Copy the whole outdir to the Antigravity
+     workspace as `jobs/<slug>/`. `render.md` lists what must be filmed for
+     real, the lip-sync shots and the budget.
 
    Summarise the stage-9 `creative:` line for the user (vibe, openings, keyword). Post the caption from `posting.md` for each platform. For feedback later, the caption carries (or you add) the tag `#vsp-<first 8 chars of script_sha256>` from `manifest.json` → `script_summary.script_sha256`.
 5. Alternate openings (A/B). `hooks.md` lists 3–5 openings. A is the master's own. B, C… change only the first 3 seconds: frame-0 visual, card and spoken hook. Film each alternate's first 3 seconds and splice it onto the same body. Post the alternates as Trial Reels with the tag `#vsp-<sha8><letter>` (e.g. `#vsp-1a2b3c4dB`), then follow `vsp-feedback`.

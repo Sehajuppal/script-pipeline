@@ -3379,6 +3379,21 @@ def pick_hook(ctx, rng):
         # priors file, or without evidence, hrng is untouched and the pick
         # is byte-identical.
         qtop = max(c["score"][:3] for c in cands)
+        # v2.2 D164: a trend recipe's hook archetypes (in its order) break
+        # the tie among the top-quality candidates — quality, the format
+        # contract and hook strength (score[:3]) always rank first; the
+        # learned prior, the keyword preference and the niche family then
+        # decide within the trend's archetype. Draw-free.
+        tarcs = [x for x in ((ctx.get("trend") or {}).get("hook_archetypes") or [])
+                 if isinstance(x, str)]
+        if tarcs:
+            topq = [c for c in cands if c["score"][:3] == qtop]
+            for arc in tarcs:
+                pref = [c for c in topq if c.get("archetype") == arc]
+                if pref:
+                    cands = pref + [c for c in cands if c["score"][:3] != qtop]
+                    ctx["trend_hook_archetype"] = arc
+                    break
         tied = {c["family"] for c in cands if c["score"][:3] == qtop}
         if len(tied) > 1:
             try:
@@ -5312,7 +5327,8 @@ def _resolve_persona(presenter, name):
     return {"name": entry.get("name", key), "identity": entry["identity"],
             "voice": entry.get("voice", ""), "styling_rule": entry.get("styling_rule", "")}
 
-def generate(prompt, presenter="ai", fmt="demo", duration=30, seed=None, use_research=True, persona=None):
+def generate(prompt, presenter="ai", fmt="demo", duration=30, seed=None, use_research=True,
+             persona=None, trend=None):
     global _NO_RESEARCH
     _NO_RESEARCH = not use_research or _PACK is None
     rng = random.Random(seed)
@@ -5321,6 +5337,11 @@ def generate(prompt, presenter="ai", fmt="demo", duration=30, seed=None, use_res
     # no raw {slot} can reach a template or the viewer.
     ctx = parse_prompt(re.sub(r"\s+", " ", re.sub(r"[{}]", "", prompt)).strip())
     ctx["_prompt"] = prompt   # D36: the evidence line names the prompt's subject
+    # v2.2 D164: a trend recipe (vsp.trends.steer.for_run) steers ties only —
+    # hook archetype after quality and strength (pick_hook), the vibe inside
+    # the direction lanes, variant preferences; never a gate, never the rng
+    if isinstance(trend, dict) and trend.get("recipe_id"):
+        ctx["trend"] = trend
     fam, beats = build_beats(ctx, duration, rng, fmt, presenter)
     # D63: spoken-voice pass over every spoken string before the script ships —
     # gates below measure the final spoken words, not the raw templates.
@@ -5358,6 +5379,13 @@ def generate(prompt, presenter="ai", fmt="demo", duration=30, seed=None, use_res
         script["disclosure"] = PERSONA_DISCLOSURE
     else:
         script["delivery_note"] = HUMAN_NOTE
+    if ctx.get("trend"):
+        # v2.2 D164: which trend recipe steered this script (provenance only)
+        tr = ctx["trend"]
+        script["trend"] = {"recipe_id": tr.get("recipe_id"), "title": tr.get("title"),
+                           "operator": tr.get("operator"), "stage": tr.get("stage"),
+                           "trend_keys": list(tr.get("trend_keys") or [])[:6],
+                           "hook_archetype": ctx.get("trend_hook_archetype")}
     # pipeline v2.1 creative layer: direction (vibe/tone), hook variants,
     # discovery packaging — additive keys; absent modules add nothing.
     try:

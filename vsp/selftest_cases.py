@@ -1785,7 +1785,11 @@ E2E_PROMPT = "portable door lock"
 E2E_ARTIFACTS = ("script.json", "bundle.md", "brief.md", "validation-report.md",
                  "captions.srt", "captions.vtt", "captions.json", "shotlist.csv",
                  "shots.json", "direction.md", "hooks.md", "posting.md",
+                 "render.json", "voice_plan.json", "render.md",
                  "manifest.json", "trace.jsonl", "gate-report.json")
+# v2.2: trend.md + trend.json exist only when a trend recipe steered the run
+E2E_TREND_ARTIFACTS = ("trend.md", "trend.json")
+TREND_PROMPT = "LED sunrise alarm lamp"      # gadgets: the demo dataset's niche
 # v2.1: a finished legacy --script-json (no creative keys) writes no
 # direction.md / hooks.md / posting.md
 E2E_CREATIVE_DOCS = ("direction.md", "hooks.md", "posting.md")
@@ -2373,6 +2377,63 @@ def _e2e_creative_keys(h):
     return probs[:12] + ([f"+{len(probs) - 12} more"] if len(probs) > 12 else [])
 
 
+def _e2e_trend_steering(h):
+    """v2.2 (D164/D162): a demo trends dataset (built for today) steers a
+    run — trend.md + trend.json, the recipe id in script.json, the manifest
+    summary and render.json, the use recorded in the dataset — and --replay
+    reproduces it from the pinned trend.json; --voice-lane creator_clone
+    without --consent-ref is refused. Skipped without vsp.trends."""
+    import importlib.util
+    import json
+    import os
+    from datetime import datetime, timezone
+    if importlib.util.find_spec("vsp.trends") is None:
+        h.state.setdefault("notes", []).append("e2e-trend-steering skipped (no vsp.trends)")
+        return []
+    from vsp.trends import fixtures as tfx
+    ds = tfx.build_demo_dataset(os.path.join(h.out("trends-dataset"), "db"),
+                                now=datetime.now(timezone.utc))
+    out = h.out("trend-run")
+    r = h.run([TREND_PROMPT, "--presenter", "ai", "--trends-dir", ds, "--out-dir", out])
+    if r.returncode != 0:
+        return _fail_run(r)
+    probs = []
+    missing = [f for f in E2E_TREND_ARTIFACTS + ("render.json", "voice_plan.json")
+               if not os.path.isfile(os.path.join(out, f))]
+    if missing:
+        return [f"trend run lacks {missing}"]
+    with open(os.path.join(out, "trend.md"), encoding="utf-8") as f:
+        if "## TREND — what this video rides" not in f.read():
+            probs.append("trend.md lacks its heading")
+    pin = _load(os.path.join(out, "trend.json"))
+    rid = pin.get("recipe_id")
+    s = _load(os.path.join(out, "script.json"))
+    m = _load(os.path.join(out, "manifest.json"))
+    rj = _load(os.path.join(out, "render.json"))
+    got = ((s.get("trend") or {}).get("recipe_id"),
+           (m.get("script_summary") or {}).get("trend_recipe_id"),
+           (rj.get("trend") or {}).get("recipe_id"))
+    if not rid or got != (rid, rid, rid):
+        probs.append(f"recipe id not carried through: trend.json {rid}, "
+                     f"script/manifest/render {got}")
+    if not r.stdout.count(f"trend: {rid}"):
+        probs.append("report lacks the 'trend:' line naming the recipe")
+    used = os.path.join(ds, "usage", "used.jsonl")
+    if not os.path.isfile(used) or rid not in open(used, encoding="utf-8").read():
+        probs.append("the shipped recipe was not recorded in usage/used.jsonl")
+    r2 = h.run(["--replay", os.path.join(out, "manifest.json")])
+    if r2.returncode != 0 or "replay: OK" not in r2.stdout:
+        probs.append("--replay of a trend-steered run did not reproduce: "
+                     + _fail_run(r2)[0])
+    r3 = h.run([TREND_PROMPT, "--voice-lane", "creator_clone",
+                "--out-dir", h.out("clone-no-consent")])
+    if r3.returncode != 2 or "--consent-ref" not in (r3.stderr + r3.stdout):
+        probs.append(f"--voice-lane creator_clone without --consent-ref: exit "
+                     f"{r3.returncode} (want 2 + a --consent-ref message)")
+    h.state.setdefault("notes", []).append(f"e2e-trend-steering: {rid}")
+    return probs
+
+
 def e2e_checks():
     return [("e2e-normal-run", _e2e_normal),
             ("e2e-candidates-1-seed-parity", _e2e_parity),
@@ -2385,10 +2446,13 @@ def e2e_checks():
             ("e2e-failing-run-is-loud", _e2e_loud_failure),
             ("e2e-stage-1-input-errors", _e2e_input_errors),
             # WS-EVAL (pipeline v2.1): skipped until the modules exist
-            ("e2e-creative-keys", _e2e_creative_keys)]
+            ("e2e-creative-keys", _e2e_creative_keys),
+            # v2.2: trend steering end to end + its replay pin + lane guard
+            ("e2e-trend-steering-replay", _e2e_trend_steering)]
 
 
 # modules other workstreams own; each may expose selfcheck() -> (ok, lines)
 # (v2.1: the creative-layer modules, run when present like the v2 ones)
 OPTIONAL_SELFCHECKS = ("vsp.ingest", "vsp.feedback", "vsp.improve",
-                       "vsp.direction", "vsp.hooks", "vsp.discovery", "vsp.shotplan")
+                       "vsp.direction", "vsp.hooks", "vsp.discovery", "vsp.shotplan",
+                       "vsp.trends", "vsp.render")

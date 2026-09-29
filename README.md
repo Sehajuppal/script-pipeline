@@ -1,4 +1,4 @@
-# Viral Script Pipeline (v2.1)
+# Viral Script Pipeline (v2.2)
 
 A research-grounded, self-improving generator of shoot-ready short-form
 video scripts (Reels / TikTok / Shorts). One command turns a product prompt
@@ -10,6 +10,20 @@ Instagram and YouTube Shorts. The pipeline measures itself, learns from the
 reels you post (including which opening won), and improves its own hook
 templates under statistical guardrails. Built to be run by an agent
 (Hermes Agent on Meta Muse) — see `AGENTS.md` and `agent/README.md`.
+
+v2.2 adds two things:
+- **Daily trend intelligence** (`vsp.trends`) on a private GitHub dataset:
+  - viral outliers, measured against each creator's own median, with small
+    and medium creators first;
+  - trend lifecycle stages;
+  - recipes that combine trends, transplant them from other niches, or
+    invent new ones.
+
+  The recipes steer every script.
+- **A render hand-off** for a Google Antigravity agent that makes the video
+  with Gemini Omni and voices it with Cartesia:
+  - `render.json` and `voice_plan.json` for each run;
+  - the render agent's own instructions in `antigravity/`.
 
 ## Quick start
 
@@ -37,13 +51,13 @@ Quote prompts containing `$` in single quotes. Formats: `demo` ·
 | 6 | repair | deterministic rule-keyed repairs, only if nothing passed |
 | 7 | shot list | shots, identity-locked render brief, DELIVERABLE block |
 | 8 | gate 2 | 18 brief rules (v2.1: typed shot plan D157, music lane D159, AI render-prompt hygiene D160) |
-| 9 | export | captions (SRT/VTT/Remotion JSON), shotlist.csv, schema check; `direction.md`, `hooks.md`, `posting.md` |
+| 9 | export | captions (SRT/VTT/Remotion JSON), shotlist.csv, schema check; `direction.md`, `hooks.md`, `posting.md`; `trend.md`; `render.json`, `voice_plan.json`, `render.md` |
 | 10 | manifest | manifest.json (hashes, seeds, scores), trace.jsonl, gate-report.json; `--replay` reproduces a run |
 
 Output lands in `outputs/<slug>/` (or `--out-dir`). Exit code is non-zero
 when any gate fails.
 
-What a run gives you (v2.1):
+What a run gives you:
 
 | file | for | what's in it |
 |---|---|---|
@@ -53,7 +67,22 @@ What a run gives you (v2.1):
 | `hooks.md` | the A/B test | 3–5 openings (A = the master's own; each alternate has its own archetype, frame-0 visual, card and first words), scores, test protocol, Bayesian stop rule |
 | `posting.md` | posting | primary keyword (spoken + on screen by 3 s), per-platform caption, ≤5 / ≤5 / ≤15 hashtags, YouTube title, cover frame + text, AI-content toggles, posting checklist |
 | `script.json`, `shots.json`, `shotlist.csv`, `captions.*` | tools | machine-readable script, typed shots, captions |
-| `manifest.json` | the learning loop | hashes, seeds, scores; `script_summary` links a posted reel to its vibe, opening and keyword |
+| `trend.md` (+ `trend.json`) | the creator | the trend recipe the script rides: stage, small-creator evidence (permalinks), what to copy, what to change (keep 2 of 4 elements), licensed audio only; `trend.json` pins it for `--replay` |
+| `render.json` | the Antigravity render agent | one Gemini Omni plan per shot: mode (ai/real/edit/reuse), task, clip length, windows, the prompt, reference images, lip-sync, QA checks, fallback, budget, disclosure |
+| `voice_plan.json` | the Antigravity render agent | Cartesia Sonic 3.6 line plan: transcript, window, emotion/speed/volume per line, pauses, lane (AI persona / creator clone / real voice), words.json export |
+| `render.md` | you | what gets generated, what must be filmed for real, lip-sync shots, budget |
+| `manifest.json` | the learning loop | hashes, seeds, scores; `script_summary` links a posted reel to its vibe, opening, keyword and trend recipe |
+
+Trends (`python3 -m vsp.trends …`, skill `vsp-trends`, dataset template `trends-db-template/`):
+
+```sh
+python3 -m vsp.trends init --dir ~/viral-trends-db
+python3 -m vsp.trends import-ingest && python3 -m vsp.trends youtube --query "gadget shorts"
+python3 -m vsp.trends observe --platform tiktok --permalink <url> --views 480000 --followers 12000 ...
+python3 -m vsp.trends score && python3 -m vsp.trends lifecycle && python3 -m vsp.trends synth --invent 3
+python3 -m vsp.trends digest               # digests/<today>.md: outliers, rising trends, recipes to post
+python3 pipeline.py 'LED sunrise alarm lamp' --presenter ai --trend auto
+```
 
 ## Results (`docs/SCORECARD-v2.1.md`, v2.0 detail in `docs/SCORECARD.md`)
 
@@ -96,3 +125,5 @@ The v2.1 harness (rubric R01–R28) ran the same 990 runs for each version (33 p
 - `evals/` — golden, holdout, capability sets + scorecard harness · `learned/` — loop state
 - `docs/` — design (`UPGRADE-PLAN.md`), research (`docs/research/`), per-workstream notes, rule coverage
 - `.agents/skills/`, `AGENTS.md`, `agent/` — agent packaging (Hermes / Muse Code)
+- `vsp/trends/`, `trends-db-template/` — trend intelligence + the GitHub dataset layout
+- `vsp/render.py`, `antigravity/` — the Omni + Cartesia render hand-off and the render agent's rules pack

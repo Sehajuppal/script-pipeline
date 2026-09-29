@@ -69,6 +69,8 @@ HOOK_ARCHETYPE_IDS = tuple(CV.HOOK_ARCHETYPES)
 VISUAL_TYPE_IDS = tuple(CV.VISUAL_TYPES)
 VIBE_IDS = tuple(CV.VIBES)
 
+# D163: trend data compliance — permalinks + public metrics + a <=12-word
+# hook excerpt + own analysis; never media, CDN URLs or whole captions
 MAX_FIRST_WORDS = 12
 MAX_ON_SCREEN_WORDS = 8
 MAX_NOTES = 280
