@@ -28,9 +28,10 @@ import json, re, sys, os
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from vsp import config  # noqa: E402  (VSP_VIRAL_DB, read-only DB access)
+from vsp import shotplan  # noqa: E402  (v2.1 shot recommender, CREATIVE-PLAN §1.4)
 
 BEAT_SHOT_DIRECTION = {
-    "VISUAL TRIGGER": "Frame-0 composition, static or micro push-in. High contrast, readable with sound off.",
+    "VISUAL TRIGGER": "Frame-0 composition, static or micro push-in. High contrast, readable at a glance.",
     "VERBAL HOOK + LOCK": "Medium close-up, direct to camera, eye-level. Brisk and confident.",
     "IMPERFECTION BEAT": "Same framing, slightly looser — faint handheld feel. Candid, unpolished read.",
     "EDUCATION BEAT": "Product macro / B-roll over VO, or presenter with prop in hand. Unhurried, warm.",
@@ -179,7 +180,7 @@ NICHE_STYLE_NOTES = {
                "Motion toward the camera reads as confidence; stillness reads as ad."],
     "fitness": ["Sweat and effort are the proof — never shoot the workout looking fresh."],
     "kitchen": ["Steam, sizzle, and close-up texture carry the genre — shoot the food, not the cook."],
-    "generic": ["Fast cold open, proof before pitch — the first frame must work with sound off."],
+    "generic": ["Fast cold open, proof before pitch — the first frame hooks the eye and the first line hooks the ear (sound on; captions stay)."],
     "tech": ["Show the gadget doing its job in the first second — function is the hook, not the unboxing.",
              "Hands in frame make scale obvious; keep screens and LEDs readable, never blown out."],
     "wellness": ["Calm, uncluttered frames and soft light — trust beats energy in this niche."],
@@ -187,9 +188,9 @@ NICHE_STYLE_NOTES = {
     "pets": ["The animal's reaction is the proof — keep the pet in frame at its own eye level."],
     "home": ["Each find in its real spot in the room — one clear before/after of the space."],
     "outdoors": ["Real outdoor light and texture — show it working in the field, not on a table."],
-    "finance": ["Face-first and fast — cut on every new point; on-screen labels carry the numbers for muted viewers."],
-    "education": ["Face-first and fast — cut on every new point; on-screen labels carry the numbers for muted viewers."],
-    "commentary": ["Face-first and fast — cut on every new point; on-screen labels carry the numbers for muted viewers."],
+    "finance": ["Subject first, your face by 3 s, then fast — cut on every new point; on-screen labels carry the numbers alongside the voice."],
+    "education": ["Subject first, your face by 3 s, then fast — cut on every new point; on-screen labels carry the numbers alongside the voice."],
+    "commentary": ["Subject first, your face by 3 s, then fast — cut on every new point; on-screen labels carry the numbers alongside the voice."],
 }
 SHOT_CAMERA = {
     "VISUAL TRIGGER": "Camera: static frame with a micro push-in.",
@@ -474,14 +475,11 @@ def _order(items):
 
 def _block_lines(sh):
     """The '- ' lines render_bundle emits under '### Shot ...' (gate 2 parses
-    exactly these for D47/D48)."""
-    L = [f"- Camera: {sh['direction']}"]
-    if sh["on_screen"]: L.append(f"- On-screen text: {sh['on_screen']}")
-    if sh["dialogue"]: L.append(f"- Dialogue/VO: \"{sh['dialogue']}\"")
-    if sh["delivery"]: L.append(f"- Delivery: {sh['delivery']}")
-    if sh["rehook"]: L.append(f"- Re-hook into next: \"{sh['rehook']}\"")
-    if sh["match_cut"]: L.append(f"- Match-cut: {sh['match_cut']}")
-    return L
+    exactly these for D47/D48). v2.1: '- Shot type:' (and, for AI-presenter
+    proof shots, '- REAL FOOTAGE REQUIRED:') right after '- Camera:' — one
+    renderer (vsp.shotplan.block_lines) so the planner checks exactly what
+    the gate reads."""
+    return shotplan.block_lines(sh)
 
 
 def _talking_head(sh):
@@ -534,7 +532,7 @@ def _split(sh, product=True):
         if first and sh.get("explicit"):
             framing = sh["direction"]        # the maker's own staging leads
         out.append({
-            "n": f"{sh['n']}{chr(97 + i)}", "group": sh["n"],
+            "n": f"{sh['n']}{chr(97 + i)}", "group": sh["n"], "item": sh.get("item"),
             "t": f"{ss:.1f}\u2013{se:.1f}s", "s": round(ss, 3), "e": round(se, 3),
             "beat": beat + (" (cont.)" if i else ""),
             "direction": framing + ("" if first else " (VO continues)"),
@@ -601,7 +599,22 @@ def _rotate(shots, product):
 
 
 def build_shots(d):
-    """Script dict -> (shots, vo_lines). Pure: no I/O.
+    """Script dict -> (shots, vo_lines). Pure: no I/O (the shot library is a
+    cached read-only table).
+
+    v2.1: the legacy timeline below (_base_shots) is re-cut and typed by
+    vsp.shotplan.plan — every shot carries a SHOT_LIBRARY shot_type with a
+    reason plus scale/angle/move/purpose/energy/needs/ai_risk/ai_fallback/
+    real_footage/setup/broll/sfx (CREATIVE-PLAN §1.4)."""
+    shots, vo_lines = _base_shots(d)
+    prompt = d.get("prompt") or ""
+    shots = shotplan.plan(d, shots, ctx={"concept": _concept(prompt),
+                                         "product_short": product_phrase(prompt)})
+    return shots, vo_lines
+
+
+def _base_shots(d):
+    """Script dict -> (legacy shots, vo_lines): the v2.0 timeline of record.
 
     Timeline of record (v2): a valid script window is used exactly; only an
     item without one is sized from its words at the cursor (and pushes the
@@ -660,7 +673,7 @@ def build_shots(d):
             BEAT_SHOT_DIRECTION.get(btype, DEFAULT_DIRECTION)
         n = len(shots) + 1
         shots.append({
-            "n": n, "group": n, "t": f"{s:.1f}\u2013{e:.1f}s",
+            "n": n, "group": n, "item": idx, "t": f"{s:.1f}\u2013{e:.1f}s",
             "s": round(s, 3), "e": round(e, 3),
             "beat": btype, "direction": clean_meta(_flat(direction)) or DEFAULT_DIRECTION,
             "camera": SHOT_CAMERA.get(btype, "Camera: static."), "explicit": explicit,
@@ -828,6 +841,16 @@ def render_bundle(d, shots, vo_lines, refs=None):
     style_notes = niche_style_notes(d)
     slug = slugify(d.get("prompt"))
     is_ai = d.get("presenter") == "ai"
+    # v2.1: prompt assets for the shot recommender's D160-clean prompts, and
+    # the sibling creative modules (absent module or key = section omitted)
+    _prompt = d.get("prompt") or ""
+    A = shotplan.prompt_assets(d, presenter_identity_txt, product_desc, setting_desc, light_desc,
+                               ctx={"concept": _concept(_prompt),
+                                    "product_short": product_phrase(_prompt)})
+    _dir = d.get("direction") if isinstance(d.get("direction"), dict) else None
+    _disc = d.get("discovery") if isinstance(d.get("discovery"), dict) else None
+    _dir_mod = _optional("vsp.direction") if _dir else None
+    _disc_mod = _optional("vsp.discovery") if _disc else None
 
     L = []
     L.append(f"# Production bundle — {d.get('prompt')}")
@@ -860,8 +883,9 @@ def render_bundle(d, shots, vo_lines, refs=None):
     L.append("")
     L.append("## PRESENTER — identity lock")
     L.append(f"{presenter_identity_txt} — use this exact description in every shot "
-             "prompt below. Same person, same hair, same outfit in ALL shots. "
-             "Never redesign the presenter between shots.")
+             "prompt that shows the presenter's face. Same person, same hair, same outfit in ALL shots. "
+             "Never redesign the presenter between shots. Hands-only shots carry a short hands "
+             "reference instead, and product-only shots carry no presenter text.")
     L.append("")
     if is_ai:
         # D138 (2026-09-28): the frame-0 disclosure label is carried by EVERY
@@ -876,7 +900,7 @@ def render_bundle(d, shots, vo_lines, refs=None):
         _pname = (_persona.get("name") or "The AI persona")
         _pro = _pronoun(presenter_identity_txt)
         L.append(f"## PERSONA — fidelity rules (do not redesign {_pro})")
-        L.append(f"- {_pname} is a recurring character. Render the identity above EXACTLY in every shot of THIS video and keep {_pro} recognizably identical across videos in the series — face, hair, outfit, age. Identity drift reads as fake and triggers rejection (dossier Q2/F10).")
+        L.append(f"- {_pname} is a recurring character. Render the identity above EXACTLY in every shot of THIS video that shows {_pro} and keep {_pro} recognizably identical across videos in the series — face, hair, outfit, age. Identity drift reads as fake and triggers rejection (dossier Q2/F10).")
         L.append("- Neutral, non-sexualized presentation — natural look, modest plain clothing as described. Sexualized styling damages brand attitude and purchase intent (dossier Q1/F6).")
         L.append(f"- Casting is neutral by design: attractiveness has no direct effect on purchase intent — credibility and product fit do the work (dossier Q1/F2). Do not beautify, glam up, or youth-shift {_pro} beyond the description.")
         L.append("- On-screen small \"AI persona\" label from FRAME 0, top safe zone, minimum 2 seconds, separate from hook text. Disclosure costs nothing on reach and omission costs trust (dossier Q7/F130).")
@@ -889,20 +913,32 @@ def render_bundle(d, shots, vo_lines, refs=None):
     L.append("## SHOT PROMPTS (self-contained — generate each shot from its own prompt only)")
     for sh in shots:
         L.append(f"#### Prompt — Shot {sh['n']} ({sh['t']})")
-        L.append(f"VISUAL PROMPT: {shot_visual_prompt(sh, presenter_identity_txt, product_desc, setting_desc, light_desc)}")
+        # v2.1 (D160): [scale, angle, move]: subject, one action, setting,
+        # light, vertical phone footage, one continuous shot, no in-frame text;
+        # the identity lock only where the face is in frame
+        _vp = shotplan.visual_prompt(sh, A) or \
+            shot_visual_prompt(sh, presenter_identity_txt, product_desc, setting_desc, light_desc)
+        L.append(f"VISUAL PROMPT: {_vp}")
         if sh["on_screen"]:
-            L.append(f"ON-SCREEN TEXT (render exactly, bold sans, high contrast): {sh['on_screen']}")
+            L.append(shotplan.overlay_line(sh["on_screen"]))
         if sh["dialogue"]:
-            L.append(f"AUDIO (voiceover for this shot — audio only, never on-screen text): \"{sh['dialogue']}\"")
+            L.append("AUDIO (voiceover for this shot — audio only, never on-screen text): "
+                     + shotplan.says(A["name"], sh["dialogue"]))
             if sh["delivery"]:
                 L.append(f"DELIVERY: {sh['delivery']}")
         else:
             L.append("AUDIO: no dialogue — visuals only (voiceover continues from previous shot if mid-sentence).")
         if sh["rehook"]:
-            L.append(f"SPOKEN TRANSITION into next shot (audio only): \"{sh['rehook']}\"")
+            L.append("SPOKEN TRANSITION into next shot (audio only): " + shotplan.says(A["name"], sh["rehook"]))
         if sh["match_cut"]:
             L.append(f"EDIT NOTE: {sh['match_cut']}")
         L.append("")
+    _alt = shotplan.alt_openings_md(d, A, shots)
+    if _alt:
+        L.extend(_safe_section(_alt, d).split("\n"))
+        L.append("")
+    L.extend(_safe_section(shotplan.shoot_plan_md(d, shots, A), d).split("\n"))
+    L.append("")
     L.append("## VOICEOVER — separate audio track")
     L.append("AUDIO ONLY. Do not render any of these words as on-screen text, captions, "
              "or graphics. This is the spoken track laid over the shots above.")
@@ -915,19 +951,36 @@ def render_bundle(d, shots, vo_lines, refs=None):
     _cast = (f"{_voice.rstrip('.')} (locked persona voice — the same voice in every video)"
              if _voice else "cast a conversational human read — like a real person talking "
              "to a friend, never an ad read")
+    if is_ai:
+        # v2.1: an AI persona speaks with a disclosed synthetic voice — never
+        # "human voice only" (research §1), never claimed to be a real person
+        _cast = (re.sub(r"(?i)\bhuman read\b", "read", _cast) + " — a natural-prosody synthetic "
+                 "voice, disclosed as AI, never robotic and never presented as a real person")
     _who = (f"{_g} voice, matching the presenter identity above" if _g
             else "Voice matching the presenter identity above")
     _tone = (" — never pressuring" if "warm" in _voice.lower()
              else " — warm and confident, never pressuring")
-    L.append(f"Voice spec: {_cast}. {_who}{_tone}. "
-             "Vary pace naturally: unhurried on trust "
-             "beats, brisk 160–180 wpm on the CTA. Light natural imperfections welcome "
-             "(breath, pace shifts, emphasis). Never monotone, never a polished commercial "
-             "delivery. No scripted laughs/sighs.")
+    _vs = _call(_dir_mod, "voice_spec", _dir)
+    if _vs:
+        _vs = _safe_section(_vs, d).replace("\n", " ").strip()
+    if _vs:
+        L.append(_vs if _vs.startswith("Voice spec:") else f"Voice spec: {_vs}")
+    else:
+        L.append(f"Voice spec: {_cast}. {_who}{_tone}. "
+                 "Vary pace naturally: unhurried on trust "
+                 "beats, brisk 160–180 wpm on the CTA. Light natural imperfections welcome "
+                 "(breath, pace shifts, emphasis). Never monotone, never a polished commercial "
+                 "delivery. No scripted laughs/sighs.")
     L.append("")
     L.append("## STYLE")
     _lane = "AI" if is_ai else str(d.get("presenter", "human")).capitalize()
-    L.append(f"{_lane} UGC {d.get('format')}, {d.get('niche')} niche. 9:16 vertical. "
+    _sp = _call(_dir_mod, "style_paragraph", _dir)
+    if _sp:
+        _sp = _safe_section(_sp, d).replace("\n", " ").strip()
+    if _sp:
+        L.append(_sp)
+    else:
+        L.append(f"{_lane} UGC {d.get('format')}, {d.get('niche')} niche. 9:16 vertical. "
              f"{setting_desc[:1].upper() + setting_desc[1:]}. {light_desc[:1].upper() + light_desc[1:]}. "
              f"Imperfection welcome (flaws in the BEFORE, faint handheld in candid beats) — "
              f"polish kills trust in this format. "
@@ -939,11 +992,15 @@ def render_bundle(d, shots, vo_lines, refs=None):
     for sn in style_notes:
         L.append(f"- {sn}")
     L.append("")
+    _cd = _call(_dir_mod, "render_md", _dir)
+    if _cd:
+        L.extend(_safe_section(_cd, d, "## CREATIVE DIRECTION — vibe & tone").split("\n"))
+        L.append("")
     L.append("## NEGATIVE PROMPT — never render")
     L.append("Warped faces, extra fingers or limbs, melted hands, garbled / misspelled / merged "
              "text, watermarks or logos, burned-in captions or subtitles, letterbox or pillarbox bars, "
-             "plastic CGI skin, stock-photo stiffness. If any on-screen text cannot be rendered cleanly, "
-             "drop the text and keep the shot — never ship garbled text.")
+             "plastic CGI skin, stock-photo stiffness. Never render text, captions, labels or cards "
+             "in-frame — every word on screen is added in the edit.")
     L.append("")
     L.append("## Reference reels (human review — the quality bar)")
     L.append("The style notes above are distilled from these; the URLs are for human review, "
@@ -956,7 +1013,7 @@ def render_bundle(d, shots, vo_lines, refs=None):
     L.append(RENDER_SPEC.replace("<slug>", slug))
     L.append("")
     L.append("## Do NOT")
-    L.append(DO_NOT + " Do NOT render voiceover words as on-screen text.")
+    L.append(DO_NOT + " Do NOT render voiceover words as on-screen text." + (AI_VOICE_NOTE if is_ai else ""))
     L.append("")
     L.append("## Fallbacks")
     # v2: fallback shot numbers come from the actual shots (was "Shot 8")
@@ -966,6 +1023,12 @@ def render_bundle(d, shots, vo_lines, refs=None):
         fb.append(f"Shot {_bait} fallback: presenter holds phone showing a DM notification close-up, points at it. "
                   "If on-screen phone/UI text renders garbled, use the fallback with the notification visible but no readable text required.")
     fb.append("Any product-macro fallback: clean product hero on a neutral surface, slow push-in.")
+    if is_ai:
+        _chain = [f"Shot {sh['n']} → {sh['ai_fallback']}" for sh in shots
+                  if sh.get("ai_fallback") and not sh.get("real_footage")]
+        if _chain:
+            fb.append("AI retries: up to 3 attempts per shot, then swap to its fallback shot type ("
+                      + "; ".join(_chain) + "), then to text-card-over-motion.")
     L.append(" ".join(fb))
     L.append("")
     L.append("## WORKFLOW (production pipeline — not generation instructions)")
@@ -981,9 +1044,66 @@ def render_bundle(d, shots, vo_lines, refs=None):
     L.append("words.json: if your pipeline synthesizes the voiceover, export word-level timings as "
              f"{slug}-words.json; otherwise omit it — Marlowe's caption stage aligns separately.")
     L.append("")
+    _pd = _call(_disc_mod, "render_md", _disc, d)
+    if _pd:
+        L.extend(_safe_section(_pd, d, "## POSTING & DISCOVERY").split("\n"))
+        L.append("")
     L.append("## Caption + hashtags (post as-is)")
     L.append(d.get("caption", ""))
     return "\n".join(L)
+
+
+AI_VOICE_NOTE = (" AI presenter: the voice is the persona's disclosed, natural-prosody synthetic "
+                 "voice — human-sounding, never a robotic TTS read, never presented as a real person.")
+
+
+def _optional(modname):
+    """A sibling creative module (vsp.direction / vsp.discovery) or None."""
+    mod = sys.modules.get(modname)
+    if mod is not None:
+        return mod
+    try:
+        import importlib
+        import importlib.util
+        if importlib.util.find_spec(modname) is None:
+            return None
+        return importlib.import_module(modname)
+    except Exception:  # noqa: BLE001 — an unimportable module = section omitted
+        return None
+
+
+def _call(mod, fn, *args):
+    f = getattr(mod, fn, None) if mod is not None else None
+    if not callable(f):
+        return None
+    try:
+        out = f(*args)
+    except Exception:  # noqa: BLE001 — a failing renderer omits its section
+        return None
+    return out if isinstance(out, str) and out.strip() else None
+
+
+def _safe_section(md, d, heading=None):
+    """New bundle sections never carry a creative_vocab.BUNDLE_FORBIDDEN
+    phrase ('### Shot', 'same body', 'D43 WARNING', 'FIXTURE') or a D46
+    link group the script caption doesn't already use."""
+    from vsp import creative_vocab as V
+    allowed = V.link_groups_in(d.get("caption", ""))
+    out = []
+    for line in (md or "").strip("\n").split("\n"):
+        if "same body" in line.lower() or any(p in line for p in V.BUNDLE_FORBIDDEN):
+            continue
+        if V.link_groups_in(line) - allowed:
+            continue
+        out.append(line)
+    if heading:
+        out = [x for x in out if x.strip() != heading]
+        while out and not out[0].strip():
+            out.pop(0)
+        if out and out[0].startswith("## "):
+            out.pop(0)                    # a foreign heading: ours is the contract
+        out = [heading] + out
+    return "\n".join(out)
 
 
 def build_bundle(d, refs=None):

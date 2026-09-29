@@ -10,7 +10,10 @@
         shots.json     machine-readable shot list + VO lines
 
 The shot rows use the shot list's own rounded times (the bundle headings),
-so the CSV and bundle.md always agree. Captions are sidecars, never burned
+so the CSV and bundle.md always agree. v2.1 (CREATIVE-PLAN §1.4): the CSV
+appends the shot plan columns (shot_type, scale, move, purpose, energy,
+ai_risk, real_footage, setup — empty for shots without a plan) and
+shots.json carries every shot key, including the full vsp.shotplan set. Captions are sidecars, never burned
 in (DELIVERABLE: captioning is Marlowe's stage).
 """
 import csv
@@ -22,7 +25,20 @@ import re
 from vsp import captions
 
 CSV_COLUMNS = ["shot", "start_s", "end_s", "duration_s", "beat", "camera",
-               "on_screen", "dialogue", "rehook", "delivery"]
+               "on_screen", "dialogue", "rehook", "delivery",
+               # v2.1 shot plan (appended; legacy columns keep their positions)
+               "shot_type", "scale", "move", "purpose", "energy", "ai_risk",
+               "real_footage", "setup"]
+PLAN_COLUMNS = CSV_COLUMNS[10:]
+
+
+def _plan_cell(sh, key):
+    v = sh.get(key)
+    if v is None:
+        return ""
+    if isinstance(v, bool):
+        return "true" if v else "false"
+    return str(v)
 SCHEMA_VERSION = 1
 
 
@@ -45,7 +61,8 @@ def shotlist_csv(shots):
         w.writerow([sh.get("n", ""), f"{s:.1f}", f"{e:.1f}", f"{e - s:.1f}",
                     sh.get("beat", ""), sh.get("direction", ""),
                     sh.get("on_screen", ""), sh.get("dialogue", ""),
-                    sh.get("rehook", ""), sh.get("delivery", "")])
+                    sh.get("rehook", ""), sh.get("delivery", "")]
+                   + [_plan_cell(sh, k) for k in PLAN_COLUMNS])
     return buf.getvalue()
 
 

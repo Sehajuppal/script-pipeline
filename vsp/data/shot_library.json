@@ -1,0 +1,1734 @@
+{
+ "schema_version": 1,
+ "source": "docs/research/shots-cinematography.md §5.0-§5.4 (checked 2026-09-29), transcribed verbatim; ids per vsp/creative_vocab.py",
+ "EVIDENCE_REFS": {
+  "TT-CreativeCodes": "https://ads.tiktok.com/business/en/blog/creative-best-practices-top-performing-ads",
+  "TT-AdsHelp": "https://ads.tiktok.com/help/article/creative-best-practices?lang=en",
+  "TT-CQS": "https://ads.tiktok.com/help/article/about-tiktoks-content-quality-standard-for-creator-commercial-content",
+  "TT-Shop-2026": "https://ppc.land/tiktok-shops-quality-rules-ban-ai-voices-and-still-images-from-lives/",
+  "TT-Symphony-avatar": "https://ads.tiktok.com/help/article/how-to-generate-a-custom-avatar-with-symphony-creative-studio",
+  "TT-TopAds-spotlight": "https://ads.tiktok.com/business/creativecenter/tiktok-topads-spotlight/pc/en",
+  "Meta-creators": "https://creators.facebook.com/reels-best-practices-tips-tricks",
+  "Emplifi-2026": "https://emplifi.io/resources/facebook-reels-data/",
+  "ABCD": "https://support.google.com/google-ads/answer/14783551?hl=en",
+  "YT-Shorts-deck-2026": "https://services.google.com/fh/files/events/partner_center__youtube_shorts_best_practices_and_roadblocks__july_2026.pdf",
+  "VidMob-2025": "https://help.vidmob.com/en/articles/14690582-december-2025-product-update",
+  "Xiao-2024": "https://www.emerald.com/insight/content/doi/10.1108/INTR-07-2023-0521/full/html",
+  "Dost-Huang-2026": "https://archives.marketing-trends-congress.com/2026/pages/PDF/paper_professor_DOST_HUANG.pdf",
+  "Hilton-2026": "https://link.springer.com/article/10.1007/s11002-026-09839-0",
+  "Ling-2021": "https://arxiv.org/abs/2111.02452v1",
+  "Stuppy-2024": "https://journals.sagepub.com/doi/full/10.1177/00222437231179187",
+  "Stuppy-2025": "https://archives.marketing-trends-congress.com/2025/pages/PDF/039.pdf",
+  "Touch-2022": "https://link.springer.com/article/10.1007/s12144-022-03221-9",
+  "Usage-video-2022": "https://www.frontiersin.org/journals/psychology/articles/10.3389/fpsyg.2022.812579/full",
+  "Tactile-2024": "https://www.mdpi.com/2076-328X/14/1/50",
+  "SecondPerson-2023": "https://journals.sagepub.com/doi/10.1177/08944393231178603",
+  "LOreal-2026": "https://www.forbes.com/sites/jamiegutfreund/2026/01/12/how-loral-unlearned-advertising-and-boosted-creator-results-55/",
+  "Influee-2026": "https://influee.co/gb/blog/effectively-use-your-raw-review-videos-and-b-roll-shots",
+  "ASDS": "https://www.asds.net/Portals/0/PDF/Resident-Kit-Allergan-Before-After-Photo-Guidelines.pdf",
+  "Apple-AEAF": "https://support.apple.com/en-gb/guide/iphone/iph3dc593597/ios",
+  "Veo-docs": "https://ai.google.dev/gemini-api/docs/veo",
+  "Veo-guide": "https://cloud.google.com/blog/products/ai-machine-learning/ultimate-prompting-guide-for-veo-3-1",
+  "Google-best-practices": "https://docs.cloud.google.com/vertex-ai/generative-ai/docs/video/best-practice",
+  "Google-prompt-guide": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/video/video-gen-prompt-guide",
+  "Omni-docs": "https://ai.google.dev/gemini-api/docs/omni",
+  "Sora-shutdown": "https://developers.openai.com/api/docs/guides/video-generation/",
+  "Sora-guide": "https://developers.openai.com/cookbook/examples/sora/sora2_prompting_guide/",
+  "Kling-3": "https://www.prnewswire.com/news-releases/kling-ai-launches-3-0-model-ushering-in-an-era-where-everyone-can-be-a-director-302679944.html",
+  "Seedance-2": "https://huggingface.co/papers/2604.14148",
+  "Runway-Gen-4.5": "https://runway.com/research/introducing-runway-gen-4.5",
+  "Runway-Aleph-2": "https://runway.com/news/introducing-aleph-2-and-edit-studio",
+  "Luma-Ray3.14": "https://lumalabs.ai/learning-hub/ray3-faq",
+  "Luma-Ray3.2": "https://lumalabs.ai/ray",
+  "Wan-3": "https://winbuzzer.com/2026/08/25/alibaba-launches-wan3-0-for-30-second-ai-video-from-documents-xcxwbn/",
+  "Meta-Muse": "https://ai.meta.com/blog/introducing-muse-image-muse-video-msl/",
+  "PhysicsIQ": "https://physics-iq.github.io/",
+  "ABot-2026": "https://arxiv.org/abs/2603.23376",
+  "T2V-text-2025": "https://arxiv.org/abs/2505.04946",
+  "Vendor-AI-product": "https://invideo.io/faq/what-happens-to-ai-generated-product-videos-when-you/",
+  "Batching": "https://firsttakeguide.com/",
+  "virality": "docs/research/short-form-virality.md",
+  "discovery": "docs/research/discovery-seo.md",
+  "RULES-D47": "RULES.md D47 (scale rotation); vsp/gates.py g2_d47_shot_scale",
+  "gate-D48": "vsp/gates.py g2_d48_internal_cuts (MOVE_KW)",
+  "vocab-human-only": "vsp/creative_vocab.py HOOK_ARCHETYPES confession human_only"
+ },
+ "SHOT_LIBRARY": [
+  {"id": "hook-hands-mid-action", "name": "Frame-0 hands mid-action", "scale": "CU", "angle": "high", "move": "push-in", "duration_s": [0.5, 1.5], "purposes": ["hook", "demo"], "best_beats": ["VISUAL TRIGGER", "DEMO BEAT"], "visual_types": ["product-in-action"], "vibes": ["raw-ugc", "hype-energy", "clean-aesthetic"], "needs": ["hands", "product"], "ai_risk": "high", "ai_fallback": "product-operating-cu", "human_instructions": "Start using the product before you hit record and trim so frame 0 is already mid-motion, hands and product filling the lower two-thirds.", "ai_prompt": "Close-up, slightly high angle, subtle push-in: hands already mid-motion using {product} on {setting}, {light}.", "evidence": ["TT-CreativeCodes", "virality §1", "Touch-2022", "ABot-2026"]},
+  {"id": "result-first-reveal", "name": "Result shown first", "scale": "CU", "angle": "eye-level", "move": "push-in", "duration_s": [0.5, 2.0], "purposes": ["hook", "payoff"], "best_beats": ["VISUAL TRIGGER", "PAYOFF"], "visual_types": ["result-reveal"], "vibes": ["before-after-reveal", "clean-aesthetic", "cinematic-premium", "raw-ugc"], "needs": ["product", "props"], "ai_risk": "med", "ai_fallback": "hero-static-push-in", "human_instructions": "Film the finished result first (the foam, the clean seat, the styled hair) in a steady close-up with the product at the edge of frame.", "ai_prompt": "Close-up, eye level, slow push-in on {result} with {product} at the frame edge, {light}.", "evidence": ["virality §1", "Usage-video-2022", "ABCD"]},
+  {"id": "problem-state-open", "name": "Problem at its worst", "scale": "MS", "angle": "high", "move": "handheld", "duration_s": [0.5, 2.0], "purposes": ["hook", "context"], "best_beats": ["VISUAL TRIGGER", "STORY BEAT", "EDUCATION BEAT"], "visual_types": ["problem-state"], "vibes": ["raw-ugc", "playful-comedic", "before-after-reveal", "story-vlog"], "needs": ["location", "props"], "ai_risk": "low", "ai_fallback": "insert-object-detail", "human_instructions": "Hold the phone at chest height over the real mess or failure and drift in slightly as you start recording; do not tidy first.", "ai_prompt": "Medium shot, high angle, handheld phone look: {problem} at its worst in {setting}, {light}.", "evidence": ["virality §1", "TT-AdsHelp"]},
+  {"id": "split-before-after", "name": "Split-screen before/after", "scale": "MS", "angle": "split", "move": "static", "duration_s": [1.5, 3.0], "purposes": ["hook", "proof", "payoff"], "best_beats": ["VISUAL TRIGGER", "EVIDENCE BEAT", "PAYOFF"], "visual_types": ["before-after-split"], "vibes": ["before-after-reveal", "expert-trust"], "needs": ["product", "location"], "ai_risk": "high", "ai_fallback": "text-card-over-motion", "human_instructions": "In the edit, put the matched BEFORE (left) and AFTER (right) clips side by side, both shot from the same taped phone spot, lens and light.", "ai_prompt": "Not generated: split-screen built in the edit from two real matched clips.", "evidence": ["ASDS", "virality §3", "virality §6"]},
+  {"id": "pov-hands-first-use", "name": "POV hands using the product", "scale": "CU", "angle": "pov", "move": "handheld", "duration_s": [1.0, 3.0], "purposes": ["hook", "demo"], "best_beats": ["VISUAL TRIGGER", "DEMO BEAT", "RITUAL BEAT"], "visual_types": ["pov-hands"], "vibes": ["raw-ugc", "story-vlog", "asmr-satisfying"], "needs": ["hands", "product"], "ai_risk": "high", "ai_fallback": "product-operating-cu", "human_instructions": "Hold the phone at your eye line pointing down at your hands and use the product as a first-timer would, both hands in frame.", "ai_prompt": "First-person POV close-up, handheld: two hands use {product} with one simple motion, {setting}, {light}.", "evidence": ["Meta-creators", "SecondPerson-2023", "Touch-2022", "ABot-2026"]},
+  {"id": "face-reaction-product", "name": "Reaction with product in frame", "scale": "MCU", "angle": "eye-level", "move": "handheld", "duration_s": [0.8, 2.0], "purposes": ["hook", "reaction", "emotion"], "best_beats": ["VISUAL TRIGGER", "DEMO BEAT", "PAYOFF"], "visual_types": ["face-reaction"], "vibes": ["playful-comedic", "raw-ugc", "hype-energy"], "needs": ["face", "product"], "ai_risk": "med", "ai_fallback": "reaction-cutaway-3q", "human_instructions": "Frame chest-up with the product or result in the lower third and film a genuine first reaction without speaking.", "ai_prompt": "Medium close-up, eye level, handheld: {persona} reacts with raised eyebrows to {product} held in the lower third, no speech, {light}.", "evidence": ["virality §7", "Emplifi-2026", "Hilton-2026"]},
+  {"id": "text-card-over-motion", "name": "Text-first card over moving B-roll", "scale": "CU", "angle": "eye-level", "move": "push-in", "duration_s": [0.8, 2.0], "purposes": ["hook", "context", "transition"], "best_beats": ["VISUAL TRIGGER", "EDUCATION BEAT", "TEACHING BEAT", "CTA"], "visual_types": ["text-first"], "vibes": ["hype-energy", "expert-trust", "clean-aesthetic", "playful-comedic"], "needs": ["product"], "ai_risk": "low", "ai_fallback": "hero-static-push-in", "human_instructions": "Film 3 s of slow push-in on the product (or the concept's subject) and add the 3-word card in the edit, inside the safe zone.", "ai_prompt": "Close-up, slow push-in on {product} on {setting}, {light}, clean negative space in the upper-middle frame for a card added later.", "evidence": ["TT-CreativeCodes", "Emplifi-2026", "VidMob-2025", "virality §2"]},
+  {"id": "unboxing-mid-open", "name": "Unboxing mid-open", "scale": "CU", "angle": "overhead", "move": "handheld", "duration_s": [1.0, 3.0], "purposes": ["hook", "demo"], "best_beats": ["VISUAL TRIGGER", "DEMO BEAT", "STORY BEAT"], "visual_types": ["unboxing"], "vibes": ["raw-ugc", "asmr-satisfying", "hype-energy"], "needs": ["hands", "product", "props"], "ai_risk": "high", "ai_fallback": "flat-lay-reveal", "human_instructions": "Shoot top-down with the box already half-open when you hit record, and keep the real tape and flap sounds.", "ai_prompt": "Overhead close-up: a box lid lifts to reveal {product} inside, hands only at the frame edge, {light}.", "evidence": ["Influee-2026", "virality §1", "Runway-Gen-4.5"]},
+  {"id": "comparison-side-by-side", "name": "Side-by-side with the alternative", "scale": "MS", "angle": "eye-level", "move": "pan", "duration_s": [1.5, 3.5], "purposes": ["proof", "hook"], "best_beats": ["VISUAL TRIGGER", "EVIDENCE BEAT", "REJECTION HISTORY"], "visual_types": ["comparison"], "vibes": ["expert-trust", "raw-ugc", "playful-comedic"], "needs": ["product", "props"], "ai_risk": "med", "ai_fallback": "text-card-over-motion", "human_instructions": "Put the product and the old alternative (brand taped over) on one surface under one light and pan slowly from the alternative to the product.", "ai_prompt": "Medium shot, eye level, slow pan left to right from an unbranded {alt} to {product} on {setting}, {light}.", "evidence": ["TT-TopAds-spotlight", "virality §3"]},
+  {"id": "day-counter-selfie", "name": "Day-N selfie check-in", "scale": "MCU", "angle": "eye-level", "move": "handheld", "duration_s": [1.0, 2.5], "purposes": ["hook", "context"], "best_beats": ["VISUAL TRIGGER", "VERBAL HOOK + LOCK", "STORY BEAT", "RITUAL BEAT", "PAYOFF"], "visual_types": ["day-counter"], "vibes": ["story-vlog", "raw-ugc"], "needs": ["face", "location"], "ai_risk": "med", "ai_fallback": "insert-object-detail", "human_instructions": "Film a front-camera check-in at the same spot and time each day, arm's length, eyes in the upper third; the Day N marker goes on in the edit.", "ai_prompt": "Selfie-style medium close-up, handheld front camera: {persona} in {setting}, {light}, glancing at the lens.", "evidence": ["Meta-creators", "Google-best-practices"]},
+  {"id": "macro-texture-ecu", "name": "Macro texture / sound moment", "scale": "ECU", "angle": "eye-level", "move": "push-in", "duration_s": [1.0, 3.0], "purposes": ["hook", "b-roll", "proof"], "best_beats": ["VISUAL TRIGGER", "EDUCATION BEAT", "RITUAL BEAT"], "visual_types": ["satisfying-macro"], "vibes": ["asmr-satisfying", "cinematic-premium", "clean-aesthetic"], "needs": ["product"], "ai_risk": "low", "ai_fallback": "hero-static-push-in", "human_instructions": "Switch to macro (or 2x from about 10 cm), lock focus and exposure on the texture, and record the real sound up close.", "ai_prompt": "Extreme close-up, macro lens, very slow push-in across the texture of {material}, shallow depth of field, {light}; sound design: {sound}.", "evidence": ["LOreal-2026", "Tactile-2024", "Apple-AEAF"]},
+  {"id": "label-detail-ecu", "name": "Label / spec detail", "scale": "ECU", "angle": "three-quarter", "move": "tilt", "duration_s": [1.0, 2.0], "purposes": ["proof", "b-roll"], "best_beats": ["EDUCATION BEAT", "EVIDENCE BEAT"], "visual_types": [], "vibes": ["expert-trust", "clean-aesthetic"], "needs": ["product"], "ai_risk": "high", "ai_fallback": "macro-texture-ecu", "human_instructions": "Tilt slowly down the real label or spec plate, holding each readable line for a full second.", "ai_prompt": "Image-to-video from the real label photo only: slow tilt down, no other motion, letters unchanged.", "evidence": ["T2V-text-2025", "Vendor-AI-product", "Google-best-practices"]},
+  {"id": "talking-head-mcu", "name": "Talking head, direct to camera", "scale": "MCU", "angle": "eye-level", "move": "static", "duration_s": [1.5, 3.5], "purposes": ["context", "emotion"], "best_beats": ["VERBAL HOOK + LOCK", "TEACHING BEAT", "STORY BEAT", "REJECTION HISTORY", "COMMENT BAIT"], "visual_types": [], "vibes": ["raw-ugc", "expert-trust", "story-vlog", "cozy-calm"], "needs": ["face"], "ai_risk": "med", "ai_fallback": "vo-over-hands-broll", "human_instructions": "Prop the phone at eye height about an arm's length away, face the window, lock exposure on your face and say the line to the lens.", "ai_prompt": "Medium close-up, eye level, static: {persona} speaks to the lens in {setting}, {light}. {name} says: {line}", "evidence": ["Ling-2021", "Dost-Huang-2026", "Google-best-practices"]},
+  {"id": "talking-head-product-in-hand", "name": "To camera, product in hand", "scale": "MCU", "angle": "eye-level", "move": "push-in", "duration_s": [1.5, 3.5], "purposes": ["proof", "payoff", "cta"], "best_beats": ["VERBAL HOOK + LOCK", "PAYOFF", "EDUCATION BEAT", "CTA"], "visual_types": ["face-reaction"], "vibes": ["raw-ugc", "expert-trust", "hype-energy"], "needs": ["face", "hands", "product"], "ai_risk": "high", "ai_fallback": "talking-head-mcu", "human_instructions": "Hold the product beside your face at chin height, front toward the lens, and deliver the line with the phone on a stand.", "ai_prompt": "Medium close-up, eye level, slow push-in: {persona} holds {product} at chin height, front toward camera. {name} says: {line}", "evidence": ["ABCD", "TT-Shop-2026", "TT-Symphony-avatar", "ABot-2026"]},
+  {"id": "selfie-walk-talk", "name": "Selfie walk-and-talk", "scale": "MCU", "angle": "eye-level", "move": "tracking", "duration_s": [2.0, 5.0], "purposes": ["context", "emotion"], "best_beats": ["STORY BEAT", "VERBAL HOOK + LOCK", "TEACHING BEAT"], "visual_types": ["day-counter"], "vibes": ["story-vlog", "raw-ugc"], "needs": ["face", "location"], "ai_risk": "med", "ai_fallback": "talking-head-mcu", "human_instructions": "Walk slowly with the front camera at arm's length just above eye level, stabilisation on, talking in the present tense.", "ai_prompt": "Selfie-style tracking shot, medium close-up: {persona} walks slowly through {setting} talking to the lens, {light}. {name} says: {line}", "evidence": ["Meta-creators", "TT-Shop-2026"]},
+  {"id": "mws-cta-to-camera", "name": "Medium-wide CTA to camera", "scale": "MWS", "angle": "eye-level", "move": "push-in", "duration_s": [1.5, 3.0], "purposes": ["cta"], "best_beats": ["COMMENT BAIT", "CTA"], "visual_types": [], "vibes": ["raw-ugc", "expert-trust", "hype-energy", "clean-aesthetic", "story-vlog"], "needs": ["face", "product", "location"], "ai_risk": "med", "ai_fallback": "end-card-hero", "human_instructions": "Step back so your hips and the product on the counter are in frame and push the phone in slightly while you say the comment prompt.", "ai_prompt": "Medium-wide, eye level, slow push-in: {persona} beside {product} on {setting} speaks to camera, {light}. {name} says: {line}", "evidence": ["ABCD", "RULES-D47"]},
+  {"id": "reaction-cutaway-3q", "name": "Reaction cutaway, three-quarter", "scale": "MCU", "angle": "three-quarter", "move": "static", "duration_s": [0.8, 2.0], "purposes": ["reaction", "emotion"], "best_beats": ["DEMO BEAT", "EVIDENCE BEAT", "STORY BEAT", "PAYOFF"], "visual_types": ["face-reaction"], "vibes": ["playful-comedic", "raw-ugc", "story-vlog", "expert-trust"], "needs": ["face"], "ai_risk": "low", "ai_fallback": "insert-object-detail", "human_instructions": "Move the phone 45 degrees off your eye line and film a silent nod or look at the result as it happens.", "ai_prompt": "Medium close-up, three-quarter angle, static: {persona} looks down at {subject} and nods slightly, eyes off-lens, no speech, {light}.", "evidence": ["virality §7", "Emplifi-2026"]},
+  {"id": "profile-look-cutaway", "name": "Profile look at product or result", "scale": "MCU", "angle": "profile", "move": "static", "duration_s": [0.8, 2.0], "purposes": ["reaction", "transition"], "best_beats": ["EDUCATION BEAT", "STORY BEAT", "RITUAL BEAT"], "visual_types": [], "vibes": ["cozy-calm", "cinematic-premium", "story-vlog"], "needs": ["face", "product"], "ai_risk": "low", "ai_fallback": "insert-object-detail", "human_instructions": "Film side-on at face height while you look at the product, with the window lighting the far side of your face.", "ai_prompt": "Medium close-up, profile, static: {persona} studies {product} in {setting}, soft side light.", "evidence": ["Google-prompt-guide"]},
+  {"id": "jump-cut-punch-in", "name": "Jump-cut punch-in", "scale": "CU", "angle": "eye-level", "move": "push-in", "duration_s": [1.0, 2.5], "purposes": ["emotion", "transition"], "best_beats": ["VERBAL HOOK + LOCK", "TEACHING BEAT", "STORY BEAT", "REJECTION HISTORY", "PAYOFF"], "visual_types": [], "vibes": ["hype-energy", "playful-comedic", "raw-ugc", "expert-trust"], "needs": ["face"], "ai_risk": "low", "ai_fallback": "talking-head-mcu", "human_instructions": "Record the talking head in 4K and punch in 1.3-1.5x in the edit on the key word; nothing extra to film.", "ai_prompt": "Edit-only: crop the previous talking-head clip 1.3x on the emphasised word; no new generation.", "evidence": ["Dost-Huang-2026"]},
+  {"id": "confession-handheld-cu", "name": "Candid handheld confession", "scale": "CU", "angle": "eye-level", "move": "handheld", "duration_s": [2.0, 4.0], "purposes": ["emotion"], "best_beats": ["IMPERFECTION BEAT", "STORY BEAT", "REJECTION HISTORY"], "visual_types": [], "vibes": ["raw-ugc", "story-vlog"], "needs": ["face"], "ai_risk": "high", "ai_fallback": "vo-over-hands-broll", "human_instructions": "Hold the phone yourself, a little closer than your talking-head framing, and say the flaw in one unrehearsed take.", "ai_prompt": "Not generated: confession is human-only and an AI presenter cannot claim experience.", "evidence": ["vocab-human-only", "virality §6"]},
+  {"id": "over-shoulder-demo", "name": "Over-shoulder demo", "scale": "MS", "angle": "over-shoulder", "move": "handheld", "duration_s": [1.5, 4.0], "purposes": ["demo"], "best_beats": ["DEMO BEAT", "TEACHING BEAT", "RITUAL BEAT"], "visual_types": ["product-in-action", "pov-hands"], "vibes": ["raw-ugc", "expert-trust", "story-vlog"], "needs": ["hands", "product", "location"], "ai_risk": "high", "ai_fallback": "product-operating-cu", "human_instructions": "Have a helper, or a tall stand behind you, film over your shoulder while you do the real task start to finish.", "ai_prompt": "Over-the-shoulder medium shot, handheld: hands use {product} with one simple motion on {setting}, {light}.", "evidence": ["TT-Shop-2026", "ABot-2026"]},
+  {"id": "overhead-hands-demo", "name": "Top-down hands demo", "scale": "MS", "angle": "overhead", "move": "static", "duration_s": [1.5, 3.5], "purposes": ["demo", "context"], "best_beats": ["DEMO BEAT", "TEACHING BEAT", "RITUAL BEAT", "EDUCATION BEAT"], "visual_types": ["pov-hands", "product-in-action"], "vibes": ["clean-aesthetic", "asmr-satisfying", "expert-trust"], "needs": ["hands", "product", "props"], "ai_risk": "high", "ai_fallback": "flat-lay-reveal", "human_instructions": "Mount the phone flat above the table, have your hands enter from the bottom of frame, and film one step per clip.", "ai_prompt": "Overhead medium shot, static: hands enter from the bottom and perform one step with {product} on {setting}, {light}.", "evidence": ["Influee-2026", "ABot-2026"]},
+  {"id": "product-operating-cu", "name": "Product doing its job, hands out", "scale": "CU", "angle": "high", "move": "push-in", "duration_s": [1.0, 3.0], "purposes": ["demo", "proof"], "best_beats": ["DEMO BEAT", "EVIDENCE BEAT", "VISUAL TRIGGER"], "visual_types": ["product-in-action", "satisfying-macro"], "vibes": ["asmr-satisfying", "cinematic-premium", "hype-energy", "clean-aesthetic"], "needs": ["product", "props"], "ai_risk": "med", "ai_fallback": "hero-static-push-in", "human_instructions": "Frame only the working end (whisk in milk, brush on the seat) with hands cropped out and push in slowly as the effect builds.", "ai_prompt": "Close-up, slightly high angle, slow push-in: the working end of {product} {action} in {medium}, hands out of frame, {light}.", "evidence": ["PhysicsIQ", "Google-best-practices"]},
+  {"id": "step-insert-cu", "name": "Feature or step insert (press, twist, click)", "scale": "CU", "angle": "high", "move": "static", "duration_s": [0.8, 2.0], "purposes": ["demo", "proof"], "best_beats": ["DEMO BEAT", "TEACHING BEAT", "EDUCATION BEAT"], "visual_types": ["product-in-action"], "vibes": ["expert-trust", "clean-aesthetic", "raw-ugc"], "needs": ["hands", "product"], "ai_risk": "high", "ai_fallback": "feature-callout-hero", "human_instructions": "Film the single finger action in a tight close-up with its sound, one attempt per clip.", "ai_prompt": "Not generated: finger-level manipulation of small parts; use the fallback.", "evidence": ["ABot-2026", "Runway-Gen-4.5"]},
+  {"id": "feature-callout-hero", "name": "Feature call-out on a hero shot", "scale": "CU", "angle": "three-quarter", "move": "push-in", "duration_s": [1.0, 2.5], "purposes": ["demo", "proof"], "best_beats": ["EDUCATION BEAT", "TEACHING BEAT", "EVIDENCE BEAT"], "visual_types": [], "vibes": ["expert-trust", "clean-aesthetic"], "needs": ["product"], "ai_risk": "low", "ai_fallback": "hero-static-push-in", "human_instructions": "Film a slow push toward the feature and add the circle or arrow in the edit.", "ai_prompt": "Image-to-video from the real product photo: slow push-in toward the {feature}, no other motion.", "evidence": ["Google-best-practices"]},
+  {"id": "timelapse-process", "name": "Time-lapse of a slow process", "scale": "MS", "angle": "high", "move": "static", "duration_s": [1.0, 3.0], "purposes": ["proof", "transition"], "best_beats": ["EVIDENCE BEAT", "RITUAL BEAT", "STORY BEAT", "PAYOFF"], "visual_types": ["result-reveal"], "vibes": ["asmr-satisfying", "story-vlog", "before-after-reveal"], "needs": ["location", "product"], "ai_risk": "med", "ai_fallback": "text-card-over-motion", "human_instructions": "Lock the phone on a stand in Time-lapse mode for the whole slow process and do not touch the frame until it ends.", "ai_prompt": "Time-lapse, static camera, high angle: {process} unfolds over the shot in {setting}, {light}.", "evidence": ["Stuppy-2025", "Google-prompt-guide"]},
+  {"id": "slowmo-hero-moment", "name": "Slow-motion hero moment", "scale": "CU", "angle": "eye-level", "move": "speed-ramp", "duration_s": [1.0, 2.5], "purposes": ["payoff", "b-roll", "hook"], "best_beats": ["VISUAL TRIGGER", "PAYOFF", "RITUAL BEAT", "DEMO BEAT"], "visual_types": ["satisfying-macro", "product-in-action"], "vibes": ["cinematic-premium", "asmr-satisfying", "clean-aesthetic", "hype-energy"], "needs": ["product", "props"], "ai_risk": "med", "ai_fallback": "macro-texture-ecu", "human_instructions": "Shoot the fast moment (pour, splash, spritz, fabric drop) in Slo-mo at 120 fps or more on a stand, then ramp into slow motion in the edit.", "ai_prompt": "Close-up, eye level, slow motion: {fast_action} with {product}, droplets and motion detail visible, {light}.", "evidence": ["Stuppy-2024", "Stuppy-2025", "Meta-Muse"]},
+  {"id": "pour-dispense-cu", "name": "Pour, pump or dispense close-up", "scale": "CU", "angle": "high", "move": "static", "duration_s": [1.0, 2.5], "purposes": ["demo", "b-roll"], "best_beats": ["DEMO BEAT", "RITUAL BEAT", "EDUCATION BEAT"], "visual_types": ["product-in-action", "satisfying-macro"], "vibes": ["asmr-satisfying", "cozy-calm", "clean-aesthetic"], "needs": ["hands", "product", "props"], "ai_risk": "med", "ai_fallback": "product-operating-cu", "human_instructions": "Frame the receiving cup or palm and pour or pump once, slowly, with the sound close to the mic.", "ai_prompt": "Close-up, high angle, static: {liquid} pours slowly from {product} into {vessel}, {light}.", "evidence": ["PhysicsIQ", "Influee-2026"]},
+  {"id": "hand-enters-pickup", "name": "Hand enters and picks up", "scale": "CU", "angle": "eye-level", "move": "static", "duration_s": [1.0, 2.0], "purposes": ["hook", "transition"], "best_beats": ["VISUAL TRIGGER", "CTA", "PAYOFF"], "visual_types": ["product-in-action"], "vibes": ["raw-ugc", "clean-aesthetic", "hype-energy"], "needs": ["hands", "product"], "ai_risk": "med", "ai_fallback": "hero-static-push-in", "human_instructions": "Start on the product alone and let your hand enter within half a second to grab it, so the opening already moves.", "ai_prompt": "Close-up, eye level, static: a hand enters from the frame bottom and lifts {product} (large, easy grip) off {setting}, {light}.", "evidence": ["virality §1", "Touch-2022"]},
+  {"id": "turn-in-hand-light", "name": "Turn in hand under window light", "scale": "CU", "angle": "eye-level", "move": "static", "duration_s": [1.5, 3.0], "purposes": ["proof", "b-roll"], "best_beats": ["EDUCATION BEAT", "EVIDENCE BEAT", "PAYOFF"], "visual_types": ["product-in-action"], "vibes": ["clean-aesthetic", "cinematic-premium", "expert-trust"], "needs": ["hands", "product"], "ai_risk": "high", "ai_fallback": "hero-static-push-in", "human_instructions": "Face the window and rotate the product slowly in your hand so the light travels across front, side and back.", "ai_prompt": "Not generated: in-hand rotation makes the model invent unseen sides; use the fallback.", "evidence": ["Influee-2026", "TT-Shop-2026", "Vendor-AI-product"]},
+  {"id": "product-hero-orbit", "name": "Orbit around the product", "scale": "CU", "angle": "three-quarter", "move": "orbit", "duration_s": [1.5, 3.5], "purposes": ["payoff", "b-roll"], "best_beats": ["PAYOFF", "EDUCATION BEAT", "CTA"], "visual_types": [], "vibes": ["cinematic-premium", "clean-aesthetic"], "needs": ["product", "props"], "ai_risk": "med", "ai_fallback": "hero-static-push-in", "human_instructions": "Put the product on a lazy Susan, or walk the phone in a slow half-circle around it at product height.", "ai_prompt": "Close-up, three-quarter angle, slow tracking arc around {product} on {setting}, {light}.", "evidence": ["Google-prompt-guide", "Vendor-AI-product"]},
+  {"id": "hero-static-push-in", "name": "Product hero, slow push-in", "scale": "CU", "angle": "three-quarter", "move": "push-in", "duration_s": [1.0, 3.0], "purposes": ["payoff", "cta", "b-roll"], "best_beats": ["PAYOFF", "CTA", "EDUCATION BEAT"], "visual_types": [], "vibes": ["clean-aesthetic", "cinematic-premium", "expert-trust", "cozy-calm"], "needs": ["product", "props"], "ai_risk": "low", "ai_fallback": "text-card-over-motion", "human_instructions": "Set the product on a clean surface with side window light and slide the phone slowly toward it along the table.", "ai_prompt": "Image-to-video from the real product photo: slow dolly in, no other motion.", "evidence": ["Google-best-practices", "TT-Symphony-avatar"]},
+  {"id": "flat-lay-reveal", "name": "Flat lay: what is included", "scale": "MS", "angle": "overhead", "move": "push-in", "duration_s": [1.0, 2.5], "purposes": ["context", "b-roll"], "best_beats": ["EDUCATION BEAT", "DEMO BEAT", "CTA"], "visual_types": ["unboxing"], "vibes": ["clean-aesthetic", "asmr-satisfying", "expert-trust"], "needs": ["product", "props"], "ai_risk": "low", "ai_fallback": "hero-static-push-in", "human_instructions": "Lay out the product and everything in the box in a grid and record top-down while lowering the phone slightly.", "ai_prompt": "Image-to-video from the real flat-lay photo: slow overhead push-in, objects stay still.", "evidence": ["Influee-2026"]},
+  {"id": "lifestyle-context-ws", "name": "Product in its real setting", "scale": "MWS", "angle": "eye-level", "move": "dolly", "duration_s": [1.0, 2.5], "purposes": ["context", "b-roll"], "best_beats": ["EDUCATION BEAT", "STORY BEAT", "RITUAL BEAT", "CTA"], "visual_types": [], "vibes": ["cozy-calm", "clean-aesthetic", "story-vlog"], "needs": ["location", "product"], "ai_risk": "low", "ai_fallback": "establishing-ws", "human_instructions": "Show where the product actually lives (counter, nightstand, car door) with a slow sideways slide of the phone.", "ai_prompt": "Medium-wide, eye level, slow dolly right: {product} in place in {setting}, {light}.", "evidence": ["TT-CQS", "ABCD"]},
+  {"id": "establishing-ws", "name": "Establishing wide", "scale": "WS", "angle": "eye-level", "move": "pan", "duration_s": [0.8, 2.0], "purposes": ["context", "transition"], "best_beats": ["STORY BEAT", "RITUAL BEAT"], "visual_types": ["day-counter"], "vibes": ["story-vlog", "cozy-calm", "cinematic-premium"], "needs": ["location"], "ai_risk": "low", "ai_fallback": "lifestyle-context-ws", "human_instructions": "From the doorway, pan slowly across the room or place to set the time and location (morning kitchen, gym, car).", "ai_prompt": "Wide establishing shot, eye level, slow pan across {setting} at {time_of_day}, {light}.", "evidence": ["Google-prompt-guide"]},
+  {"id": "matched-before", "name": "Matched BEFORE", "scale": "MS", "angle": "eye-level", "move": "static", "duration_s": [1.5, 2.5], "purposes": ["proof", "context"], "best_beats": ["EVIDENCE BEAT", "VISUAL TRIGGER", "STORY BEAT"], "visual_types": ["problem-state"], "vibes": ["before-after-reveal", "expert-trust", "raw-ugc"], "needs": ["location", "props"], "ai_risk": "high", "ai_fallback": "text-card-over-motion", "human_instructions": "Tape the phone's spot, note the lens and time of day, turn off filters and beauty mode, and record the BEFORE with a clock or date in frame.", "ai_prompt": "Not generated: before/after evidence must be real footage.", "evidence": ["ASDS", "virality §3", "virality §6"]},
+  {"id": "matched-after", "name": "Matched AFTER", "scale": "MS", "angle": "eye-level", "move": "static", "duration_s": [1.5, 3.0], "purposes": ["proof", "payoff"], "best_beats": ["EVIDENCE BEAT", "PAYOFF"], "visual_types": ["result-reveal"], "vibes": ["before-after-reveal", "expert-trust", "raw-ugc"], "needs": ["location", "props"], "ai_risk": "high", "ai_fallback": "hero-static-push-in", "human_instructions": "Return the phone to the taped spot with the same lens, light and time of day and record the AFTER with the date visible.", "ai_prompt": "Not generated: before/after evidence must be real footage.", "evidence": ["ASDS", "virality §3"]},
+  {"id": "match-cut-transform", "name": "Match-cut transformation", "scale": "MCU", "angle": "eye-level", "move": "whip-pan", "duration_s": [0.5, 1.5], "purposes": ["transition", "payoff"], "best_beats": ["PAYOFF", "EVIDENCE BEAT", "VISUAL TRIGGER"], "visual_types": ["result-reveal"], "vibes": ["before-after-reveal", "hype-energy", "playful-comedic"], "needs": ["location", "product"], "ai_risk": "high", "ai_fallback": "text-card-over-motion", "human_instructions": "End the BEFORE clip on a fast swipe past the lens, start the AFTER clip with the same swipe from the same taped spot, and cut mid-motion.", "ai_prompt": "Edit-only: transition between two real matched clips.", "evidence": ["ASDS", "Google-prompt-guide"]},
+  {"id": "timestamp-proof-insert", "name": "Timestamped proof insert", "scale": "CU", "angle": "high", "move": "static", "duration_s": [1.0, 2.5], "purposes": ["proof"], "best_beats": ["EVIDENCE BEAT", "PAYOFF"], "visual_types": ["result-reveal", "day-counter"], "vibes": ["expert-trust", "raw-ugc", "story-vlog"], "needs": ["screen", "props", "hands"], "ai_risk": "high", "ai_fallback": "text-card-over-motion", "human_instructions": "Film the real reading (timer, scale, battery percentage, phone clock) in one steady close-up held long enough to read.", "ai_prompt": "Not generated: readable numbers and evidence must be real footage.", "evidence": ["T2V-text-2025", "Runway-Gen-4.5", "virality §6"]},
+  {"id": "screen-insert", "name": "Phone-screen insert", "scale": "CU", "angle": "pov", "move": "static", "duration_s": [1.0, 3.0], "purposes": ["proof", "cta"], "best_beats": ["EVIDENCE BEAT", "EDUCATION BEAT", "COMMENT BAIT"], "visual_types": ["text-first"], "vibes": ["expert-trust", "raw-ugc", "playful-comedic"], "needs": ["screen", "hands"], "ai_risk": "high", "ai_fallback": "text-card-over-motion", "human_instructions": "Screen-record, or film the screen straight-on with brightness up and notifications off; never a product-page screenshot for TikTok Shop.", "ai_prompt": "Not generated: UI text is unreliable; use a real screen recording.", "evidence": ["TT-Shop-2026", "T2V-text-2025"]},
+  {"id": "stress-test-action", "name": "Stress or torture test", "scale": "MS", "angle": "low", "move": "handheld", "duration_s": [1.0, 3.0], "purposes": ["proof", "demo"], "best_beats": ["EVIDENCE BEAT", "DEMO BEAT", "VISUAL TRIGGER"], "visual_types": ["product-in-action", "problem-state"], "vibes": ["hype-energy", "playful-comedic", "raw-ugc"], "needs": ["hands", "product", "props"], "ai_risk": "high", "ai_fallback": "product-operating-cu", "human_instructions": "Do the real test once in one unbroken take (drop, spill, stretch) with a second phone catching a wider angle.", "ai_prompt": "Not generated: AI outcomes succeed too often and cannot prove durability.", "evidence": ["Runway-Gen-4.5", "PhysicsIQ", "virality §3"]},
+  {"id": "rejection-lineup", "name": "Rejected alternatives line-up", "scale": "MS", "angle": "eye-level", "move": "pan", "duration_s": [1.5, 3.5], "purposes": ["context", "proof"], "best_beats": ["REJECTION HISTORY", "EVIDENCE BEAT"], "visual_types": ["comparison"], "vibes": ["raw-ugc", "playful-comedic", "expert-trust"], "needs": ["props", "product"], "ai_risk": "med", "ai_fallback": "text-card-over-motion", "human_instructions": "Line up the products you gave up on (brands turned away or taped over), the winner last, and pan along them.", "ai_prompt": "Medium shot, eye level, slow pan along a row of unbranded {category} items ending on {product}, {light}.", "evidence": ["virality §3"]},
+  {"id": "toss-aside-cutaway", "name": "Toss-aside cutaway", "scale": "MS", "angle": "high", "move": "whip-pan", "duration_s": [0.5, 1.5], "purposes": ["transition", "emotion"], "best_beats": ["REJECTION HISTORY", "IMPERFECTION BEAT"], "visual_types": ["problem-state"], "vibes": ["playful-comedic", "raw-ugc", "hype-energy"], "needs": ["hands", "props"], "ai_risk": "high", "ai_fallback": "rejection-lineup", "human_instructions": "Drop the old item into a drawer or box and whip the phone toward the new product as it lands.", "ai_prompt": "Not generated: thrown-object physics; use the fallback.", "evidence": ["PhysicsIQ", "Meta-Muse"]},
+  {"id": "count-off-teaching-ms", "name": "Counting points on fingers", "scale": "MS", "angle": "eye-level", "move": "push-in", "duration_s": [2.0, 3.5], "purposes": ["context"], "best_beats": ["TEACHING BEAT", "EDUCATION BEAT"], "visual_types": [], "vibes": ["expert-trust", "raw-ugc"], "needs": ["face", "hands"], "ai_risk": "high", "ai_fallback": "talking-head-mcu", "human_instructions": "Frame waist-up so your hand is in shot and count the point on your fingers as you say it.", "ai_prompt": "Not generated: finger counts render wrong; use talking-head-mcu with the number as an edit overlay.", "evidence": ["Vendor-AI-product", "ABot-2026"]},
+  {"id": "prop-explainer-cu", "name": "Prop explainer", "scale": "CU", "angle": "eye-level", "move": "push-in", "duration_s": [1.5, 3.0], "purposes": ["context", "proof"], "best_beats": ["EDUCATION BEAT", "TEACHING BEAT", "EVIDENCE BEAT"], "visual_types": [], "vibes": ["expert-trust", "cozy-calm", "raw-ugc"], "needs": ["hands", "props"], "ai_risk": "med", "ai_fallback": "insert-object-detail", "human_instructions": "Hold the prop (ingredient, receipt, sketch) close to the lens and steady while you explain it.", "ai_prompt": "Close-up, eye level, slow push-in: a hand holds {prop} steady toward camera, {light}.", "evidence": ["TT-CQS"]},
+  {"id": "insert-object-detail", "name": "Insert of what the line is about", "scale": "CU", "angle": "high", "move": "push-in", "duration_s": [1.0, 2.5], "purposes": ["b-roll", "context"], "best_beats": ["STORY BEAT", "EDUCATION BEAT", "TEACHING BEAT"], "visual_types": ["problem-state"], "vibes": ["story-vlog", "cozy-calm", "raw-ugc", "expert-trust"], "needs": ["props"], "ai_risk": "low", "ai_fallback": "establishing-ws", "human_instructions": "Film a tight close-up of the object the sentence mentions (snack drawer, notebook, alarm) while you say it.", "ai_prompt": "Close-up, slightly high angle, slow push-in on {object} in {setting}, {light}.", "evidence": ["Influee-2026"]},
+  {"id": "green-screen-explainer", "name": "Green-screen explainer", "scale": "MCU", "angle": "eye-level", "move": "static", "duration_s": [2.0, 3.5], "purposes": ["context", "proof"], "best_beats": ["TEACHING BEAT", "EDUCATION BEAT", "EVIDENCE BEAT"], "visual_types": ["text-first"], "vibes": ["expert-trust", "playful-comedic"], "needs": ["face", "screen"], "ai_risk": "med", "ai_fallback": "talking-head-mcu", "human_instructions": "Use the app's green-screen effect with a real source (chart, article, product photo) behind you and point to it.", "ai_prompt": "Medium close-up, eye level, static: {persona} speaks to camera in front of a plain backdrop, a real image is composited later. {name} says: {line}", "evidence": ["TT-CreativeCodes", "TT-Shop-2026"]},
+  {"id": "pov-walk-in", "name": "POV walk-in", "scale": "MWS", "angle": "pov", "move": "tracking", "duration_s": [1.0, 3.0], "purposes": ["context", "transition"], "best_beats": ["STORY BEAT", "RITUAL BEAT", "CTA"], "visual_types": ["day-counter"], "vibes": ["story-vlog", "raw-ugc", "cozy-calm"], "needs": ["location"], "ai_risk": "low", "ai_fallback": "establishing-ws", "human_instructions": "Walk into the room at chest height with the rear camera, stabilisation on, ending on the spot where the routine happens.", "ai_prompt": "First-person POV tracking shot walking into {setting} toward {spot}, {light}.", "evidence": ["SecondPerson-2023", "Meta-creators"]},
+  {"id": "ritual-step-wide", "name": "Routine step, wide", "scale": "MWS", "angle": "three-quarter", "move": "dolly", "duration_s": [2.0, 4.0], "purposes": ["context", "demo"], "best_beats": ["RITUAL BEAT", "STORY BEAT"], "visual_types": [], "vibes": ["cozy-calm", "story-vlog", "clean-aesthetic"], "needs": ["face", "location", "props"], "ai_risk": "med", "ai_fallback": "lifestyle-context-ws", "human_instructions": "Place the phone at waist height at 45 degrees and slide it slowly while you do the routine step in real time.", "ai_prompt": "Medium-wide, three-quarter angle, slow dolly: {persona} does {step} in {setting}, {light}.", "evidence": ["TT-CQS"]},
+  {"id": "mirror-selfie", "name": "Mirror selfie", "scale": "MS", "angle": "eye-level", "move": "handheld", "duration_s": [1.0, 3.0], "purposes": ["context", "demo"], "best_beats": ["RITUAL BEAT", "DEMO BEAT", "STORY BEAT"], "visual_types": ["day-counter"], "vibes": ["story-vlog", "raw-ugc"], "needs": ["face", "location"], "ai_risk": "high", "ai_fallback": "talking-head-mcu", "human_instructions": "Film in a clean mirror with the phone at chest height and the product or outfit centred.", "ai_prompt": "Not generated: mirror reflections and the phone in hand break consistency; use the fallback.", "evidence": ["Runway-Gen-4.5", "Vendor-AI-product"]},
+  {"id": "low-angle-hero-payoff", "name": "Low-angle result held to lens", "scale": "MCU", "angle": "low", "move": "push-in", "duration_s": [1.5, 3.0], "purposes": ["payoff", "emotion"], "best_beats": ["PAYOFF"], "visual_types": ["result-reveal"], "vibes": ["hype-energy", "cinematic-premium", "raw-ugc"], "needs": ["face", "hands", "product"], "ai_risk": "high", "ai_fallback": "hero-static-push-in", "human_instructions": "Hold the phone slightly below chest height and bring the result toward the lens while your face stays in the upper third.", "ai_prompt": "Medium close-up, low angle, slow push-in: {persona} holds {result} toward camera, {light}.", "evidence": ["ABot-2026", "virality §1"]},
+  {"id": "comment-typing-insert", "name": "Comment keyword typed", "scale": "CU", "angle": "pov", "move": "static", "duration_s": [1.5, 3.0], "purposes": ["cta"], "best_beats": ["COMMENT BAIT"], "visual_types": ["text-first"], "vibes": ["raw-ugc", "playful-comedic", "story-vlog"], "needs": ["screen", "hands"], "ai_risk": "high", "ai_fallback": "mws-cta-to-camera", "human_instructions": "Screen-record typing the keyword into the comment box on your own post, with other handles out of frame.", "ai_prompt": "Not generated: typed UI text is unreliable; screen-record it.", "evidence": ["discovery", "T2V-text-2025"]},
+  {"id": "end-card-hero", "name": "End card on product hero", "scale": "CU", "angle": "eye-level", "move": "push-in", "duration_s": [1.0, 2.5], "purposes": ["cta"], "best_beats": ["CTA"], "visual_types": [], "vibes": ["clean-aesthetic", "expert-trust", "cinematic-premium", "cozy-calm"], "needs": ["product"], "ai_risk": "low", "ai_fallback": "text-card-over-motion", "human_instructions": "Reuse the hero push-in and add the CTA card in the edit, product centred above the bottom caption band.", "ai_prompt": "Image-to-video from the real product photo: slow push-in, clear space above the product for a card added later.", "evidence": ["TT-CreativeCodes", "virality §4"]},
+  {"id": "loop-return-frame", "name": "Loop-back final frame", "scale": "CU", "angle": "high", "move": "pull-out", "duration_s": [0.5, 1.5], "purposes": ["transition", "cta"], "best_beats": ["CTA", "PAYOFF"], "visual_types": [], "vibes": ["hype-energy", "asmr-satisfying", "playful-comedic", "raw-ugc", "clean-aesthetic", "before-after-reveal"], "needs": ["product"], "ai_risk": "low", "ai_fallback": "hero-static-push-in", "human_instructions": "End on the same framing, position and motion as frame 0 so the jump back to the start is invisible.", "ai_prompt": "Use the frame-0 still as both first and last frame (loop); slow dolly out that settles on the opening composition.", "evidence": ["Emplifi-2026", "Omni-docs", "Luma-Ray3.14"]},
+  {"id": "whip-pan-transition", "name": "Whip-pan transition", "scale": "MS", "angle": "eye-level", "move": "whip-pan", "duration_s": [0.3, 0.8], "purposes": ["transition"], "best_beats": ["STORY BEAT", "DEMO BEAT", "PAYOFF"], "visual_types": [], "vibes": ["hype-energy", "playful-comedic", "story-vlog"], "needs": ["location"], "ai_risk": "med", "ai_fallback": "insert-object-detail", "human_instructions": "Whip the phone sideways at the end of one clip and the same way at the start of the next, then cut mid-blur.", "ai_prompt": "Medium shot, fast whip pan to the right ending on {subject} in {setting}, motion blur, {light}.", "evidence": ["Google-prompt-guide", "Meta-creators"]},
+  {"id": "speed-ramp-reveal", "name": "Speed-ramp into the reveal", "scale": "CU", "angle": "eye-level", "move": "speed-ramp", "duration_s": [0.8, 2.0], "purposes": ["transition", "payoff"], "best_beats": ["PAYOFF", "VISUAL TRIGGER", "DEMO BEAT"], "visual_types": ["result-reveal", "product-in-action"], "vibes": ["hype-energy", "cinematic-premium"], "needs": ["product"], "ai_risk": "med", "ai_fallback": "slowmo-hero-moment", "human_instructions": "Shoot the move toward the reveal at 60 fps or more and ramp from fast to slow on the frame where the result appears.", "ai_prompt": "Close-up, fast handheld push-in that slows sharply as {result} comes into view, {light}.", "evidence": ["Stuppy-2024", "TT-AdsHelp"]},
+  {"id": "lens-cover-transition", "name": "Lens-cover wipe", "scale": "CU", "angle": "eye-level", "move": "handheld", "duration_s": [0.3, 1.0], "purposes": ["transition"], "best_beats": ["PAYOFF", "EVIDENCE BEAT", "STORY BEAT"], "visual_types": [], "vibes": ["playful-comedic", "hype-energy", "before-after-reveal"], "needs": ["hands"], "ai_risk": "med", "ai_fallback": "whip-pan-transition", "human_instructions": "Cover the lens with your palm at the end of one clip and uncover it at the start of the next, cutting on the dark frame.", "ai_prompt": "Close-up, a palm moves toward the lens until the frame goes dark, {light}.", "evidence": ["Meta-creators"]},
+  {"id": "vo-over-hands-broll", "name": "Voice-over on hands B-roll", "scale": "CU", "angle": "high", "move": "handheld", "duration_s": [1.0, 3.0], "purposes": ["b-roll", "demo"], "best_beats": ["EDUCATION BEAT", "TEACHING BEAT", "STORY BEAT", "IMPERFECTION BEAT"], "visual_types": [], "vibes": ["raw-ugc", "asmr-satisfying", "cozy-calm", "expert-trust"], "needs": ["hands", "product"], "ai_risk": "med", "ai_fallback": "product-operating-cu", "human_instructions": "Film your hands handling the product loosely for about 10 s per clip; the talking-head audio runs on top.", "ai_prompt": "Close-up, high angle, handheld: relaxed hands rest on and gently touch {product} on {setting}, no speech, {light}.", "evidence": ["Influee-2026", "Emplifi-2026"]}
+ ],
+ "SHOT_RULES": {
+  "cadence": {
+   "raw-ugc": {
+    "avg_shot_s": [
+     2.0,
+     3.5
+    ],
+    "cuts_per_10s": [
+     2.9,
+     5.0
+    ],
+    "max_static_s": 3.5
+   },
+   "clean-aesthetic": {
+    "avg_shot_s": [
+     2.0,
+     3.5
+    ],
+    "cuts_per_10s": [
+     2.9,
+     5.0
+    ],
+    "max_static_s": 3.0
+   },
+   "hype-energy": {
+    "avg_shot_s": [
+     1.25,
+     2.0
+    ],
+    "cuts_per_10s": [
+     5.0,
+     8.0
+    ],
+    "max_static_s": 2.0
+   },
+   "cozy-calm": {
+    "avg_shot_s": [
+     3.0,
+     5.0
+    ],
+    "cuts_per_10s": [
+     2.0,
+     3.3
+    ],
+    "max_static_s": 3.5
+   },
+   "expert-trust": {
+    "avg_shot_s": [
+     2.5,
+     4.0
+    ],
+    "cuts_per_10s": [
+     2.5,
+     4.0
+    ],
+    "max_static_s": 3.5
+   },
+   "playful-comedic": {
+    "avg_shot_s": [
+     1.25,
+     2.5
+    ],
+    "cuts_per_10s": [
+     4.0,
+     8.0
+    ],
+    "max_static_s": 2.5
+   },
+   "cinematic-premium": {
+    "avg_shot_s": [
+     2.0,
+     4.0
+    ],
+    "cuts_per_10s": [
+     2.5,
+     5.0
+    ],
+    "max_static_s": 2.5
+   },
+   "asmr-satisfying": {
+    "avg_shot_s": [
+     2.5,
+     5.0
+    ],
+    "cuts_per_10s": [
+     2.0,
+     4.0
+    ],
+    "max_static_s": 3.5
+   },
+   "story-vlog": {
+    "avg_shot_s": [
+     2.0,
+     3.5
+    ],
+    "cuts_per_10s": [
+     2.9,
+     5.0
+    ],
+    "max_static_s": 3.0
+   },
+   "before-after-reveal": {
+    "avg_shot_s": [
+     1.5,
+     3.0
+    ],
+    "cuts_per_10s": [
+     3.3,
+     6.7
+    ],
+    "max_static_s": 3.0
+   }
+  },
+  "cadence_global": {
+   "video_cuts_per_10s_hard": [
+    1.9,
+    8.2
+   ],
+   "opening_0_3s_cuts": [
+    1,
+    2
+   ],
+   "min_shot_length_stdev_s": 0.4,
+   "sources": [
+    "Dost-Huang-2026",
+    "Xiao-2024",
+    "TT-CreativeCodes",
+    "Emplifi-2026"
+   ]
+  },
+  "hard": {
+   "frame0": {
+    "window_s": [
+     0.0,
+     0.5
+    ],
+    "product_concepts": "frame-0 shot needs 'product', or its visual_type is result-reveal or before-after-split",
+    "no_product_concepts": "frame 0 shows the subject, problem or day counter",
+    "banned_ids_at_frame0": [
+     "talking-head-mcu",
+     "jump-cut-punch-in",
+     "mws-cta-to-camera",
+     "confession-handheld-cu",
+     "count-off-teaching-ms",
+     "green-screen-explainer"
+    ],
+    "overlay_max_words": 3,
+    "alternate_openings_differ_in": "visual_type AND shot id",
+    "sources": [
+     "virality §1",
+     "Hilton-2026",
+     "ABCD",
+     "virality §4"
+    ]
+   },
+   "human_presence": {
+    "face_or_hands_by_s": 3.0,
+    "min_on_screen_s": 1.0,
+    "face_by_s_if_human_presenter": 3.0,
+    "face_required_tiktok_shop": true,
+    "face_only_share_0_5s_max": {
+     "utilitarian": 0.5,
+     "hedonic": 1.0,
+     "neutral": 0.7
+    },
+    "sources": [
+     "virality §1",
+     "Emplifi-2026",
+     "Hilton-2026",
+     "TT-Shop-2026",
+     "ABCD"
+    ]
+   },
+   "scale_rotation": {
+    "max_consecutive_same_scale": 2,
+    "max_consecutive_talking_head": 2,
+    "min_distinct_scales_per_15s": 3,
+    "sources": [
+     "RULES-D47",
+     "Ling-2021",
+     "LOreal-2026"
+    ]
+   },
+   "loop_ending": {
+    "required_if_duration_le_s": 15,
+    "rule": "last shot is loop-return-frame (inherits frame 0's scale, angle and subject) or repeats frame 0's shot id; the last spoken line may run into the first",
+    "bonus_if_duration_gt_s": 15,
+    "sources": [
+     "Emplifi-2026",
+     "YT-Shorts-deck-2026",
+     "Omni-docs"
+    ]
+   },
+   "safe_zone": {
+    "see": "virality §2 (all-platform box x 120-888, y 288-1248 on 1080x1920)",
+    "eyes_y_px": [
+     560,
+     760
+    ],
+    "product_hero_box_px": {
+     "x": [
+      240,
+      840
+     ],
+     "y": [
+      640,
+      1248
+     ]
+    },
+    "grade": "A (derived)"
+   },
+   "product_visibility_share_min": {
+    "demo": 0.6,
+    "review": 0.5,
+    "transformation": 0.4,
+    "pov-vlog": 0.4,
+    "talking-head": 0.3,
+    "no_product_concepts": 0.0,
+    "sources": [
+     "TT-CreativeCodes",
+     "ABCD",
+     "VidMob-2025"
+    ]
+   },
+   "demo_beat_min_angles": 2,
+   "before_after": {
+    "same_setup_id": true,
+    "same_scale_and_angle": true,
+    "min_hold_each_s": 1.5,
+    "time_marker_required": true,
+    "filters_and_beauty_mode": "off",
+    "ai_generated_states_allowed": false,
+    "sources": [
+     "ASDS",
+     "virality §3",
+     "virality §6"
+    ]
+   },
+   "d48_compatibility": {
+    "static_max_s": 3.5,
+    "gate_move_keywords": [
+     "push-in",
+     "push in",
+     "pan",
+     "tilt",
+     "dolly",
+     "handheld",
+     "tracking",
+     "move"
+    ],
+    "render_phrase_for_move_id": {
+     "pull-out": "dolly out",
+     "orbit": "tracking arc (orbit)",
+     "speed-ramp": "handheld push-in, speed-ramped",
+     "whip-pan": "whip pan",
+     "static": "split into sub-shots of 3.5 s or less"
+    },
+    "sources": [
+     "gate-D48"
+    ]
+   },
+   "tiktok_shop_lane": {
+    "min_continuous_live_action_s": 3.0,
+    "live_action_must_show": [
+     "face",
+     "product",
+     "camera movement",
+     "real-world setting"
+    ],
+    "max_still_or_loop_segment_s": 1.0,
+    "banned": [
+     "product-page screenshots",
+     "slideshows of stills",
+     "AI voice"
+    ],
+    "footage": "stabilised (tripod or in-hand stabiliser)",
+    "on_screen_text": "in sync with speech",
+    "sources": [
+     "TT-Shop-2026",
+     "virality §3"
+    ]
+   }
+  },
+  "talking_head_ids": [
+   "talking-head-mcu",
+   "talking-head-product-in-hand",
+   "selfie-walk-talk",
+   "mws-cta-to-camera",
+   "jump-cut-punch-in",
+   "confession-handheld-cu",
+   "count-off-teaching-ms",
+   "green-screen-explainer",
+   "day-counter-selfie"
+  ],
+  "ai": {
+   "models": {
+    "gemini-omni-flash-1.1": {
+     "clip_s": [
+      3,
+      10
+     ],
+     "extend_to_s": 40,
+     "ratio_9_16": true,
+     "refs": "images + up to 3 video refs of 3 s or less",
+     "notes": "multi-shot by default; no negative-prompt param"
+    },
+    "veo-3.1": {
+     "clip_s": [
+      4,
+      8
+     ],
+     "allowed_s": [
+      4,
+      6,
+      8
+     ],
+     "extend_to_s": 148,
+     "ratio_9_16": true,
+     "refs": "up to 3 asset images (8 s only)",
+     "notes": "first+last frame; audio always on; 24 fps"
+    },
+    "kling-3.0": {
+     "clip_s": [
+      3,
+      15
+     ],
+     "ratio_9_16": true,
+     "refs": "reference video or multiple images",
+     "notes": "storyboard per-shot size/angle/move"
+    },
+    "seedance-2.0": {
+     "clip_s": [
+      4,
+      15
+     ],
+     "ratio_9_16": true,
+     "refs": "up to 9 images, 3 videos, 3 audio",
+     "notes": "native 480p/720p"
+    },
+    "wan-3.0": {
+     "clip_s": [
+      2,
+      30
+     ],
+     "ratio_9_16": true,
+     "refs": "multimodal",
+     "notes": "hosted preview API"
+    },
+    "luma-ray3.14": {
+     "clip_s": [
+      5,
+      10
+     ],
+     "extend_to_s": 30,
+     "ratio_9_16": "UNVERIFIED (Reframe on Ray 3.2)",
+     "refs": "none on 3.14",
+     "notes": "loop mode; no native audio"
+    },
+    "runway-gen-4.5": {
+     "clip_s": "5 or 10 (Gen-4; Gen-4.5 UNVERIFIED)",
+     "ratio_9_16": "UNVERIFIED",
+     "refs": "Gen-4 references",
+     "notes": "Aleph 2.0 edits up to 30 s"
+    },
+    "sora-2": {
+     "retired": "2026-09-24"
+    }
+   },
+   "one_shot_per_prompt": true,
+   "generate_length_rule": "shortest allowed clip length at least shot duration + 1.0 s of handles; trim in the edit",
+   "native_aspect": "9:16 (never crop 16:9)",
+   "prompt_order": [
+    "cinematography: scale, angle, one move",
+    "subject: locked persona or product text",
+    "one action in beats",
+    "setting",
+    "light + 3-5 palette anchors",
+    "style: vertical phone footage",
+    "audio: SFX/ambience; dialogue after a colon"
+   ],
+   "prompt_suffix": "Single continuous shot, no scene cuts. One camera move only. No on-screen text, captions, logos or watermarks.",
+   "quotes_in_prompts": false,
+   "model_rendered_text": false,
+   "dialogue_max_words_per_clip": {
+    "4s": 10,
+    "8s": 20
+   },
+   "inserts_without_persona": "shots whose needs lack 'face' must not include the persona description; add 'hands only, face out of frame' when hands appear",
+   "persona_consistency": "same 1-3 reference stills in every shot + identical description text + same seed; never re-describe the face when a reference is loaded",
+   "product_consistency": "real product photos (front, side, back, detail); image-to-video from the real packshot for hero, label and end-card shots; slow moves only over labels",
+   "hands": "large-object grasps only, contact 2 s or less; no finger-level manipulation, counting, typing or writing",
+   "physics": "no drops, throws, snap-fits, stacking or fast motion; slow pours and foam are med risk",
+   "proof": "AI shots never serve as evidence: EVIDENCE BEAT, matched before/after, stress tests and timestamps use real footage, or become text cards",
+   "presenter_ai_substitution": "replace ai_risk=high with ai_fallback (follow the chain to med or low); at most 2 consecutive med shots; low-risk shots at least 30% of runtime",
+   "risk_rubric": {
+    "factors": [
+     "hand-object contact",
+     "readable text or numbers",
+     "rigid or fast physics",
+     "multi-object continuity",
+     "lip-synced speech over 2 lines",
+     "proof claim"
+    ],
+    "low": 0,
+    "med": 1,
+    "high": "2+ or any proof claim"
+   },
+   "loop": "pass the frame-0 still as first and last frame (Omni sources syntax, Veo first+last frame) or use Luma loop",
+   "qa": "run a vision-model check on every clip for hands, labels, identity and extra cuts before assembly",
+   "sources": [
+    "Omni-docs",
+    "Veo-docs",
+    "Veo-guide",
+    "Google-best-practices",
+    "Google-prompt-guide",
+    "Sora-guide",
+    "Sora-shutdown",
+    "Kling-3",
+    "Seedance-2",
+    "Wan-3",
+    "Luma-Ray3.14",
+    "Runway-Gen-4.5",
+    "ABot-2026",
+    "PhysicsIQ",
+    "T2V-text-2025",
+    "Meta-Muse",
+    "virality §6"
+   ]
+  }
+ },
+ "FORMAT_RECIPES": {
+  "resolution": [
+   "default",
+   "formats[format]",
+   "concepts[concept]"
+  ],
+  "assembly": [
+   "1. concatenate each beat's shots in beat order; trim from the end of a beat's list when its window is shorter than the sum of min durations",
+   "2. presenter=ai: replace ai_risk=high ids by following ai_fallback until med/low",
+   "3. if a shot repeats the previous id, or breaks max_consecutive_same_scale / max_consecutive_talking_head, take the beat's first alt (ai_risk != high when presenter=ai) that fixes it",
+   "4. presenter=ai and format=transformation: require brand-supplied real before/after footage, else route the script to demo",
+   "5. apply SHOT_RULES.hard (frame0, human_presence, loop_ending, product share) and log any rule still failing"
+  ],
+  "default": {
+   "VISUAL TRIGGER": {
+    "shots": [
+     "hook-hands-mid-action"
+    ],
+    "alt": [
+     "result-first-reveal",
+     "problem-state-open",
+     "pov-hands-first-use",
+     "macro-texture-ecu"
+    ]
+   },
+   "VERBAL HOOK + LOCK": {
+    "shots": [
+     "talking-head-mcu"
+    ],
+    "alt": [
+     "talking-head-product-in-hand",
+     "jump-cut-punch-in",
+     "selfie-walk-talk"
+    ]
+   },
+   "IMPERFECTION BEAT": {
+    "shots": [
+     "vo-over-hands-broll",
+     "confession-handheld-cu"
+    ],
+    "alt": [
+     "talking-head-mcu",
+     "toss-aside-cutaway"
+    ]
+   },
+   "REJECTION HISTORY": {
+    "shots": [
+     "rejection-lineup",
+     "talking-head-mcu"
+    ],
+    "alt": [
+     "comparison-side-by-side",
+     "toss-aside-cutaway",
+     "jump-cut-punch-in"
+    ]
+   },
+   "EDUCATION BEAT": {
+    "shots": [
+     "macro-texture-ecu",
+     "vo-over-hands-broll",
+     "reaction-cutaway-3q",
+     "feature-callout-hero"
+    ],
+    "alt": [
+     "label-detail-ecu",
+     "lifestyle-context-ws",
+     "prop-explainer-cu",
+     "text-card-over-motion"
+    ]
+   },
+   "TEACHING BEAT": {
+    "shots": [
+     "insert-object-detail",
+     "talking-head-mcu",
+     "text-card-over-motion"
+    ],
+    "alt": [
+     "jump-cut-punch-in",
+     "count-off-teaching-ms",
+     "green-screen-explainer",
+     "prop-explainer-cu"
+    ]
+   },
+   "STORY BEAT": {
+    "shots": [
+     "insert-object-detail",
+     "selfie-walk-talk",
+     "reaction-cutaway-3q"
+    ],
+    "alt": [
+     "talking-head-mcu",
+     "establishing-ws",
+     "pov-walk-in",
+     "whip-pan-transition"
+    ]
+   },
+   "DEMO BEAT": {
+    "shots": [
+     "over-shoulder-demo",
+     "product-operating-cu",
+     "reaction-cutaway-3q"
+    ],
+    "alt": [
+     "pov-hands-first-use",
+     "overhead-hands-demo",
+     "pour-dispense-cu",
+     "step-insert-cu",
+     "flat-lay-reveal",
+     "timelapse-process"
+    ]
+   },
+   "EVIDENCE BEAT": {
+    "shots": [
+     "matched-before",
+     "matched-after",
+     "reaction-cutaway-3q"
+    ],
+    "alt": [
+     "split-before-after",
+     "timestamp-proof-insert",
+     "comparison-side-by-side",
+     "stress-test-action"
+    ]
+   },
+   "RITUAL BEAT": {
+    "shots": [
+     "pov-walk-in",
+     "ritual-step-wide",
+     "pour-dispense-cu"
+    ],
+    "alt": [
+     "macro-texture-ecu",
+     "timelapse-process",
+     "slowmo-hero-moment"
+    ]
+   },
+   "PAYOFF": {
+    "shots": [
+     "talking-head-product-in-hand"
+    ],
+    "alt": [
+     "low-angle-hero-payoff",
+     "result-first-reveal",
+     "hero-static-push-in",
+     "speed-ramp-reveal"
+    ]
+   },
+   "COMMENT BAIT": {
+    "shots": [
+     "mws-cta-to-camera"
+    ],
+    "alt": [
+     "comment-typing-insert",
+     "talking-head-mcu"
+    ]
+   },
+   "CTA": {
+    "shots": [
+     "loop-return-frame"
+    ],
+    "alt": [
+     "end-card-hero",
+     "hero-static-push-in",
+     "text-card-over-motion"
+    ]
+   }
+  },
+  "formats": {
+   "demo": {
+    "VISUAL TRIGGER": {
+     "shots": [
+      "hook-hands-mid-action"
+     ],
+     "alt": [
+      "product-operating-cu",
+      "result-first-reveal",
+      "problem-state-open"
+     ]
+    },
+    "VERBAL HOOK + LOCK": {
+     "shots": [
+      "talking-head-product-in-hand"
+     ],
+     "alt": [
+      "talking-head-mcu",
+      "jump-cut-punch-in"
+     ]
+    },
+    "EDUCATION BEAT": {
+     "shots": [
+      "macro-texture-ecu",
+      "feature-callout-hero",
+      "vo-over-hands-broll",
+      "reaction-cutaway-3q"
+     ],
+     "alt": [
+      "label-detail-ecu",
+      "flat-lay-reveal",
+      "lifestyle-context-ws"
+     ]
+    },
+    "DEMO BEAT": {
+     "shots": [
+      "over-shoulder-demo",
+      "product-operating-cu",
+      "pov-hands-first-use",
+      "reaction-cutaway-3q"
+     ],
+     "alt": [
+      "overhead-hands-demo",
+      "pour-dispense-cu",
+      "step-insert-cu",
+      "slowmo-hero-moment",
+      "flat-lay-reveal",
+      "timelapse-process"
+     ]
+    },
+    "EVIDENCE BEAT": {
+     "shots": [
+      "comparison-side-by-side",
+      "timestamp-proof-insert"
+     ],
+     "alt": [
+      "matched-before",
+      "matched-after",
+      "stress-test-action"
+     ]
+    },
+    "PAYOFF": {
+     "shots": [
+      "result-first-reveal",
+      "talking-head-product-in-hand"
+     ],
+     "alt": [
+      "speed-ramp-reveal",
+      "low-angle-hero-payoff",
+      "hero-static-push-in"
+     ]
+    },
+    "COMMENT BAIT": {
+     "shots": [
+      "mws-cta-to-camera"
+     ],
+     "alt": [
+      "comment-typing-insert"
+     ]
+    },
+    "CTA": {
+     "shots": [
+      "loop-return-frame"
+     ],
+     "alt": [
+      "end-card-hero",
+      "hand-enters-pickup"
+     ]
+    }
+   },
+   "review": {
+    "VISUAL TRIGGER": {
+     "shots": [
+      "hook-hands-mid-action"
+     ],
+     "alt": [
+      "comparison-side-by-side",
+      "face-reaction-product",
+      "result-first-reveal"
+     ]
+    },
+    "VERBAL HOOK + LOCK": {
+     "shots": [
+      "talking-head-product-in-hand"
+     ],
+     "alt": [
+      "talking-head-mcu",
+      "jump-cut-punch-in"
+     ]
+    },
+    "IMPERFECTION BEAT": {
+     "shots": [
+      "vo-over-hands-broll",
+      "confession-handheld-cu"
+     ],
+     "alt": [
+      "toss-aside-cutaway",
+      "talking-head-mcu"
+     ]
+    },
+    "REJECTION HISTORY": {
+     "shots": [
+      "rejection-lineup",
+      "jump-cut-punch-in"
+     ],
+     "alt": [
+      "comparison-side-by-side",
+      "toss-aside-cutaway"
+     ]
+    },
+    "EDUCATION BEAT": {
+     "shots": [
+      "macro-texture-ecu",
+      "turn-in-hand-light",
+      "reaction-cutaway-3q"
+     ],
+     "alt": [
+      "label-detail-ecu",
+      "feature-callout-hero",
+      "vo-over-hands-broll"
+     ]
+    },
+    "DEMO BEAT": {
+     "shots": [
+      "pov-hands-first-use",
+      "product-operating-cu",
+      "reaction-cutaway-3q"
+     ],
+     "alt": [
+      "over-shoulder-demo",
+      "overhead-hands-demo",
+      "pour-dispense-cu",
+      "slowmo-hero-moment",
+      "flat-lay-reveal"
+     ]
+    },
+    "EVIDENCE BEAT": {
+     "shots": [
+      "matched-before",
+      "matched-after",
+      "timestamp-proof-insert"
+     ],
+     "alt": [
+      "comparison-side-by-side",
+      "split-before-after",
+      "stress-test-action"
+     ]
+    },
+    "PAYOFF": {
+     "shots": [
+      "hero-static-push-in",
+      "talking-head-product-in-hand"
+     ],
+     "alt": [
+      "low-angle-hero-payoff",
+      "result-first-reveal"
+     ]
+    },
+    "COMMENT BAIT": {
+     "shots": [
+      "mws-cta-to-camera"
+     ],
+     "alt": [
+      "comment-typing-insert"
+     ]
+    },
+    "CTA": {
+     "shots": [
+      "end-card-hero"
+     ],
+     "alt": [
+      "loop-return-frame",
+      "hand-enters-pickup"
+     ]
+    }
+   },
+   "transformation": {
+    "VISUAL TRIGGER": {
+     "shots": [
+      "split-before-after"
+     ],
+     "alt": [
+      "result-first-reveal",
+      "problem-state-open",
+      "match-cut-transform"
+     ]
+    },
+    "VERBAL HOOK + LOCK": {
+     "shots": [
+      "talking-head-mcu"
+     ],
+     "alt": [
+      "jump-cut-punch-in",
+      "face-reaction-product"
+     ]
+    },
+    "STORY BEAT": {
+     "shots": [
+      "matched-before",
+      "insert-object-detail",
+      "talking-head-mcu"
+     ],
+     "alt": [
+      "selfie-walk-talk",
+      "day-counter-selfie"
+     ]
+    },
+    "DEMO BEAT": {
+     "shots": [
+      "pov-hands-first-use",
+      "pour-dispense-cu",
+      "timelapse-process"
+     ],
+     "alt": [
+      "overhead-hands-demo",
+      "product-operating-cu"
+     ]
+    },
+    "EVIDENCE BEAT": {
+     "shots": [
+      "matched-before",
+      "match-cut-transform",
+      "matched-after"
+     ],
+     "alt": [
+      "split-before-after",
+      "timestamp-proof-insert",
+      "reaction-cutaway-3q",
+      "timelapse-process"
+     ]
+    },
+    "PAYOFF": {
+     "shots": [
+      "matched-after",
+      "reaction-cutaway-3q"
+     ],
+     "alt": [
+      "speed-ramp-reveal",
+      "low-angle-hero-payoff",
+      "result-first-reveal",
+      "face-reaction-product"
+     ]
+    },
+    "COMMENT BAIT": {
+     "shots": [
+      "mws-cta-to-camera"
+     ],
+     "alt": [
+      "comment-typing-insert"
+     ]
+    },
+    "CTA": {
+     "shots": [
+      "loop-return-frame"
+     ],
+     "alt": [
+      "split-before-after",
+      "end-card-hero"
+     ]
+    }
+   },
+   "talking-head": {
+    "VISUAL TRIGGER": {
+     "shots": [
+      "text-card-over-motion"
+     ],
+     "alt": [
+      "problem-state-open",
+      "hook-hands-mid-action",
+      "face-reaction-product"
+     ]
+    },
+    "VERBAL HOOK + LOCK": {
+     "shots": [
+      "talking-head-mcu"
+     ],
+     "alt": [
+      "green-screen-explainer",
+      "selfie-walk-talk"
+     ]
+    },
+    "TEACHING BEAT": {
+     "shots": [
+      "insert-object-detail",
+      "talking-head-mcu",
+      "jump-cut-punch-in",
+      "problem-state-open"
+     ],
+     "alt": [
+      "count-off-teaching-ms",
+      "green-screen-explainer",
+      "prop-explainer-cu",
+      "text-card-over-motion"
+     ]
+    },
+    "EDUCATION BEAT": {
+     "shots": [
+      "green-screen-explainer",
+      "insert-object-detail",
+      "reaction-cutaway-3q"
+     ],
+     "alt": [
+      "prop-explainer-cu",
+      "vo-over-hands-broll",
+      "macro-texture-ecu"
+     ]
+    },
+    "STORY BEAT": {
+     "shots": [
+      "insert-object-detail",
+      "talking-head-mcu",
+      "profile-look-cutaway"
+     ],
+     "alt": [
+      "selfie-walk-talk",
+      "establishing-ws"
+     ]
+    },
+    "REJECTION HISTORY": {
+     "shots": [
+      "rejection-lineup",
+      "talking-head-mcu"
+     ],
+     "alt": [
+      "jump-cut-punch-in",
+      "toss-aside-cutaway"
+     ]
+    },
+    "PAYOFF": {
+     "shots": [
+      "text-card-over-motion",
+      "jump-cut-punch-in"
+     ],
+     "alt": [
+      "talking-head-product-in-hand",
+      "hero-static-push-in"
+     ]
+    },
+    "COMMENT BAIT": {
+     "shots": [
+      "mws-cta-to-camera"
+     ],
+     "alt": [
+      "comment-typing-insert",
+      "talking-head-mcu"
+     ]
+    },
+    "CTA": {
+     "shots": [
+      "end-card-hero"
+     ],
+     "alt": [
+      "loop-return-frame",
+      "text-card-over-motion"
+     ]
+    }
+   },
+   "pov-vlog": {
+    "VISUAL TRIGGER": {
+     "shots": [
+      "pov-hands-first-use"
+     ],
+     "alt": [
+      "day-counter-selfie",
+      "problem-state-open",
+      "pov-walk-in"
+     ]
+    },
+    "VERBAL HOOK + LOCK": {
+     "shots": [
+      "selfie-walk-talk"
+     ],
+     "alt": [
+      "talking-head-mcu",
+      "day-counter-selfie"
+     ]
+    },
+    "STORY BEAT": {
+     "shots": [
+      "insert-object-detail",
+      "selfie-walk-talk",
+      "reaction-cutaway-3q"
+     ],
+     "alt": [
+      "pov-walk-in",
+      "establishing-ws",
+      "whip-pan-transition",
+      "mirror-selfie"
+     ]
+    },
+    "RITUAL BEAT": {
+     "shots": [
+      "pov-walk-in",
+      "ritual-step-wide",
+      "pour-dispense-cu"
+     ],
+     "alt": [
+      "macro-texture-ecu",
+      "timelapse-process",
+      "mirror-selfie"
+     ]
+    },
+    "DEMO BEAT": {
+     "shots": [
+      "pov-hands-first-use",
+      "product-operating-cu"
+     ],
+     "alt": [
+      "over-shoulder-demo",
+      "mirror-selfie",
+      "pour-dispense-cu",
+      "ritual-step-wide",
+      "slowmo-hero-moment"
+     ]
+    },
+    "PAYOFF": {
+     "shots": [
+      "result-first-reveal",
+      "day-counter-selfie"
+     ],
+     "alt": [
+      "talking-head-product-in-hand",
+      "timelapse-process",
+      "speed-ramp-reveal"
+     ]
+    },
+    "COMMENT BAIT": {
+     "shots": [
+      "comment-typing-insert"
+     ],
+     "alt": [
+      "mws-cta-to-camera",
+      "selfie-walk-talk"
+     ]
+    },
+    "CTA": {
+     "shots": [
+      "loop-return-frame"
+     ],
+     "alt": [
+      "pov-walk-in",
+      "end-card-hero"
+     ]
+    }
+   }
+  },
+  "concepts": {
+   "product": {},
+   "showcase": {
+    "VISUAL TRIGGER": {
+     "shots": [
+      "product-operating-cu"
+     ],
+     "alt": [
+      "slowmo-hero-moment",
+      "macro-texture-ecu",
+      "hook-hands-mid-action"
+     ]
+    },
+    "EDUCATION BEAT": {
+     "shots": [
+      "product-hero-orbit",
+      "macro-texture-ecu",
+      "lifestyle-context-ws"
+     ],
+     "alt": [
+      "feature-callout-hero",
+      "flat-lay-reveal"
+     ]
+    },
+    "DEMO BEAT": {
+     "shots": [
+      "pov-hands-first-use",
+      "over-shoulder-demo",
+      "slowmo-hero-moment"
+     ],
+     "alt": [
+      "product-operating-cu",
+      "pour-dispense-cu",
+      "flat-lay-reveal"
+     ]
+    },
+    "PAYOFF": {
+     "shots": [
+      "speed-ramp-reveal",
+      "face-reaction-product"
+     ],
+     "alt": [
+      "hero-static-push-in",
+      "product-hero-orbit",
+      "result-first-reveal"
+     ]
+    },
+    "COMMENT BAIT": {
+     "shots": [
+      "mws-cta-to-camera"
+     ],
+     "alt": [
+      "comment-typing-insert"
+     ]
+    },
+    "CTA": {
+     "shots": [
+      "loop-return-frame"
+     ],
+     "alt": [
+      "end-card-hero"
+     ]
+    }
+   },
+   "challenge": {
+    "VISUAL TRIGGER": {
+     "shots": [
+      "problem-state-open"
+     ],
+     "alt": [
+      "day-counter-selfie",
+      "insert-object-detail",
+      "text-card-over-motion"
+     ]
+    },
+    "VERBAL HOOK + LOCK": {
+     "shots": [
+      "day-counter-selfie"
+     ],
+     "alt": [
+      "talking-head-mcu",
+      "selfie-walk-talk"
+     ]
+    },
+    "STORY BEAT": {
+     "shots": [
+      "insert-object-detail",
+      "selfie-walk-talk",
+      "establishing-ws"
+     ],
+     "alt": [
+      "reaction-cutaway-3q",
+      "pov-walk-in",
+      "mirror-selfie",
+      "whip-pan-transition"
+     ]
+    },
+    "RITUAL BEAT": {
+     "shots": [
+      "pov-walk-in",
+      "ritual-step-wide"
+     ],
+     "alt": [
+      "timelapse-process",
+      "insert-object-detail"
+     ]
+    },
+    "EVIDENCE BEAT": {
+     "shots": [
+      "timestamp-proof-insert",
+      "matched-before",
+      "matched-after"
+     ],
+     "alt": [
+      "day-counter-selfie"
+     ]
+    },
+    "PAYOFF": {
+     "shots": [
+      "reaction-cutaway-3q",
+      "day-counter-selfie"
+     ],
+     "alt": [
+      "matched-after",
+      "text-card-over-motion"
+     ]
+    },
+    "COMMENT BAIT": {
+     "shots": [
+      "comment-typing-insert"
+     ],
+     "alt": [
+      "talking-head-mcu"
+     ]
+    },
+    "CTA": {
+     "shots": [
+      "loop-return-frame"
+     ],
+     "alt": [
+      "text-card-over-motion",
+      "day-counter-selfie"
+     ]
+    }
+   },
+   "routine": {
+    "VISUAL TRIGGER": {
+     "shots": [
+      "pour-dispense-cu"
+     ],
+     "alt": [
+      "macro-texture-ecu",
+      "pov-hands-first-use",
+      "day-counter-selfie"
+     ]
+    },
+    "VERBAL HOOK + LOCK": {
+     "shots": [
+      "selfie-walk-talk"
+     ],
+     "alt": [
+      "talking-head-mcu"
+     ]
+    },
+    "RITUAL BEAT": {
+     "shots": [
+      "establishing-ws",
+      "pov-walk-in",
+      "ritual-step-wide",
+      "pour-dispense-cu",
+      "macro-texture-ecu"
+     ],
+     "alt": [
+      "timelapse-process",
+      "slowmo-hero-moment",
+      "mirror-selfie"
+     ]
+    },
+    "STORY BEAT": {
+     "shots": [
+      "insert-object-detail",
+      "profile-look-cutaway"
+     ],
+     "alt": [
+      "selfie-walk-talk"
+     ]
+    },
+    "PAYOFF": {
+     "shots": [
+      "result-first-reveal",
+      "reaction-cutaway-3q"
+     ],
+     "alt": [
+      "timelapse-process",
+      "day-counter-selfie"
+     ]
+    },
+    "CTA": {
+     "shots": [
+      "loop-return-frame"
+     ],
+     "alt": [
+      "lifestyle-context-ws",
+      "text-card-over-motion"
+     ]
+    }
+   },
+   "advice": {
+    "VISUAL TRIGGER": {
+     "shots": [
+      "text-card-over-motion"
+     ],
+     "alt": [
+      "problem-state-open",
+      "insert-object-detail"
+     ]
+    },
+    "VERBAL HOOK + LOCK": {
+     "shots": [
+      "talking-head-mcu"
+     ],
+     "alt": [
+      "green-screen-explainer",
+      "jump-cut-punch-in"
+     ]
+    },
+    "TEACHING BEAT": {
+     "shots": [
+      "insert-object-detail",
+      "talking-head-mcu",
+      "jump-cut-punch-in",
+      "problem-state-open"
+     ],
+     "alt": [
+      "green-screen-explainer",
+      "count-off-teaching-ms",
+      "prop-explainer-cu",
+      "text-card-over-motion"
+     ]
+    },
+    "EDUCATION BEAT": {
+     "shots": [
+      "green-screen-explainer",
+      "insert-object-detail"
+     ],
+     "alt": [
+      "prop-explainer-cu",
+      "screen-insert"
+     ]
+    },
+    "EVIDENCE BEAT": {
+     "shots": [
+      "screen-insert",
+      "reaction-cutaway-3q"
+     ],
+     "alt": [
+      "green-screen-explainer",
+      "prop-explainer-cu"
+     ]
+    },
+    "PAYOFF": {
+     "shots": [
+      "text-card-over-motion",
+      "jump-cut-punch-in"
+     ],
+     "alt": [
+      "reaction-cutaway-3q"
+     ]
+    },
+    "COMMENT BAIT": {
+     "shots": [
+      "talking-head-mcu"
+     ],
+     "alt": [
+      "comment-typing-insert"
+     ]
+    },
+    "CTA": {
+     "shots": [
+      "insert-object-detail"
+     ],
+     "alt": [
+      "text-card-over-motion",
+      "loop-return-frame"
+     ]
+    }
+   }
+  }
+ },
+ "SHOOT_PLAN_RULES": {
+  "setup_key": [
+   "location",
+   "light_preset",
+   "phone_support",
+   "lens",
+   "wardrobe",
+   "product_state"
+  ],
+  "group_rule": "shots with the same setup_key form one setup; inside a setup shoot wide to tight (WS, MWS, MS, MCU, CU, ECU) so the phone moves in one direction",
+  "setup_order": [
+   {
+    "step": 1,
+    "name": "pristine product",
+    "ids": [
+     "unboxing-mid-open",
+     "flat-lay-reveal",
+     "hero-static-push-in",
+     "product-hero-orbit",
+     "label-detail-ecu",
+     "macro-texture-ecu",
+     "end-card-hero",
+     "feature-callout-hero",
+     "text-card-over-motion"
+    ],
+    "why": "packaging and product are untouched only once"
+   },
+   {
+    "step": 2,
+    "name": "BEFORE states",
+    "ids": [
+     "matched-before",
+     "problem-state-open",
+     "insert-object-detail"
+    ],
+    "why": "tape the phone spot now; the AFTER reuses it"
+   },
+   {
+    "step": 3,
+    "name": "hands and demo",
+    "ids": [
+     "hook-hands-mid-action",
+     "pov-hands-first-use",
+     "over-shoulder-demo",
+     "overhead-hands-demo",
+     "product-operating-cu",
+     "step-insert-cu",
+     "pour-dispense-cu",
+     "slowmo-hero-moment",
+     "turn-in-hand-light",
+     "hand-enters-pickup",
+     "stress-test-action",
+     "vo-over-hands-broll",
+     "timelapse-process"
+    ]
+   },
+   {
+    "step": 4,
+    "name": "A-roll talking head",
+    "ids": [
+     "talking-head-mcu",
+     "talking-head-product-in-hand",
+     "confession-handheld-cu",
+     "count-off-teaching-ms",
+     "green-screen-explainer",
+     "mws-cta-to-camera",
+     "face-reaction-product",
+     "reaction-cutaway-3q",
+     "profile-look-cutaway",
+     "low-angle-hero-payoff",
+     "prop-explainer-cu"
+    ],
+    "why": "record the whole script top to bottom, then the cutaways at the same light"
+   },
+   {
+    "step": 5,
+    "name": "AFTER states",
+    "ids": [
+     "matched-after",
+     "result-first-reveal",
+     "timestamp-proof-insert"
+    ],
+    "why": "same taped spot, lens, light and time of day as step 2"
+   },
+   {
+    "step": 6,
+    "name": "location and movement",
+    "ids": [
+     "establishing-ws",
+     "lifestyle-context-ws",
+     "pov-walk-in",
+     "selfie-walk-talk",
+     "ritual-step-wide",
+     "mirror-selfie",
+     "day-counter-selfie"
+    ]
+   },
+   {
+    "step": 7,
+    "name": "screens",
+    "ids": [
+     "screen-insert",
+     "comment-typing-insert"
+    ],
+    "why": "screen-record after posting a draft; notifications off"
+   },
+   {
+    "step": 8,
+    "name": "transitions and pick-ups",
+    "ids": [
+     "whip-pan-transition",
+     "lens-cover-transition",
+     "speed-ramp-reveal",
+     "match-cut-transform",
+     "toss-aside-cutaway",
+     "rejection-lineup",
+     "comparison-side-by-side",
+     "loop-return-frame"
+    ],
+    "why": "loop-return-frame is shot right after frame 0 when possible, at the same setup"
+   }
+  ],
+  "edit_only_ids": [
+   "split-before-after",
+   "jump-cut-punch-in"
+  ],
+  "a_roll": {
+   "takes_min": 2,
+   "record_full_script_per_take": true,
+   "resolution": "4K 30 fps",
+   "punch_in_headroom": 1.5,
+   "phone_height": "eye level, arm's length, on a stand"
+  },
+  "b_roll": {
+   "roll_s_per_clip": [
+    5,
+    10
+   ],
+   "angles_per_action": 2,
+   "clips_per_30s_video": [
+    12,
+    20
+   ],
+   "clips_for_ad_variant_library": [
+    20,
+    30
+   ],
+   "record_live_sound": true,
+   "one_insert_per_vo_line_over_2s": true
+  },
+  "min_coverage_product_concepts": {
+   "product close-ups (hero-static-push-in, turn-in-hand-light)": 2,
+   "hands in use (pov-hands-first-use, vo-over-hands-broll)": 2,
+   "texture (macro-texture-ecu)": 1,
+   "result (result-first-reveal or matched-after)": 1,
+   "flat lay (flat-lay-reveal)": 1,
+   "wide context (lifestyle-context-ws)": 1
+  },
+  "camera_settings": {
+   "lock": "AE/AF lock on the subject at every setup",
+   "stabilisation": "on; handheld moves stay smooth (TikTok Shop)",
+   "lens": "1x main; macro mode or 2x for ECU; no digital zoom past 2x",
+   "fps": {
+    "a_roll": 30,
+    "motion": 60,
+    "slow_motion": [
+     120,
+     240
+    ],
+    "slow_process": "phone Time-lapse mode"
+   },
+   "filters_and_beauty_mode": "off"
+  },
+  "light_presets": {
+   "window-key-45": {
+    "use": "talking heads, reactions",
+    "how": "face a window at about 45 degrees; overhead lights off; no direct sun",
+    "vibes": [
+     "raw-ugc",
+     "expert-trust",
+     "story-vlog"
+    ]
+   },
+   "window-plus-bounce": {
+    "use": "product in hand, payoff",
+    "how": "window key plus a white card or foam board on the shadow side",
+    "vibes": [
+     "clean-aesthetic",
+     "expert-trust"
+    ]
+   },
+   "soft-overhead": {
+    "use": "flat lays, overhead demos",
+    "how": "diffused daylight or a lamp through white fabric; keep the phone's shadow out of frame",
+    "vibes": [
+     "clean-aesthetic",
+     "asmr-satisfying"
+    ]
+   },
+   "side-raking": {
+    "use": "macro, texture, foam, fabric",
+    "how": "one low side light so texture casts small shadows; dark background",
+    "vibes": [
+     "asmr-satisfying",
+     "cinematic-premium"
+    ]
+   },
+   "warm-practical": {
+    "use": "cozy routines",
+    "how": "a warm lamp as key, daylight blocked so colour temperatures do not mix",
+    "vibes": [
+     "cozy-calm",
+     "story-vlog"
+    ]
+   },
+   "ring-light-front": {
+    "use": "fast talking-head batches",
+    "how": "only when no glossy product or glasses are in frame (ring reflections)",
+    "vibes": [
+     "hype-energy",
+     "playful-comedic"
+    ]
+   }
+  },
+  "before_after_protocol": [
+   "tape the phone or stand position and note height, lens and zoom",
+   "same light preset and time of day; flash off",
+   "same background and framing; subject in the same pose and distance",
+   "clock, date card or phone clock in frame",
+   "no filters or beauty mode; the same edit grade on both clips",
+   "hold each state 1.5 s or more; show the AFTER from the same spot before any closer shot"
+  ],
+  "props_checklist_rules": [
+   "every shot needing 'product' adds the product; add a second unit if the shot list has stress-test-action or a messy demo",
+   "unboxing-mid-open adds a sealed box; film step 1 before opening anything",
+   "comparison-side-by-side and rejection-lineup add the alternatives with brand marks taped over or turned away",
+   "pour-dispense-cu, product-operating-cu and slowmo-hero-moment add the consumable (milk, water, cream) and a wipe cloth",
+   "matched-before, matched-after and timestamp-proof-insert add a clock or date card and floor or table tape",
+   "shots needing 'screen' add a second phone or screen recorder, a clean home screen and notifications off; never a product-page screenshot for TikTok Shop",
+   "shots needing 'location' list the location and time of day; shots needing 'face' list the wardrobe (one outfit per shoot day; change outfits per day only for day-counter stories)",
+   "kit, always: phone stand or tripod, white card, lens cloth, tape; lazy Susan if product-hero-orbit is used; overhead mount if overhead shots are used"
+  ],
+  "broll_checklist_rules": [
+   "each VO line longer than 2 s gets an insert showing its noun (insert-object-detail or a product close-up)",
+   "each demo step gets two angles (e.g. pov-hands-first-use + over-shoulder-demo)",
+   "record live sound on every B-roll clip; it plays under the voice",
+   "shoot one spare hero push-in and one spare reaction per setup for the variant cuts"
+  ],
+  "ai_render_plan": {
+   "order": [
+    "approve persona reference sheet (1-3 stills) and product reference photos",
+    "render low-risk image-to-video shots first (hero, flat lay, macro, lifestyle, inserts)",
+    "render presenter shots with identical persona text + same seed",
+    "apply ai_fallback swaps and re-render any clip that fails QA",
+    "assemble; add all text, captions and cards in the edit"
+   ],
+   "render_group_key": [
+    "reference_set",
+    "setting",
+    "light_preset",
+    "seed"
+   ],
+   "retry_limit_per_shot": 3,
+   "on_repeated_failure": "swap to ai_fallback, then to text-card-over-motion"
+  }
+ }
+}
