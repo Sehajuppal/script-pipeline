@@ -458,7 +458,10 @@ def link(con, media_id, manifest_path, trial=False, now=None, summary=None,
                     "WHERE platform='instagram' AND media_id=?",
                     (s["tag"], row["is_trial"], mid))
     con.commit()
-    return dict(row, variant_from=how)
+    known = [v for v, _ in hook_variants(sc)]
+    warn = (f"variant {vid} is not one of the script's hook_variants ({', '.join(known)})"
+            if vid and known and vid not in known else None)
+    return dict(row, variant_from=how, variant_warning=warn)
 
 
 def search_roots(extra=None, env=None):
@@ -606,7 +609,8 @@ def link_auto(con, roots=None, now=None):
             rep["linked"].append({"media_id": mid, "tag": tag, "manifest": mp,
                                   "niche": row["niche"], "hook_family": row["hook_family"],
                                   "variant_id": row.get("variant_id"), "by": "tag",
-                                  "variant_from": row.get("variant_from")})
+                                  "variant_from": row.get("variant_from"),
+                                  "variant_warning": row.get("variant_warning")})
     if loose:
         fidx = fingerprint_index(rep["roots"])
         fpr = rep["fingerprint"]
@@ -1970,6 +1974,11 @@ def _sc_link(C, ctx, sc):
         refused = False
     except LinkError:
         refused = True
+    z = link(con, mid["LX"], runs["sunset-lamp"]["manifest"], variant="z")
+    C.check("link: a letter that is not one of the script's variants is kept but "
+            "warned about", z["variant_id"] == "Z" and z["hook_archetype"] is None and
+            "not one of the script's hook_variants (A, B, C)" in (z["variant_warning"] or "")
+            and by[mid["FC"]]["variant_warning"] is None, z["variant_warning"])
     import contextlib
     import io
     buf = io.StringIO()
@@ -2341,10 +2350,14 @@ def _parser():
         prog="python3 -m vsp.feedback",
         description="Closed performance-feedback loop over YOUR posted reels.",
         epilog="caption tag: #vsp-<first 8 hex chars of script_sha256> "
-               "(manifest.json -> script_summary.script_sha256). Hermes cron: hourly "
+               "(manifest.json -> script_summary.script_sha256); an alternate opening "
+               "adds its letter, #vsp-<sha8>B. Untagged captions are matched by "
+               "fingerprint (caption line 1 vs the script's and each variant's "
+               "caption line). Hermes cron: hourly "
                "`python3 -m vsp.ingest own && python3 -m vsp.feedback pull`; daily "
-               "`python3 -m vsp.feedback learn && python3 -m vsp.feedback report`. "
-               "Docs: docs/ws-data-notes.md")
+               "`python3 -m vsp.feedback learn && python3 -m vsp.feedback report`; "
+               "after each variant look `python3 -m vsp.feedback variants`. "
+               "Docs: docs/ws-data-notes.md, docs/ws-learn-notes.md")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--db", help="research DB path (sets VSP_VIRAL_DB)")
     sub = ap.add_subparsers(dest="cmd", metavar="command")
@@ -2432,7 +2445,9 @@ def main(argv=None):
                  f"({row['niche']} / {row['hook_family']}, tag vsp-"
                  f"{row['script_sha256'][:8]}{', trial' if row['is_trial'] else ''}"
                  + (f", variant {row['variant_id']} ({row.get('variant_from')})"
-                    if row.get("variant_id") else "") + ")")
+                    if row.get("variant_id") else "") + ")"
+                 + (f"\nwarning: {row['variant_warning']}" if row.get("variant_warning")
+                    else ""))
             return 0
         if a.cmd == "pull":
             from vsp.ingest import jobs
