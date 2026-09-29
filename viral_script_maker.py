@@ -4191,7 +4191,10 @@ _PRODUCT_COMMUNITY_TAGS = (
     (r"\b(?:lunch|meal ?prep|food bags?)\b", ["#mealprep", "#kitchentok"]),
     (r"\b(?:kitchen|waffle|air fryer|fryer|toaster|blender|knife|kettle|"
      r"cookware|cutting boards?)\b", ["#kitchentok", "#kitchengadgets"]),
-    (r"\b(?:vacuum|mop|steamer|lint|scrub)\b", ["#cleantok", "#cleaninghacks"]),
+    (r"\b(?:vacuum|mop|steamer|lint|scrub|cleaning|cleaner)\b",
+     ["#cleantok", "#cleaninghacks"]),
+    (r"\b(?:drills?|screwdrivers?|wrench|toolbox|tool set|tools?)\b",
+     ["#diy", "#toolsoftiktok"]),
     (r"\b(?:organi[sz]ers?|storage|drawers?|shel(?:f|ves))\b",
      ["#organization", "#homeorganization"]),
     (r"\b(?:door lock|travel|luggage|passport)\b",
@@ -4257,14 +4260,18 @@ def _community_tags(ctx):
     return list(_scoped_tags_raw(ctx))
 
 def _routine_tags(ctx):
+    # routine_time defaults to "morning" when the prompt names no time, so
+    # only the label or an AM clock time is evidence of a morning routine
     label = str(ctx.get("routine_label") or "").lower()
     t = str(ctx.get("routine_time") or "").lower()
     hm = re.match(r"(\d{1,2})(am|pm)$", t)
-    morning = t == "morning" or "morning" in label or bool(hm and hm.group(2) == "am")
+    morning = "morning" in label or bool(hm and hm.group(2) == "am")
     if "gym" in label or "workout" in label:
         return ["#gymtok"] + (["#morningroutine"] if morning else ["#fitnesstips"])
-    if t == "night" or "night" in label or "evening" in label:
+    if t == "night" or re.search(r"night|evening|wind[- ]?down|bedtime", label):
         return ["#nightroutine", "#selfcare", "#sleeptok"]
+    if re.search(r"\bday in (?:my|the) life\b", label):
+        return ["#dailyvlog", "#vlog"]
     if morning:
         return ["#morningroutine"] + (["#5amclub"] if t == "5am" else []) + ["#selfimprovement"]
     return ["#selfcare", "#selfimprovement"]

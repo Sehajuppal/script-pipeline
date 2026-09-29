@@ -25,6 +25,7 @@ import json
 import os
 import re
 import sys
+import unicodedata
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 DATA_PATH = os.path.join(_HERE, "data", "discovery.json")
@@ -70,9 +71,20 @@ _LEMMA_KEEP3 = frozenset({"yes", "its", "his", "has", "was", "gas", "bus",
 _ADJ_RX = re.compile(r"(?:ic|ical|able|ible|less|ive|ous|ful|ized|ised|ated)$")
 
 
+def fold(text):
+    """Accents folded ("café crème" -> "cafe creme"; precomposed letters
+    keep their length), everything else untouched (emoji, punctuation)."""
+    s = str(text or "")
+    if s.isascii():
+        return s
+    return "".join(c for c in unicodedata.normalize("NFKD", s)
+                   if not unicodedata.combining(c))
+
+
 def tokens(text):
-    """Lowercase word tokens ("self-cleaning", "3-in-1", "5am" stay whole)."""
-    return _TOK.findall(str(text or "").lower().replace("’", "'"))
+    """Lowercase word tokens ("self-cleaning", "3-in-1", "5am" stay whole;
+    accents folded)."""
+    return _TOK.findall(fold(text).lower().replace("’", "'"))
 
 
 def lemma(word):
@@ -133,7 +145,7 @@ def phrase_rx(phrase):
 def keyword_end(text, keyword):
     """Char index just past the first exact (case/plural-tolerant) match of
     `keyword` in `text`, or -1."""
-    m = phrase_rx(keyword).search(str(text or ""))
+    m = phrase_rx(keyword).search(fold(text))
     return m.end() if m else -1
 
 
@@ -197,12 +209,12 @@ def anchor(keyword):
 
 def anchor_in(text, keyword):
     a = anchor(keyword)
-    return bool(a) and phrase_rx(a).search(str(text or "")) is not None
+    return bool(a) and phrase_rx(a).search(fold(text)) is not None
 
 
 def compact_tag(keyword):
     """"milk frother" -> "#milkfrother" (None when it carries < 3 letters)."""
-    t = re.sub(r"[^a-z0-9]", "", str(keyword or "").lower())
+    t = re.sub(r"[^a-z0-9]", "", fold(keyword).lower())
     return "#" + t if len(re.sub(r"[^a-z]", "", t)) >= 3 else None
 
 
@@ -232,28 +244,40 @@ def _product_phrase(product):
     modifiers dropped ("electric milk frother" -> "milk frother"), singular
     head, 2-4 words."""
     p = re.sub(r"[{}]", "", str(product or ""))
+    # offers/prices never enter the keyword: cut at "20% off", "under $30",
+    # "on sale", a D158 phrase, and drop any remaining price
+    cut = re.search(r"\s+(?:\d+\s?%|under\b|below\b|less than\b|for under\b|"
+                    r"on sale\b|off\b)", p, re.I)
+    if cut:
+        p = p[:cut.start()]
+    for rx in _d158_rx():
+        m = rx.search(p)
+        if m:
+            p = p[:m.start()]
     p = re.sub(r"\$\s?\d+(?:[.,]\d+)?", " ", p)
     core = re.split(r"\s+(?:with|for|in|on|from)\s+", p.strip(), maxsplit=1,
                     flags=re.I)[0]
-    toks = tokens(core)
+    toks = [re.sub(r"'s$", "", t) for t in tokens(core)]      # "dog's toy"
     while toks and toks[0] in _set("strip_leading"):
         toks.pop(0)
     toks = [t for t in toks if not re.search(r"\d", t)] or toks
     if len(toks) >= 2 and toks[-1] in _set("pack_tails"):
         toks = toks[:-1]
     kept = [t for t in toks if t not in _set("drop_modifiers")]
-    if len(kept) < 2 and len(toks) >= 2:
-        kept = toks[-2:]              # "led lamp": never a 1-word keyword
-    kept = kept or toks
+    if len(kept) < 2:
+        # "led lamp", "electric toothbrush": a spec modifier comes back
+        # rather than a 1-word keyword; marketing words never do
+        back = [t for t in toks if t in _set("restore_modifiers") and t not in kept]
+        if back and kept:
+            kept = [back[-1]] + kept
+    kept = kept or toks[-1:]
     while len(kept) > 3 and _adj_like(kept[0]):
         kept.pop(0)                   # "reusable silicone food bags"
     kept = kept[-_kwt()["max_words"]:]
     if not kept:
         return ""
     kept[-1] = lemma(kept[-1])
-    if len(kept) == 1:
-        kept.append("review")         # KEYWORD_RULES min 2 words
-    return " ".join(kept)
+    return " ".join(kept)             # 1 word only for 1-word products
 
 
 _CONSUME = ("drinking", "eating", "having", "using", "taking", "smoking")
@@ -296,7 +320,10 @@ def _routine_phrase(ctx):
     if re.search(r"\bday in (?:my|the) life\b", low):
         return "day in my life"
     if re.search(r"\bgrwm\b|\bget ready with me\b", low):
-        return "grwm routine"
+        m = re.search(r"\b(?:grwm|get ready with me)\s+for\s+(?:a|an|the|my)?\s*"
+                      r"([a-z]+(?:\s[a-z]+)?)", low)
+        occ = [t for t in tokens(m.group(1))][:2] if m else []
+        return f"{' '.join(occ)} grwm" if occ else "grwm routine"   # "wedding grwm"
     toks = tokens(label)
     while toks and toks[0] in _set("strip_leading"):
         toks.pop(0)
@@ -409,20 +436,27 @@ def display_keyword(keyword, ctx=None, text=None):
     src = text if text is not None else (ctx.get("prompt_text")
                                          or ctx.get("_prompt") or "")
     casing = {}
-    for i, w in enumerate(_WORD.findall(str(src))):
+    src = str(src)
+    for m in _WORD.finditer(src):
+        w = m.group(0)
         lw = w.lower()
         if lw in casing:
             continue
-        acronym = len(w) >= 2 and w.isupper()
-        proper = i > 0 and len(w) > 1 and w[0].isupper() and w[1:].islower()
+        before = src[:m.start()].rstrip(" \t")
+        sentence_start = not before or before[-1] in ".!?:;\n\"“("
+        acronym = len(w) >= 2 and w.isupper() and not w.isdigit()
+        proper = (not sentence_start and len(w) > 1 and w[0].isupper()
+                  and w[1:].islower())
         if acronym or proper:
             casing[lw] = w
     return " ".join(casing.get(t, t) for t in str(keyword or "").split())
 
 
-def _fmt_vars(keyword, ctx=None):
+def _fmt_vars(keyword, ctx=None, casing=""):
     ctx = ctx or {}
-    kw = display_keyword(keyword, ctx)
+    src = "\n".join(x for x in (str(ctx.get("prompt_text") or ctx.get("_prompt") or ""),
+                                str(casing or "")) if x)
+    kw = display_keyword(keyword, ctx, text=src)
     return {"kw": kw, "Kw": _cap(kw), "KW": kw.upper(),
             "a_kw": _article(kw), "A_kw": _cap(_article(kw)),
             "n": str(ctx.get("span_n") or ""),
@@ -436,12 +470,12 @@ def _concept_template(table, concept, fmt):
     return t
 
 
-def keyword_sentence(keyword, ctx=None, fmt="demo"):
+def keyword_sentence(keyword, ctx=None, fmt="demo", casing=""):
     """The natural keyword-first sentence that joins caption line 1 when the
     hook does not carry the keyword ("No sugar challenge, day by day.")."""
     c = (ctx or {}).get("concept") or "product"
     t = _concept_template(_eng()["keyword_sentence"], c, fmt)
-    return t.format(**_fmt_vars(keyword, ctx))
+    return t.format(**_fmt_vars(keyword, ctx, casing))
 
 
 def caption_line1(hookline, keyword, ctx=None, fmt="demo"):
@@ -455,7 +489,7 @@ def caption_line1(hookline, keyword, ctx=None, fmt="demo"):
     within = _eng()["d155"]["caption_first_line_within"]
     if not keyword or has_keyword(hook, keyword, within):
         return hook
-    sent = keyword_sentence(keyword, ctx, fmt)
+    sent = keyword_sentence(keyword, ctx, fmt, casing=hook)
     if not hook:
         return sent
     joined = f"{hook} {sent}"
