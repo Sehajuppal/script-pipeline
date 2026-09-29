@@ -188,7 +188,9 @@ verbatim.
   - `## POSTING & DISCOVERY`, just before `## Caption + hashtags (post as-is)`
     (`vsp.discovery.render_md`)
 - New sections never contain a `### Shot` heading or any
-  `creative_vocab.BUNDLE_FORBIDDEN` phrase.
+  `creative_vocab.BUNDLE_FORBIDDEN` phrase. They may repeat the script
+  caption's own CTA destination, but they never introduce a different D46
+  link group (`creative_vocab.link_groups_in`).
 - AI prompt hygiene (D160):
   - on-screen text is an edit overlay, never generated in-frame;
   - no quoted dialogue in visual prompts (use `says:`);

@@ -82,7 +82,18 @@ SHOT_PURPOSES = ("hook", "context", "proof", "demo", "emotion", "payoff",
                  "cta", "b-roll", "transition", "reaction")
 
 # Phrases that must never appear in NEW bundle sections (they trip legacy
-# gate-2 checks or leak test data): D46 link groups, D36, D43, D151.
-BUNDLE_FORBIDDEN = ("link in bio", "link list", "in your dms", "check your dms",
-                    "tap the link", "same body", "D43 WARNING", "### Shot",
-                    "FIXTURE")
+# gate-2 checks or leak test data): D36, D43, shot-heading parsing, D151.
+BUNDLE_FORBIDDEN = ("same body", "D43 WARNING", "### Shot", "FIXTURE")
+
+# D46 link-payload groups (same as vsp.gates.LINK_GROUPS). New sections may
+# REPEAT the script caption's own CTA destination but must never introduce a
+# phrase from a different group (2+ groups anywhere in the bundle fail D46).
+LINK_GROUPS = (("link in bio",),
+               ("link list", "in your dms", "check your dms"),
+               ("tap the link",))
+
+
+def link_groups_in(text):
+    """Indices of the D46 link groups whose phrases occur in `text`."""
+    low = (text or "").lower()
+    return {i for i, g in enumerate(LINK_GROUPS) if any(p in low for p in g)}

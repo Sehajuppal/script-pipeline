@@ -17,6 +17,7 @@ ap.add_argument("--n", type=int, default=4)
 ap.add_argument("--gate2", action="store_true")
 ap.add_argument("--only", default="", help="prompt id filter (comma)")
 ap.add_argument("--dump", default="", help="write all scripts to this jsonl")
+ap.add_argument("--golden", default="", help="prompt set (default evals/golden.jsonl; e.g. evals/holdout.jsonl)")
 a = ap.parse_args()
 
 sys.path.insert(0, a.repo)
@@ -32,7 +33,7 @@ from vsp import rubric as RUB  # noqa
 if a.gate2:
     import make_shotlist
 
-golden = [json.loads(l) for l in open(os.path.join(a.repo, "evals/golden.jsonl")) if l.strip()]
+golden = [json.loads(l) for l in open(a.golden or os.path.join(a.repo, "evals/golden.jsonl")) if l.strip()]
 if a.only:
     keep = set(a.only.split(","))
     golden = [g for g in golden if g["id"] in keep]
