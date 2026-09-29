@@ -472,6 +472,307 @@ def _unit_research_contract():
     return probs
 
 
+# ------------------------------------ WS-EVAL: synthetic v2.1 bundle (gate 2)
+# A complete v2.1 brief written from docs/CREATIVE-PLAN.md §1.4 (never from
+# make_shotlist): every legacy gate-2 rule passes, every shot carries its
+# '- Shot type:' line, the four new sections are present. Unit checks derive
+# one violation per D157 / D159 / D160 clause by exact substring swaps.
+
+UNIT_REEL = "- https://www.instagram.com/reel/UNIT-1/ (@unit, 1 likes) — unit"
+V21_IDENTITY = ("a photorealistic AI woman in her late 20s with short dark hair, "
+                "wearing a plain gray crewneck")
+
+
+def v21_script(good, ai=False):
+    s = creative_fixture(good_ai(good) if ai else good)
+    if ai:
+        s["persona"] = {"name": "Unit", "identity": V21_IDENTITY,
+                        "voice": "natural-prosody synthetic voice, disclosed"}
+    return s
+
+
+def v21_bundle(s):
+    """The synthetic v2.1 bundle for v21_script(good, ai)."""
+    from vsp.gates import DELIVERABLE_BLOCK
+    ai = s.get("presenter") == "ai"
+    idn = V21_IDENTITY + ". " if ai else ""
+    rf = ("- REAL FOOTAGE REQUIRED: the on-camera result proves the claim — "
+          "do not generate\n" if ai else "")
+    L = [
+        "# Production bundle — test product",
+        f"niche: beauty | presenter: {s.get('presenter')} | format: demo | "
+        f"duration: 10s | hook family: transformation", "",
+        "## Shot list",
+        "### Shot 1 (0.0–0.5s) — VISUAL TRIGGER",
+        "- Camera: Frame 0 mid-action: hands on the test product, before and after split.",
+        "- Shot type: hook-hands-mid-action · CU · push-in · hook · energy 5 · AI risk high",
+        "- On-screen text: BEFORE | AFTER", "",
+        "### Shot 2 (0.5–3.0s) — VERBAL HOOK + LOCK",
+        "- Camera: Medium close-up, presenter to camera, eye-level, handheld.",
+        "- Shot type: talking-head-mcu · MCU · handheld · hook · energy 4 · AI risk med",
+        '- Dialogue/VO: "This is the after."', "",
+        "### Shot 3 (3.0–6.0s) — DEMO BEAT",
+        "- Camera: Overhead, hands demo the test product, the result forming, slow push-in.",
+        "- Shot type: overhead-hands-demo · MS · push-in · demo · energy 3 · AI risk high",
+        rf + '- Dialogue/VO: "One pass and it is done."', "",
+        "### Shot 4 (6.0–9.0s) — COMMENT BAIT",
+        "- Camera: Presenter to camera with the product, handheld, keyword on screen.",
+        "- Shot type: face-reaction-product · MCU · handheld · cta · energy 3 · AI risk med",
+        '- Dialogue/VO: "Hit follow, comment TEST and it is yours."', "",
+        "### Shot 5 (9.0–10.0s) — LOOP",
+        "- Camera: Close-up, hands back on the test product: the frame-0 framing.",
+        "- Shot type: loop-return-frame · CU · pull-out · b-roll · energy 4 · AI risk low",
+        "- Loop: returns to frame 0's framing and motion.", "",
+        "## Antigravity brief", "",
+        "> The SHOT PROMPTS are the generation instructions, one per shot.", ""]
+    if ai:
+        L += ["## PRESENTER — identity lock",
+              f"{V21_IDENTITY} — use this exact description in every shot "
+              f"prompt that shows her face.", "",
+              "## AI DISCLOSURE — frame-0 label (required)",
+              'On-screen small "AI persona" label from FRAME 0, top safe zone, '
+              'minimum 2 seconds, separate from hook text.', ""]
+    sfx = ("Vertical phone footage. Single continuous shot, no scene cuts. "
+           "No on-screen text, captions, logos or watermarks.")
+    L += ["## SHOT PROMPTS (self-contained — generate each shot from its own prompt only)",
+          "#### Prompt — Shot 1 (0.0–0.5s)",
+          f"VISUAL PROMPT: Close-up, high angle, slow push-in: hands on the test "
+          f"product mid-pass, bathroom counter, window light. {sfx}",
+          "AUDIO: the real product sound.", "",
+          "#### Prompt — Shot 2 (0.5–3.0s)",
+          f"VISUAL PROMPT: {idn}Medium close-up, eye-level, handheld: the presenter "
+          f"looks into the lens and says: this is the after. {sfx}",
+          "AUDIO: voiceover for this shot, audio only.", "",
+          "#### Prompt — Shot 3 (3.0–6.0s)",
+          f"VISUAL PROMPT: Overhead, slow push-in: hands only, face out of frame, "
+          f"one pass with the test product. {sfx}",
+          "AUDIO: the real product sound.", "",
+          "#### Prompt — Shot 4 (6.0–9.0s)",
+          f"VISUAL PROMPT: {idn}Medium close-up, handheld: the presenter holds "
+          f"the test product toward the lens and smiles. {sfx}",
+          "AUDIO: voiceover for this shot, audio only.", "",
+          "#### Prompt — Shot 5 (9.0–10.0s)",
+          f"VISUAL PROMPT: Close-up, high angle, slow pull-out: hands on the test "
+          f"product, the same framing as shot 1. {sfx}",
+          "AUDIO: the real product sound.", "",
+          "## ALTERNATE OPENINGS — variant cuts",
+          "#### Alt opening B (0.0–3.0s) — negative-command / problem-state",
+          f"VISUAL PROMPT: Medium shot, high angle, handheld: the messy counter "
+          f"before the pass. {sfx}",
+          "VO: Stop skipping the test product step.", "",
+          "## SHOOT PLAN — setups, props, B-roll",
+          "- Setup 1 (bathroom counter, window key light): shots 1, 3, 5.",
+          "- Setup 2 (presenter, eye-level): shots 2, 4.",
+          "- Props: the test product, a towel. B-roll first while the product is clean.", "",
+          "## VOICEOVER — separate audio track",
+          "AUDIO ONLY. Do not render any of these words as on-screen text.",
+          "[0.5-3.0s] This is the after.",
+          "Voice spec: " + ("natural-prosody synthetic voice, disclosed; never "
+                            "claims to be human." if ai else
+                            "the creator's own voice, recorded on the day."), "",
+          "## STYLE",
+          "UGC demo, beauty niche. 9:16 vertical. Hard cuts. Max 3 words per card.", "",
+          "## CREATIVE DIRECTION — vibe & tone",
+          "- Vibe: raw-ugc — lo-fi phone footage, handheld, natural light.",
+          "- Tone: warm (allowed: warm, confident, calm).",
+          "- Music: none in the master. Add it at upload from each platform's "
+          "commercial library: TikTok Commercial Music Library (CML), Meta Sound "
+          "Collection, YouTube Audio Library.",
+          "- Search the library for: upbeat acoustic, bright pop 100 bpm, happy ukulele.",
+          "- No AI music on TikTok commercial content.", "",
+          "## NEGATIVE PROMPT — never render",
+          "Warped faces, extra fingers, garbled text, watermarks or logos.", "",
+          "## Reference reels (human review — the quality bar)",
+          UNIT_REEL, "",
+          "## Render spec",
+          '9:16 vertical, 1080x1920, 30fps, H.264 mp4. Files: test-product-master.mp4 '
+          '+ test-product-words.json (word-level timings as {"words": [{"word": str, '
+          '"start": float_seconds, "end": float_seconds}], "duration_s": float}).', "",
+          "## Do NOT",
+          "Do NOT burn in captions/subtitles (Marlowe's stage). No watermarks or logos.", "",
+          "## DELIVERABLE (standing)", DELIVERABLE_BLOCK, "",
+          "## POSTING & DISCOVERY",
+          "- Primary keyword: test product (spoken by 3.0 s, caption line 1, #testproduct).",
+          "- TikTok: Test product: one pass and it is done.", "",
+          "## Caption + hashtags (post as-is)", s.get("caption", ""), ""]
+    return "\n".join(L)
+
+
+def _swap(text, old, new, count=1):
+    if old not in text:
+        raise AssertionError(f"unit fixture drift: {old[:60]!r} not in the bundle")
+    return text.replace(old, new, count)
+
+
+def _only_rule(bundle, script, rid):
+    """[] when gate 2 fails with messages that all start with rid."""
+    from vsp import gates
+    errs = gates.gate2(bundle, script)
+    if not errs:
+        return [f"{rid}: the violation passed gate 2"]
+    stray = [e for e in errs if not e.startswith(rid + ":")]
+    return [f"{rid}: stray messages {stray}"] if stray else []
+
+
+def _v21_variants():
+    """(name, presenter ai?, rule id, fn(bundle) -> bundle) — one violation
+    per D157 / D159 / D160 clause of the synthetic v2.1 bundle."""
+    S3 = "- Shot type: overhead-hands-demo · MS · push-in · demo · energy 3 · AI risk high"
+    return [
+        ("d157-untyped-shot", False, "D157", lambda b: _swap(b, S3 + "\n", "")),
+        ("d157-bad-shot-type-field", False, "D157", lambda b: _swap(
+            b, "MS · push-in · demo", "MS · zoom · demo")),
+        ("d157-frame0-purpose-not-hook", False, "D157", lambda b: _swap(
+            b, "CU · push-in · hook · energy 5", "CU · push-in · context · energy 5")),
+        ("d157-frame0-talking-head", False, "D157", lambda b: _swap(
+            b, "hook-hands-mid-action · CU", "talking-head-mcu · CU")),
+        ("d157-frame0-no-subject", False, "D157", lambda b: _swap(_swap(
+            b, "Frame 0 mid-action: hands on the test product, before and after split.",
+            "A wide establishing view of the room, hands in frame."),
+            "hook-hands-mid-action · CU", "establishing-ws · CU")),
+        ("d157-no-human-by-3s", False, "D157", lambda b: _swap(_swap(_swap(_swap(
+            b, "Frame 0 mid-action: hands on the test product, before and after split.",
+            "Frame 0: the test product alone, the result shown."),
+            "hook-hands-mid-action · CU", "result-first-reveal · CU"),
+            "Medium close-up, presenter to camera, eye-level, handheld.",
+            "Close-up of the result, slow push-in."),
+            "talking-head-mcu · MCU · handheld", "feature-callout-hero · MCU · push-in")),
+        ("d157-three-same-scale", False, "D157", lambda b: _swap(
+            b, "overhead-hands-demo · MS", "overhead-hands-demo · MCU")),
+        ("d157-long-static-shot", False, "D157", lambda b: _swap(_swap(_swap(
+            b, "### Shot 3 (3.0–6.0s)", "### Shot 3 (3.0–6.6s)"),
+            "### Shot 4 (6.0–9.0s)", "### Shot 4 (6.6–9.0s)"),
+            "MS · push-in · demo", "MS · static · demo")),
+        ("d157-ai-proof-shot-not-real-footage", True, "D157", lambda b: _swap(
+            b, "- REAL FOOTAGE REQUIRED: the on-camera result proves the claim — "
+               "do not generate\n", "")),
+        ("d157-no-loop-at-15s", False, "D157", lambda b: _swap(_swap(_swap(
+            b, "loop-return-frame · CU", "end-card-hero · CU"),
+            "- Loop: returns to frame 0's framing and motion.\n", ""),
+            "hands back on the test product: the frame-0 framing.",
+            "the test product end card.")),
+        ("d157-new-section-forbidden-phrase", False, "D157", lambda b: _swap(
+            b, "- Props: the test product, a towel.",
+            "- Props: the FIXTURE product, a towel.")),
+        ("d159-no-upload-lane", False, "D159", lambda b: _swap(
+            b, "- Music: none in the master. Add it at upload from each platform's "
+               "commercial library: TikTok Commercial Music Library (CML), Meta Sound "
+               "Collection, YouTube Audio Library.", "- Music: a bright acoustic bed.")),
+        ("d159-named-track-with-artist", False, "D159", lambda b: _swap(
+            b, "- Tone: warm", '- Track: "Summer Nights" by The Examples.\n- Tone: warm')),
+        ("d159-quoted-title", False, "D159", lambda b: _swap(
+            b, "- Tone: warm", '- Track: "Golden Hour".\n- Tone: warm')),
+        ("d159-ai-music-on-tiktok", False, "D159", lambda b: _swap(
+            b, "- No AI music on TikTok commercial content.",
+            "- TikTok: use an AI-generated music bed (Suno paid plan).")),
+        ("d159-music-baked-into-master", False, "D159", lambda b: _swap(
+            b, "- Tone: warm", "- Mix the music into the master at -12 dB.\n- Tone: warm")),
+        ("d160-render-exactly", False, "D160", lambda b: _swap(
+            b, "AUDIO: the real product sound.\n\n#### Prompt — Shot 2",
+            "ON-SCREEN TEXT (render exactly, bold sans, high contrast): BEFORE | AFTER\n"
+            "AUDIO: the real product sound.\n\n#### Prompt — Shot 2")),
+        ("d160-onscreen-text-styling", False, "D160", lambda b: _swap(
+            b, "one pass with the test product.",
+            "one pass with the test product. Any on-screen text is bold sans, high contrast.")),
+        ("d160-quoted-dialogue", False, "D160", lambda b: _swap(
+            b, "looks into the lens and says: this is the after.",
+            'looks into the lens: "This is the after."')),
+        ("d160-identity-lock-on-product-shot", True, "D160", lambda b: _swap(
+            b, "VISUAL PROMPT: Close-up, high angle, slow push-in: hands on the test "
+               "product mid-pass", f"VISUAL PROMPT: {V21_IDENTITY}. Close-up, high "
+               f"angle, slow push-in: hands on the test product mid-pass")),
+    ]
+
+
+def _unit_v21_bundle_passes():
+    """The synthetic v2.1 bundles (human + AI) pass gate 2, and the parser
+    sees 5 typed shots, the loop, the AI proof shot and the identity lock."""
+    from vsp import gates, rules
+    good, _ = legacy_cases()
+    probs = []
+    for ai in (False, True):
+        s = v21_script(good, ai)
+        b = v21_bundle(s)
+        errs = gates.gate2(b, s)
+        if errs:
+            probs.append(f"synthetic v2.1 bundle (ai={ai}) failed gate 2: {errs}")
+        blocks = rules.shot_blocks(b)
+        if [x["n"] for x in blocks if x["typed"]] != ["1", "2", "3", "4", "5"]:
+            probs.append(f"shot parser saw {[(x['n'], x['type_errors']) for x in blocks]}")
+        if ai and (rules.identity_lock(s, b) != V21_IDENTITY
+                   or not blocks[2]["real_footage"]):
+            probs.append("identity lock / REAL FOOTAGE line not parsed")
+        sig = [rules.shot_signals(x) for x in blocks]
+        if [x["face"] for x in sig] != [False, True, False, True, False] or \
+                [x["hands"] for x in sig] != [True, False, True, False, True]:
+            probs.append(f"face/hands signals {sig}")
+    return probs
+
+
+def _unit_v21_violations():
+    """Each D157 / D159 / D160 clause violation fails gate 2 with that rule
+    alone (message starts with the id)."""
+    good, _ = legacy_cases()
+    base = {ai: (v21_script(good, ai), v21_bundle(v21_script(good, ai)))
+            for ai in (False, True)}
+    probs = []
+    for name, ai, rid, fn in _v21_variants():
+        s, b = base[ai]
+        try:
+            bad = fn(b)
+        except AssertionError as e:
+            probs.append(f"{name}: {e}")
+            continue
+        probs += [f"{name}: {p}" for p in _only_rule(bad, s, rid)]
+    return probs
+
+
+def _unit_v21_silent_on_legacy():
+    """Legacy bundles (no '- Shot type:' line, no v2.1 section) keep their
+    outcome: the same brief with the v2.1 lines stripped and the legacy
+    'render exactly' / quoted AUDIO / identity-everywhere prompts passes gate
+    2 with no D157/D159/D160 finding; the real make_shotlist brief of the
+    legacy good fixture carries no v2.1 finding either unless it is a v2.1
+    brief."""
+    import make_shotlist
+    from vsp import gates, rules
+    good, _ = legacy_cases()
+    probs = []
+    for ai in (False, True):
+        s = v21_script(good, ai)
+        b = v21_bundle(s)
+        keep = []
+        skip = False
+        for ln in b.split("\n"):
+            if ln.startswith("## "):
+                skip = ln[3:].upper().startswith(rules.V21_SECTIONS)
+            if skip or ln.startswith(("- Shot type:", "- REAL FOOTAGE", "- Loop:")):
+                continue
+            keep.append(ln)
+        legacy = "\n".join(keep)
+        legacy = legacy.replace(
+            "AUDIO: the real product sound.",
+            'ON-SCREEN TEXT (render exactly, bold sans, high contrast): TEST\n'
+            'AUDIO (voiceover): "One pass and it is done."')
+        if ai:
+            legacy = legacy.replace("VISUAL PROMPT: Close-up",
+                                    f"VISUAL PROMPT: {V21_IDENTITY}. Close-up")
+        f = [x for x in gates.gate2_findings(legacy, s)
+             if x["rule"] in ("D157", "D159", "D160")]
+        if f or gates.gate2(legacy, s):
+            probs.append(f"legacy-format brief (ai={ai}): {gates.gate2(legacy, s)}")
+    refs = [UNIT_REEL]
+    for sc in (good, good_ai(good)):
+        bundle, _, _ = make_shotlist.build_bundle(sc, refs=refs)
+        if not rules.SHOT_TYPE_MARK.search(bundle) and \
+                rules.section(bundle, "CREATIVE DIRECTION") is None:
+            f = [x for x in gates.gate2_findings(bundle, sc)
+                 if x["rule"] in ("D157", "D159", "D160")]
+            if f:
+                probs.append(f"legacy make_shotlist brief has v2.1 findings: {f}")
+    return probs
+
+
 def unit_cases():
     return [("registry-shape", _unit_registry_shape),
             ("router-contract", _unit_router_contract),
@@ -485,7 +786,12 @@ def unit_cases():
             # WS-INT (pipeline v2 integration): learned state the maker reads
             ("priors-reader-contract", _unit_priors_reader),
             ("priors-change-only-tie-breaks", _unit_priors_tiebreak_only),
-            ("hook-pack-loader-contract", _unit_hook_pack_loader)]
+            ("hook-pack-loader-contract", _unit_hook_pack_loader),
+            # WS-EVAL (pipeline v2.1): gate-2 creative rules on a synthetic
+            # v2.1 brief (D157 / D159 / D160)
+            ("v21-bundle-passes-gate2", _unit_v21_bundle_passes),
+            ("v21-gate2-violations-d157-d159-d160", _unit_v21_violations),
+            ("v21-gate2-silent-on-legacy-bundles", _unit_v21_silent_on_legacy)]
 
 
 def all_cases():

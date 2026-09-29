@@ -918,6 +918,440 @@ def check_d138_brief(script, bundle_text, ctx):
 URL = re.compile(r"https?://[^\s)>\]\"']+")
 
 
+# ------------------------------------------- v2.1 gate-2 rules (RULES §68)
+# Bundle parsing shared with vsp/creative_eval.py. A "v2.1 bundle" is one
+# that carries at least one "- Shot type:" line (docs/CREATIVE-PLAN.md §1.4);
+# D157 and D160 are silent on every other bundle, D159 is silent without a
+# "## CREATIVE DIRECTION" section.
+SHOT_TYPE_MARK = re.compile(r"^- Shot type:", re.M)
+SHOT_HEAD = re.compile(r"^### Shot (\d+[a-z]?) \((\d+(?:\.\d+)?)\s*[\u2013-]\s*"
+                       r"(\d+(?:\.\d+)?)s\)(?: \u2014 ([^\n]*))?$", re.M)
+SECTION_HEAD = re.compile(r"^## (?!#)(.+?)\s*$", re.M)
+PROMPT_HEAD = re.compile(r"^#### Prompt\s*[\u2014-]\s*Shot (\d+[a-z]?)\b[^\n]*$", re.M)
+V21_SECTIONS = ("CREATIVE DIRECTION", "ALTERNATE OPENINGS", "SHOOT PLAN",
+                "POSTING & DISCOVERY")
+AI_RISKS = ("low", "med", "high")
+SLUG = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+SPEECH_LINES = ("- Dialogue/VO:", "- Re-hook into next:", "- On-screen text:",
+                "- Delivery:")
+REAL_FOOTAGE = re.compile(r"^- REAL FOOTAGE REQUIRED:\s*(\S.*)$")
+# "needs"-like signals (RULES §68 D157): ids from the research SHOT_LIBRARY
+# (docs/research/shots-cinematography.md §5.1) whose needs list face/hands,
+# id tokens for ids outside it, and the block's visual lines.
+FACE_IDS = frozenset((
+    "confession-handheld-cu", "count-off-teaching-ms", "day-counter-selfie",
+    "face-reaction-product", "green-screen-explainer", "jump-cut-punch-in",
+    "low-angle-hero-payoff", "mirror-selfie", "mws-cta-to-camera",
+    "profile-look-cutaway", "reaction-cutaway-3q", "ritual-step-wide",
+    "selfie-walk-talk", "talking-head-mcu", "talking-head-product-in-hand"))
+HANDS_IDS = frozenset((
+    "comment-typing-insert", "count-off-teaching-ms", "hand-enters-pickup",
+    "hook-hands-mid-action", "lens-cover-transition", "low-angle-hero-payoff",
+    "over-shoulder-demo", "overhead-hands-demo", "pour-dispense-cu",
+    "pov-hands-first-use", "prop-explainer-cu", "screen-insert", "step-insert-cu",
+    "stress-test-action", "talking-head-product-in-hand", "timestamp-proof-insert",
+    "toss-aside-cutaway", "turn-in-hand-light", "unboxing-mid-open",
+    "vo-over-hands-broll"))
+FRAME0_BANNED = frozenset((
+    "talking-head-mcu", "jump-cut-punch-in", "mws-cta-to-camera",
+    "confession-handheld-cu", "count-off-teaching-ms", "green-screen-explainer"))
+FACE_ID_TOKENS = ("face", "selfie", "talking-head", "reaction", "confession",
+                  "mirror", "to-camera", "walk-talk", "presenter")
+HANDS_ID_TOKENS = ("hand", "pov-hands", "over-shoulder", "unboxing", "pour",
+                   "pickup", "typing")
+NOT_FACE = re.compile(r"\b(?:face|presenter|persona)s? (?:out of|off)[- ](?:frame|screen)\b|"
+                      r"\bno (?:face|presenter|persona)s?\b|"
+                      r"\bwithout (?:a |the )?(?:face|presenter|persona)\b|"
+                      r"\bhands only\b|\b[\w’']+(?:'s|’s)? hands?\b", re.I)
+NOT_HANDS = re.compile(r"\bno hands\b|\bhands (?:out of|off)[- ](?:frame|screen)\b|"
+                       r"\bhands[- ]free\b|\bwithout (?:the )?hands\b", re.I)
+FACE_TEXT = re.compile(r"\b(?:face|faces|facial|presenter|persona|selfie|to[- ]camera|"
+                       r"talking[- ]head|reaction|reacts?|nods?|smil\w*|eyes|"
+                       r"expression|creator)\b", re.I)
+HANDS_TEXT = re.compile(r"\b(?:hands?|fingers?|holds?|holding|grips?|picks? up|"
+                        r"in hand|palms?)\b", re.I)
+FRAME0_TEXT = re.compile(r"\b(?:product|result|results|after|before|problem|mess|"
+                         r"messy|split|outcome|finished|reveal\w*|transformation|"
+                         r"day[- ]\d+)\b", re.I)
+PROOF_BEAT = re.compile(r"\b(?:EVIDENCE|PAYOFF)\b", re.I)
+NON_PROOF_PURPOSES = ("reaction", "emotion", "cta", "transition", "b-roll")
+LOOP_TEXT = re.compile(r"\bloop(?:s|ed|ing)?\b", re.I)
+PROMPT_STOP = {"product", "set", "kit", "mini", "portable", "new", "best",
+               "things", "thing", "days", "day", "stopped", "buying", "make",
+               "sense", "just", "why", "how"}
+
+
+def bundle_sections(text):
+    """[(title, body)] for every '## ' section, in order."""
+    t = text or ""
+    heads = list(SECTION_HEAD.finditer(t))
+    out = []
+    for i, m in enumerate(heads):
+        end = heads[i + 1].start() if i + 1 < len(heads) else len(t)
+        out.append((m.group(1), t[m.end():end]))
+    return out
+
+
+def section(text, prefix):
+    """Body of the first '## <prefix>…' section, or None."""
+    for title, body in bundle_sections(text):
+        if title.upper().startswith(prefix.upper()):
+            return body
+    return None
+
+
+def parse_shot_type(value):
+    """'id · scale · move · purpose · energy n · AI risk r' -> (dict, [errors])."""
+    from vsp import creative_vocab as CV
+    parts = [p.strip() for p in re.split(r"\s*\u00b7\s*", _txt(value).strip())]
+    if len(parts) != 6:
+        return None, [f"{len(parts)} ' · ' fields (want 6: id · scale · move · "
+                      f"purpose · energy n · AI risk r)"]
+    st, scale, move, purpose, en, risk = parts
+    errs = []
+    if not SLUG.match(st):
+        errs.append(f"shot type {st!r} is not an id")
+    if scale not in CV.SHOT_SCALES:
+        errs.append(f"scale {scale!r}")
+    if move not in CV.CAMERA_MOVES:
+        errs.append(f"move {move!r}")
+    if purpose not in CV.SHOT_PURPOSES:
+        errs.append(f"purpose {purpose!r}")
+    m = re.fullmatch(r"energy\s+([1-5])", en)
+    if not m:
+        errs.append(f"{en!r} (want 'energy 1'–'energy 5')")
+    r = re.fullmatch(r"AI risk\s+(\w+)", risk)
+    if not r or r.group(1) not in AI_RISKS:
+        errs.append(f"{risk!r} (want 'AI risk low|med|high')")
+    rec = {"shot_type": st, "scale": scale, "move": move, "purpose": purpose,
+           "energy": int(m.group(1)) if m else None,
+           "ai_risk": r.group(1) if r else None}
+    return rec, errs
+
+
+def shot_blocks(text):
+    """Every '### Shot N (s–es) — BEAT' block in bundle order: {n, s, e, beat,
+    lines, typed (dict|None), type_errors [str], n_type_lines, visual (the
+    non-speech lines + the shot type id), real_footage (reason|None)}."""
+    t = text or ""
+    out = []
+    for m in SHOT_HEAD.finditer(t):
+        lines = []
+        for ln in t[m.end():].split("\n")[1:]:
+            if not ln.startswith("- "):
+                break
+            lines.append(ln)
+        tl = [ln for ln in lines if ln.startswith("- Shot type:")]
+        typed, errs = (None, ["no '- Shot type:' line"])
+        if len(tl) > 1:
+            errs = [f"{len(tl)} '- Shot type:' lines"]
+        elif tl:
+            typed, errs = parse_shot_type(tl[0][len("- Shot type:"):])
+        rf = None
+        for ln in lines:
+            mm = REAL_FOOTAGE.match(ln)
+            if mm:
+                rf = mm.group(1).strip()
+        visual = [ln for ln in lines if not ln.startswith(SPEECH_LINES)
+                  and not ln.startswith("- Shot type:")]
+        vid = (typed or {}).get("shot_type") or ""
+        out.append({"n": m.group(1), "s": float(m.group(2)), "e": float(m.group(3)),
+                    "beat": (m.group(4) or "").strip(), "lines": lines,
+                    "typed": typed if not errs else None, "parsed": typed,
+                    "type_errors": errs, "n_type_lines": len(tl),
+                    "visual": " ".join(ln[2:] for ln in visual) + " "
+                    + vid.replace("-", " "), "real_footage": rf})
+    return out
+
+
+def shot_signals(block):
+    """-> {"face": bool, "hands": bool}: the needs-like human signal of one
+    shot block (RULES §68 D157): the research SHOT_LIBRARY needs of its
+    shot type id, else id tokens, else the block's visual (non-speech) lines
+    — after dropping negated forms ("face out of frame", "no hands",
+    "hands only", "presenter's hands" for the face test)."""
+    sid = ((block.get("parsed") or {}).get("shot_type") or "").lower()
+    vis = block.get("visual") or ""
+    face = (sid in FACE_IDS or any(k in sid for k in FACE_ID_TOKENS)
+            or bool(FACE_TEXT.search(NOT_FACE.sub(" ", vis))))
+    hands = (sid in HANDS_IDS or any(k in sid for k in HANDS_ID_TOKENS)
+             or bool(HANDS_TEXT.search(NOT_HANDS.sub(" ", vis))))
+    return {"face": face, "hands": hands}
+
+
+def is_proof_shot(block, strict=False):
+    """D157: a shot that proves a result — purpose 'proof', an EVIDENCE /
+    PAYOFF beat shot, or a DEMO shot that shows the result. The gate skips
+    reaction / emotion / cta / transition / b-roll purposes on those beats;
+    strict=True (creative_eval audit) does not."""
+    p = (block.get("parsed") or {}).get("purpose")
+    if p == "proof":
+        return True
+    if not strict and p in NON_PROOF_PURPOSES:
+        return False
+    beat = block.get("beat") or ""
+    if PROOF_BEAT.search(beat):
+        return True
+    return bool(re.search(r"\bDEMO\b", beat, re.I)
+                and re.search(r"\bresults?\b", block.get("visual") or "", re.I))
+
+
+def _prompt_anchor_tokens(script):
+    return {w for w in L.keyword_tokens(_txt(script.get("prompt")))
+            if len(w) >= 3 and w not in L.KEYWORD_STOP and w not in PROMPT_STOP
+            and not w.isdigit()}
+
+
+def frame0_shows_subject(block, script):
+    """D157: the frame-0 shot shows the product/result or the subject/
+    problem — a prompt noun, or a product/result/problem/before-after word,
+    in its visual lines or shot type id."""
+    vis = block.get("visual") or ""
+    toks = set(L.keyword_tokens(vis))
+    return bool(toks & _prompt_anchor_tokens(script)) or bool(FRAME0_TEXT.search(vis))
+
+
+def has_loop_marker(last, first):
+    """D157 loop marker (duration <= 15 s): the last shot repeats frame 0's
+    shot type, uses a loop shot type (e.g. loop-return-frame), or carries a
+    'loop' note in a visual line (e.g. '- Loop: returns to frame 0')."""
+    lt = (last.get("parsed") or {}).get("shot_type") or ""
+    ft = (first.get("parsed") or {}).get("shot_type") or ""
+    return bool((lt and lt == ft) or "loop" in lt
+                or LOOP_TEXT.search(last.get("visual") or ""))
+
+
+def _ids(blocks, k=5):
+    ids = [b["n"] for b in blocks]
+    return ", ".join(ids[:k]) + (f" +{len(ids) - k}" if len(ids) > k else "")
+
+
+def check_d157(script, bundle_text, ctx):
+    """D157: shot-plan integrity on v2.1 bundles (any '- Shot type:' line)."""
+    from vsp import creative_vocab as CV
+    text = bundle_text or ""
+    out = []
+    for title, body in bundle_sections(text):
+        if not title.upper().startswith(V21_SECTIONS):
+            continue
+        bad = [p for p in CV.BUNDLE_FORBIDDEN if p in body]
+        if bad:
+            out.append(f"D157: v2.1 section {_q(title, 40)} carries "
+                       f"{', '.join(repr(p) for p in bad)} — new sections never "
+                       f"hold shot headings or BUNDLE_FORBIDDEN phrases")
+    if not SHOT_TYPE_MARK.search(text):
+        return out
+    blocks = sorted(shot_blocks(text), key=lambda b: (b["s"], b["e"]))
+    if not blocks:
+        return out + ["D157: '- Shot type:' lines but no '### Shot' blocks"]
+    untyped = [b for b in blocks if b["type_errors"]]
+    if untyped:
+        out.append(f"D157: shot(s) {_ids(untyped)} lack a valid '- Shot type:' "
+                   f"line (shot {untyped[0]['n']}: "
+                   f"{', '.join(untyped[0]['type_errors'])}) — every shot is typed")
+    f0 = blocks[0]
+    p0 = f0.get("parsed") or {}
+    if p0.get("purpose") and p0["purpose"] != "hook":
+        out.append(f"D157: frame-0 shot {f0['n']} has purpose {p0['purpose']!r}"
+                   f" — the frame-0 shot is the visual hook (purpose 'hook')")
+    sid0 = p0.get("shot_type") or ""
+    if sid0 in FRAME0_BANNED or "talking-head" in sid0:
+        out.append(f"D157: frame-0 shot {f0['n']} is a talking head "
+                   f"({sid0!r}) — open on the product or the result")
+    elif not frame0_shows_subject(f0, script):
+        out.append(f"D157: frame-0 shot {f0['n']} shows neither the product/"
+                   f"result nor the subject/problem")
+    human = 0.0
+    for b in blocks:
+        sig = shot_signals(b)
+        if sig["face"] or sig["hands"]:
+            human += max(0.0, min(b["e"], 3.0) - max(b["s"], 0.0))
+    if human < 1.0 - 1e-9:
+        out.append(f"D157: {human:.1f}s of face/hands shots in 0–3.0s — a "
+                   f"human (face or hands) is on screen for >= 1.0 s by 3.0 s")
+    run = []
+    for b in blocks:
+        sc = (b.get("parsed") or {}).get("scale")
+        if sc and run and (run[-1].get("parsed") or {}).get("scale") == sc:
+            run.append(b)
+        else:
+            run = [b] if sc else []
+        if len(run) == 3:
+            out.append(f"D157: 3 consecutive {sc} shots ({_ids(run)}) — at "
+                       f"most 2 same-scale shots in a row")
+    for b in blocks:
+        mv = (b.get("parsed") or {}).get("move")
+        if b["e"] - b["s"] > MAX_STATIC_S and not re.search(r"[a-z]$", b["n"]) \
+                and (mv is None or mv == "static"):
+            out.append(f"D157: shot {b['n']} runs {b['e'] - b['s']:.1f}s unsplit "
+                       f"with move {mv!r} — a shot over {MAX_STATIC_S}s carries a "
+                       f"real CAMERA_MOVES move")
+    if ctx["presenter"] == "ai":
+        miss = [b for b in blocks if is_proof_shot(b) and not b["real_footage"]]
+        if miss:
+            out.append(f"D157: presenter=ai proof shot(s) {_ids(miss)} "
+                       f"({miss[0]['beat'][:30]}) carry no '- REAL FOOTAGE "
+                       f"REQUIRED: <why> — do not generate' line — AI-rendered "
+                       f"proof is not proof")
+    dur = script.get("duration_s") or 30
+    if isinstance(dur, (int, float)) and dur <= 15:
+        last = max(blocks, key=lambda b: (b["e"], b["s"]))
+        if not has_loop_marker(last, f0):
+            out.append(f"D157: {dur:g}s video but the last shot {last['n']} "
+                       f"carries no loop marker (frame 0's shot type, a loop "
+                       f"shot type, or a '- Loop:' note) — loop required at <= 15 s")
+    return _cap(out, "D157")
+
+
+CREATIVE_DIR_HEAD = "CREATIVE DIRECTION"
+UPLOAD = re.compile(r"\bupload\w*", re.I)
+COMMERCIAL_LIBRARY = re.compile(
+    r"\bcommercial (?:music |sound |audio )?librar(?:y|ies)\b|\bCML\b|"
+    r"\bsound collection\b|\baudio library\b", re.I)
+QUOTED = re.compile(r"\"([^\"\n]{1,80})\"|\u201c([^\u201d\n]{1,80})\u201d")
+ARTIST_CREDIT = re.compile(r"(?:\"[^\"\n]{1,80}\"|\u201c[^\u201d\n]{1,80}\u201d)\s+"
+                           r"(?:by|from|feat\.?|ft\.?)\s+[A-Z]")
+SEARCH_LINE = re.compile(r"\bsearch\w*|\bquer(?:y|ies)\b", re.I)
+PLATFORM_WORD = re.compile(r"\b(?:tiktok|instagram|meta|facebook|youtube|shorts)\b",
+                           re.I)
+MUSIC_IN_MASTER = re.compile(
+    r"\b(?:bake|baked|mix|mixed|add|added|burn|burned|put|lay)\b[^.\n]{0,30}"
+    r"\b(?:music|track|song|soundtrack)\b[^.\n]{0,30}\b(?:into|in|on) the master\b",
+    re.I)
+
+
+def check_d159(script, bundle_text, ctx):
+    """D159: the CREATIVE DIRECTION section states the upload-time commercial
+    music lane, names no commercial track, recommends no AI music for TikTok
+    and never bakes music into the master. Silent without the section."""
+    body = section(bundle_text, CREATIVE_DIR_HEAD)
+    if body is None:
+        return []
+    out = []
+    if not (UPLOAD.search(body) and COMMERCIAL_LIBRARY.search(body)):
+        out.append("D159: the CREATIVE DIRECTION section never states that music "
+                   "is added at upload from the platform's commercial library "
+                   "(TikTok CML, Meta Sound Collection, YouTube Audio Library)")
+    mus = ((script.get("direction") or {}).get("music") or {}) \
+        if isinstance(script.get("direction"), dict) else {}
+    mus = mus if isinstance(mus, dict) else {}
+    ok_terms = {_txt(x).strip().lower() for k in ("search_queries", "moods",
+                                                 "genres", "sfx")
+                for x in (mus.get(k) if isinstance(mus.get(k), list) else [])}
+    titles = []
+    for ln in body.splitlines():
+        credit = ARTIST_CREDIT.search(ln)
+        for m in QUOTED.finditer(ln):
+            span = (m.group(1) or m.group(2) or "").strip()
+            if not span:
+                continue
+            if not credit and (span.lower() in ok_terms or SEARCH_LINE.search(ln)):
+                continue
+            titles.append(span)
+    if titles:
+        out.append(f"D159: quoted title(s) in the CREATIVE DIRECTION section "
+                   f"({', '.join(_q(x, 30) for x in titles[:3])}) — never name a "
+                   f"commercial track (only library search queries may be quoted, "
+                   f"on a 'search' line)")
+    for ln in body.splitlines():
+        m = _affirmed(AI_MUSIC, ln)
+        if m and (re.search(r"\btiktok\b", ln, re.I) or not PLATFORM_WORD.search(ln)):
+            out.append(f"D159: AI music recommended for TikTok "
+                       f"({_q(ln.strip(), 60)}) — no AI music on TikTok "
+                       f"commercial content")
+            break
+    m = _affirmed(MUSIC_IN_MASTER, body)
+    if m:
+        out.append(f"D159: the brief bakes music into the master "
+                   f"({_q(m.group(0), 50)}) — the master is music-free, music "
+                   f"is added at upload")
+    return _cap(out, "D159")
+
+
+RENDER_TEXT = re.compile(
+    r"\brender(?:ed|ing|s)? exactly\b|"
+    r"\bON-SCREEN TEXT\s*\((?![^)\n]*\b(?:edit|overlay|post|composite\w*|"
+    r"not (?:rendered|generated)|do not render|never render)\b)|"
+    r"\b(?:any )?on-screen text (?:is|uses?|should|must|in)\b|"
+    r"\btext on screen\s*:|"
+    r"\b(?:render|draw|write|print|generate|spell out|type out|display|burn)\w*\b"
+    r"[^.\n]{0,40}\b(?:on-screen text|text overlay|captions?|subtitles?|"
+    r"lettering|the words|the text|title card)\b", re.I)
+VISUAL_PROMPT = re.compile(r"^(?:- )?VISUAL PROMPT:(.*)$", re.M)
+DQUOTE = re.compile(r"\"[^\"\n]{2,}\"|\u201c[^\u201d\n]{2,}\u201d")
+
+
+def prompt_blocks(text, sect="SHOT PROMPTS", head=PROMPT_HEAD):
+    """[(shot id, block text)] for the '#### Prompt — Shot N' blocks of the
+    SHOT PROMPTS section."""
+    body = section(text, sect)
+    if body is None:
+        return []
+    heads = list(head.finditer(body))
+    out = []
+    for i, m in enumerate(heads):
+        end = heads[i + 1].start() if i + 1 < len(heads) else len(body)
+        nxt = body.find("\n####", m.end())
+        if 0 <= nxt < end:
+            end = nxt
+        out.append((m.group(1), body[m.start():end]))
+    return out
+
+
+def identity_lock(script, bundle_text):
+    """The persona identity-lock text: script persona.identity, else the
+    '## PRESENTER — identity lock' section's text before its ' — '."""
+    per = script.get("persona")
+    ident = _txt(per.get("identity")) if isinstance(per, dict) else ""
+    if not ident.strip():
+        for title, body in bundle_sections(bundle_text):
+            if title.upper().startswith("PRESENTER") and "IDENTITY" in title.upper():
+                first = next((ln for ln in body.splitlines() if ln.strip()), "")
+                ident = first.split(" \u2014 ")[0]
+                break
+    ident = " ".join(ident.split()).strip(" .")
+    return ident if len(ident) >= 20 else ""
+
+
+def render_prompt_problems(block):
+    """D160 hygiene problems of one render-prompt block (text)."""
+    probs = []
+    m = _affirmed(RENDER_TEXT, block)
+    if m:
+        probs.append(f"asks the model to render on-screen text "
+                     f"({_q(m.group(0), 30)})")
+    for m in VISUAL_PROMPT.finditer(block):
+        q = DQUOTE.search(m.group(1))
+        if q:
+            probs.append(f"quoted text in the VISUAL PROMPT ({_q(q.group(0), 30)})"
+                         f" — dialogue goes after 'says:', never in quotes")
+            break
+    return probs
+
+
+def check_d160(script, bundle_text, ctx):
+    """D160: AI render-prompt hygiene inside '## SHOT PROMPTS' on v2.1
+    bundles: no in-frame text rendering, no quoted dialogue in VISUAL PROMPT
+    lines, the identity lock only in shots that show a face."""
+    text = bundle_text or ""
+    if not SHOT_TYPE_MARK.search(text):
+        return []
+    out = []
+    faces = {b["n"]: shot_signals(b)["face"] for b in shot_blocks(text)}
+    ident = identity_lock(script, text).lower()
+    locked = []
+    for sid, blk in prompt_blocks(text):
+        for p in render_prompt_problems(blk):
+            out.append(f"D160: shot {sid} prompt {p}")
+        if ident and ident in " ".join(blk.split()).lower() and faces.get(sid) is False:
+            locked.append(sid)
+    if locked:
+        out.append(f"D160: the identity lock is pasted into shot(s) "
+                   f"{', '.join(locked[:6])} that show no face — product/hands "
+                   f"inserts carry no persona description")
+    return _cap(out, "D160")
+
+
 def check_d151(script, bundle_text, ctx):
     """D151: FIXTURE reference reels never ship (VSP_FIXTURE_OK=1 = tests)."""
     if ctx["fixture_ok"]:
@@ -1080,8 +1514,26 @@ V2_BUNDLE_RULES = (
          "RULES.md §66 D151; vsp/fixtures.py", check_d151),
 )
 
+V21_BUNDLE_RULES = (
+    # ---- gate 2, pipeline v2.1 (RULES.md §68) — silent on bundles without
+    # a '- Shot type:' line (D157, D160) / a CREATIVE DIRECTION section (D159)
+    Rule("D157", "shot-plan integrity (every shot typed, frame 0 = product/"
+         "result, face/hands by 3.0 s, <= 2 same-scale in a row, typed moves on "
+         ">3.5 s shots, AI proof shots = real footage, loop at <= 15 s)", _B, _E,
+         "RULES.md §68 D157; docs/CREATIVE-PLAN.md §1.4; shots-cinematography "
+         "§2.1-2.7, §4.5, SHOT_RULES.hard", check_d157),
+    Rule("D159", "music lane stated in the brief (added at upload from the "
+         "platform commercial library), no commercial track named, no AI music "
+         "on TikTok", _B, _E, "RULES.md §68 D159; vibe-tone-music §3 (TikTok "
+         "CML terms, Meta Sound Collection, YouTube Audio Library)", check_d159),
+    Rule("D160", "AI render-prompt hygiene (no in-frame text, no quoted "
+         "dialogue in VISUAL PROMPT, identity lock only on face shots)", _B, _E,
+         "RULES.md §68 D160; docs/CREATIVE-PLAN.md §1.4; Google Veo best "
+         "practices, arXiv 2505.04946", check_d160),
+)
+
 REGISTRY = (LEGACY_SCRIPT_RULES + V2_SCRIPT_RULES + V21_SCRIPT_RULES
-            + LEGACY_BUNDLE_RULES + V2_BUNDLE_RULES)
+            + LEGACY_BUNDLE_RULES + V2_BUNDLE_RULES + V21_BUNDLE_RULES)
 
 LEGACY_IDS = {"script": tuple(r.id for r in LEGACY_SCRIPT_RULES),
               "bundle": tuple(r.id for r in LEGACY_BUNDLE_RULES)}
