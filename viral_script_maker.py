@@ -204,10 +204,28 @@ REHOOKS = [  # D2 (judge loop, cycle 1+2): re-hooks are EVENT-SPECIFIC, never
  "Okay, but why does it actually work? Watch {action}.",
  "One more thing before you decide — {action}.",
 ]
+# D93 (pipeline v2): REHOOK PROMISE-UNIQUENESS past 30s. With 2–3 edu or
+# demo beats every channel re-promised ONE event (edu_action / the demo
+# test) under different frames, and 3+ challenge days repeated the same pin.
+# Later beats promise their own next event (noun phrases: they render in
+# every non-"when I" frame, D86).
+_EDU_NEXT_TEASES = ["the {category} spec that actually matters",
+                    "the setup, start to finish",
+                    "the part the listing hides"]
+_DEMO_NEXT_TEASES = ["round two, pushed harder",
+                     "the stress test that ends it",
+                     "the one detail nobody checks"]
+_DEMO_LATER_RESULTS = ["same result, pushed harder", "still holding up"]
+_CHALLENGE_REHOOK_PINS = ["Day 1 is where it almost fell apart.",
+                          "Day {d}: the moment I almost quit.",
+                          "Day {d}: the part nobody warns you about.",
+                          "Day {d}: where it finally clicked."]
 
 EDU_BEATS = [  # educational narrative beats (F103: educational > evaluative for personas)
  "Here's the problem {product} actually solves: {problem}.",
- "Most {category} fail because {flaw}. This one doesn't.",
+ # D143 drive-by: "Most {category} fail" rendered "Most car vacuum fail"
+ # (and the D63 rewrite only caught one-word categories) — plural slot.
+ "Most {category_s} fail because {flaw}. This one doesn't.",
  "The science is simple: {mechanism}.",
  "{authority} said it best — {authority_quote}.",
  "Three things to check before you buy any {category}: {check1}, {check2}, {check3}.",
@@ -229,6 +247,10 @@ DEMO_BEATS = [
 # D23 (judge loop, cycle 9): pools are niche-scoped — cycle 9 caught
 # "The last one clogged on day two" firing on a resistance bands set (bands
 # snap/roll up, never clog). A fake confession burns the trust E7 buys.
+# D143 (pipeline v2, D12 budget): the 3–5s imperfection beat carries <=12
+# spoken words — the old 20–34-word confessions shipped in a fixed 2.0s
+# window (~600 wpm). Same confessions, spoken length; {category} replaces
+# {product} (a 4-word product name blew the budget on its own).
 IMPERFECTION_BEATS = {
  "generic": [
   # D115 (gauntlet, cycle 12): RETIRED "my last {product} snapped in half on
@@ -237,34 +259,25 @@ IMPERFECTION_BEATS = {
   # doesn't live on a couch. Per D23/D32, an imperfection entry that fires
   # impossibly on 2+ categories leaves the generic pool — it was a
   # fake confession burning the E7 trust contract. Fail-neutral entries stay.
-  "I'll be honest — I thought this {product} was a scam. The last one gave up "
-  "on day two and I threw it at the wall. I'm not easy to impress here.",
+  "Honest start: I thought {this_category} {was} a scam. The last one died.",
   # D123 (gauntlet cycle 15): no markdown in spoken lines — the old template
   # shipped literal "*I*" emphasis markers; dialogue is read verbatim by the
   # presenter/VO engine, so markup is unperformable garbage, not emphasis.
-  "Confession: first swipe, I fumbled it — left that in. If it works when I "
-  "mess it up, it works.",
-  "Nobody's paying me to say this {product} is good — and honestly the first "
-  "one I tried was garbage. So I tested this like I wanted it to fail.",
+  "Confession: I fumbled the first try. Left it in.",
+  "Nobody's paying me. The first one I tried was garbage.",
  ],
  # D23: fitness lane — failure verbs true of workout equipment
  "fitness": [
-  "Real talk before we start: my last set of bands snapped mid-rep. I bought "
-  "this one expecting the same. Watch what happened.",
-  "I'll be honest — I thought this {product} was a gimmick. My last ones "
-  "rolled up and cut into my hands by day two. I'm not easy to impress here.",
+  "Real talk: my last set of bands snapped mid-rep.",
+  "Honest start: my last ones rolled up by day two.",
  ],
  # D32 (judge loop, cycle 11): wellness/sound lane — failure verbs true of
  # sleep-sound products. Cycle 11 caught the generic pool's "snapped in
  # half on the couch" firing on a WHITE NOISE MACHINE (maker self-violation
  # of D23's intent — a fake confession burns the E7 trust contract).
  "wellness": [
-  "Real talk before we start: my last sound machine died with a static "
-  "burst at 3AM. Twice. I bought this one to prove they were all gimmicks. "
-  "Watch what happened.",
-  "I'll be honest — I thought this {product} was a scam. The last one "
-  "rattled every time the fan kicked in and hissed at full volume. I'm not "
-  "easy to impress here.",
+  "Real talk: my last sound machine died at 3AM. Twice.",
+  "Honest start: the last one rattled and hissed all night.",
  ],
 }
 
@@ -421,6 +434,59 @@ CATEGORY_PURPOSE_PROOF = {
 # shot list owns the camera; VO names the proof.
 DEFAULT_PURPOSE_PROOF = "before and after, side by side"
 
+# D137 (pipeline v2): CURATOR PROOF. Five purpose-proof lines above are
+# first-person lived experience ("I woke up before the alarm", "the room
+# went quiet, I slept") and shipped verbatim in the AI lane ("Test result: I
+# woke up before the alarm."). The AI presenter speaks the demonstrative /
+# second-person form of the same result; the human lane is unchanged.
+AI_PROOF_REWRITES = {
+ "I sat straighter without thinking": "you sit straighter without thinking",
+ "I woke up before the alarm": "the room is bright before the alarm",
+ "my bag rode through every turn": "the bag rode through every turn",
+ "the room went quiet, I slept": "the room goes quiet, all night",
+ "movie night on my bedroom wall": "movie night on any bedroom wall",
+}
+
+# D142 (pipeline v2): SHORT PAYOFF CARDS. The payoff card carried the full
+# expected_flop + surprise clauses ("TEST: white noise machine · expected the
+# white noise machine's speaker to crackle at high volume like every sound
+# machine I've tried, but it never did — seven days, ...", 24–34 words, D103)
+# — unreadable at 20 chars/s and an AI first-person leak (D137). Each
+# CATEGORY_MECHANISM_FAIL key gets a <=3-token flop and surprise so the card
+# keeps D83's elements (label · short product · flop → surprise) in <=12
+# tokens. Keys match the category noun like CATEGORY_MECHANISM_FAIL.
+CATEGORY_CARD = {
+ "mount": ("a slipping magnet", "zero slips"),
+ "roller": ("jams on fur", "one-swipe clean"),
+ "brace": ("digging straps", "no digging"),
+ "lamp": ("a nightlight", "fills the room"),
+ "blender": ("a choking motor", "crushed ice"),
+ "gumm": ("bedtime candy", "asleep fast"),
+ "band": ("snapped bands", "no snap"),
+ "hook": ("a snapped hook", "zero give"),
+ "noise": ("speaker crackle", "zero crackle"),
+ "vacuum": ("a choking motor", "sand gone"),
+ "stand": ("a wobbly joint", "zero wobble"),
+ "inflator": ("a dead pump", "full pressure"),
+ "cables": ("frayed cables", "zero fraying"),
+ "lantern": ("a dim LED", "full glow"),
+ "lash": ("falling lashes", "held all day"),
+ "lid": ("a popping lid", "sealed shut"),
+}
+DEFAULT_CARD = ("a breakdown", "held all week")
+# showcase roundups: the flop is the pretty-but-unshoppable tour, the
+# surprise the almost-skipped find (never "cheapest", D141)
+SHOWCASE_CARD = ("a pretty tour", "a sleeper hit")
+# D27 on the short card: who-for in <=3 tokens (CATEGORY_WHO is a sentence)
+CATEGORY_WHO_SHORT = {
+ "mount": "daily drivers", "roller": "pet owners", "brace": "desk workers",
+ "lamp": "alarm haters", "blender": "gym commuters", "gumm": "light sleepers",
+ "band": "home trainers", "hook": "car commuters", "noise": "light sleepers",
+ "lash": "no-glue lash fans", "inflator": "road trippers",
+ "cables": "daily commuters", "lantern": "campers", "stand": "laptop workers",
+ "vacuum": "car owners",
+}
+
 # D96 (judge loop, cycle 23): DEMO BEAT NAMES THE TEST (D41 extended to the
 # beat itself). "Test 1: the side-by-side. Night-and-day difference." shipped
 # verbatim on seeds 714 and 926 — the demo beat's {test}/{result} slot
@@ -517,22 +583,34 @@ COMPOUND_OBJECT_SLOTS = {
 # reviewer names N items tried and how they failed — failure verbs are
 # category-scoped like D23 (a mount slides/fails in turns; it never
 # "clogs"). Niche pool wins; generic is fallback.
+# D143 (pipeline v2): rejection lines are spoken-length (<=~16 words; the old
+# 24-word forms shipped in a fixed 2.0s window) and count-consistent — "I
+# tried {n=2} ... Two went back, one went in the trash" listed THREE failures
+# for two items.
 REVIEW_REJECT_BEATS = {
  "generic": [
-  "Full disclosure: I tried {n} {category_s} before this one. Two went "
-  "straight back, one went in the trash. This is the one that survived.",
-  "Three {category_s}, three fails — one gave up on day two, one arrived "
-  "broken, one was a lie in the listing. Then I tested this one.",
+  "Full disclosure: I tried {n} {category_s} before this one. Not one lasted a week.",
+  "Before this one, I tried {n} {category_s}. Broken, returned, or lying in the listing.",
  ],
  "automotive": [
-  "Full disclosure: I tried {n} {category_s} before this one. Two slid off "
-  "in hard turns, one cooked in the sun and died. This is the one that "
-  "survived.",
+  "Full disclosure: I tried {n} {category_s} first. They slid in turns or cooked in the sun.",
  ],
  "fitness": [
-  "Full disclosure: I tried {n} {category_s} before this one. One snapped "
-  "mid-rep, one rolled up and cut into my hands. This is the one that "
-  "survived.",
+  "Full disclosure: I tried {n} {category_s} first. They snapped mid-rep or rolled up.",
+ ],
+}
+# D137 (pipeline v2): an AI presenter never tried anything — the rejection
+# history is CURATOR-framed (a shortlist it cut), never "I tried".
+REVIEW_REJECT_BEATS_AI = {
+ "generic": [
+  "Full disclosure: {n} other {category_s} made the shortlist. Each one got cut.",
+  "The shortlist had {n} other {category_s}. Broken, returned, or lying in the listing.",
+ ],
+ "automotive": [
+  "Full disclosure: {n} other {category_s} made the shortlist. They slide in turns or cook in the sun.",
+ ],
+ "fitness": [
+  "Full disclosure: {n} other {category_s} made the shortlist. They snap mid-rep or roll up.",
  ],
 }
 
@@ -1206,7 +1284,10 @@ VOICE_REWRITES = [
     (re.compile(r"\bThe science is simple:"), "Here's why it actually works:"),
     (re.compile(r"Three things to check before you buy any ([\w ]+?):"),
      r"Three things I check before buying any \1:"),
-    (re.compile(r"\bMost (\w+) fail because"), r"Most of these fail because"),
+    # D63 (pipeline v2): multi-word categories ("Most resistance bands set
+    # fail because") slipped past the one-word pattern ungrammatical.
+    (re.compile(r"\bMost (?!of these\b)[\w'-]+(?: [\w'-]+){0,3} fail because"),
+     r"Most of these fail because"),
     (re.compile(r"Here's the problem (.+?) actually solves:"),
      r"Here's what \1 actually fixes:"),
     # third-person product-description openers -> first person ("The wax coats
@@ -1215,12 +1296,18 @@ VOICE_REWRITES = [
                 r"(coats|covers|lasts|feels|works|dries|sets|lays|kills|fixes) "),
      r"It \1 "),
 ]
+# D63 (pipeline v2): an auxiliary never contracts at the END of a sentence or
+# clause — "Here it is." / "That's what it is." / "Here you are." are English,
+# "Here it's." is not. _CLAUSE_END guards the positive contractions.
+_CLAUSE_END = r"(?![ \t]*(?:[.,;:!?)\u2014\u2013]|$))"
 VOICE_CONTRACTIONS = [
-    (re.compile(r"\bit is\b"), "it's"), (re.compile(r"\bthat is\b"), "that's"),
-    (re.compile(r"\bI am\b"), "I'm"), (re.compile(r"\bdo not\b"), "don't"),
+    (re.compile(r"\bit is\b" + _CLAUSE_END), "it's"),
+    (re.compile(r"\bthat is\b" + _CLAUSE_END), "that's"),
+    (re.compile(r"\bI am\b" + _CLAUSE_END), "I'm"), (re.compile(r"\bdo not\b"), "don't"),
     (re.compile(r"\bcannot\b"), "can't"), (re.compile(r"\bwill not\b"), "won't"),
-    (re.compile(r"\byou are\b"), "you're"), (re.compile(r"\bwe are\b"), "we're"),
-    (re.compile(r"\bthey are\b"), "they're"), (re.compile(r"\bdid not\b"), "didn't"),
+    (re.compile(r"\byou are\b" + _CLAUSE_END), "you're"),
+    (re.compile(r"\bwe are\b" + _CLAUSE_END), "we're"),
+    (re.compile(r"\bthey are\b" + _CLAUSE_END), "they're"), (re.compile(r"\bdid not\b"), "didn't"),
     (re.compile(r"\bwas not\b"), "wasn't"), (re.compile(r"\bwere not\b"), "weren't"),
     (re.compile(r"\bhave not\b"), "haven't"), (re.compile(r"\bhas not\b"), "hasn't"),
     (re.compile(r"\bwould not\b"), "wouldn't"), (re.compile(r"\bcould not\b"), "couldn't"),
@@ -1243,8 +1330,11 @@ def humanize_dialogue(s):
     return s
 
 class RehookDeck:  # no repeated re-hook inside one script
-    def __init__(self, rng):
+    def __init__(self, rng, ai=False):
         self.rng = rng; self.deck = []
+        # D137 (pipeline v2): the AI lane never deals a first-person frame
+        # ("And then I noticed something weird — ...": 237/990 AI runs).
+        self.templates = [r for r in REHOOKS if not (ai and _ai_claims(r))]
     def draw(self, no_when_i=False):
         # D86 (judge loop, cycle 20): the "when I {action}" template needs a
         # verb-phrase action; the D58/D82 presenter-neutral defaults are noun
@@ -1254,7 +1344,7 @@ class RehookDeck:  # no repeated re-hook inside one script
         # neutral default exclude that one template; the other seven still
         # vary (D2), and no template repeats within a script.
         if not self.deck:
-            self.deck = REHOOKS[:]; self.rng.shuffle(self.deck)
+            self.deck = self.templates[:]; self.rng.shuffle(self.deck)
         if not no_when_i:
             return self.deck.pop()
         for i, tmpl in enumerate(self.deck):
@@ -1285,6 +1375,66 @@ STORY_BEATS = [  # pov-vlog mode: episodic, participatory
  "The plan was {plan}. Reality had other ideas.",
  "POV: you're {situation} and {twist}.",
 ]
+
+# D143 (pipeline v2): BANK VARIANTS. Long bank lines carry shorter spoken
+# forms with the SAME slots and the same claim; _fit_timeline swaps in the
+# longest form that fits the duration budget before it ever trims (and a trim
+# only cuts at a sentence/clause boundary — never mid-clause). Keys are the
+# raw templates; every form is rendered with the template's own slots.
+BEAT_SHORT_FORMS = {
+ # EDU_BEATS
+ "Here's the problem {product} actually solves: {problem}.":
+     ["Here's what it fixes: {problem}."],
+ "Most {category_s} fail because {flaw}. This one doesn't.":
+     ["Most {category_s} fail at daily use. This one doesn't."],
+ "The science is simple: {mechanism}.": ["{mechanism}."],
+ "{authority} said it best — {authority_quote}.":
+     ["{authority}'s rule: {authority_quote}."],
+ "Three things to check before you buy any {category}: {check1}, {check2}, {check3}.":
+     ["Three checks: build, setup time, no gimmicks."],
+ # DEMO_BEATS
+ "Watch: {action}. See that? {result}.": ["Watch: {action}. {result}.", "Watch: {action}."],
+ "The detail that sold me: {detail}.": ["The detail: {detail}."],
+ # IMPERFECTION_BEATS (human only — D12 <=12 words, 3–5s)
+ "Honest start: I thought {this_category} {was} a scam. The last one died.":
+     ["Honest start: I thought {this_category} {was} a scam.",
+      "Honest start: I doubted {this_category}."],
+ "Confession: I fumbled the first try. Left it in.": ["Confession: I fumbled the first try."],
+ "Nobody's paying me. The first one I tried was garbage.":
+     ["The first one I tried was garbage."],
+ "Real talk: my last set of bands snapped mid-rep.": ["My last bands snapped mid-rep."],
+ "Honest start: my last ones rolled up by day two.": ["My last ones rolled up by day two."],
+ "Real talk: my last sound machine died at 3AM. Twice.":
+     ["Real talk: my last sound machine died at 3AM.", "My last one died at 3AM."],
+ "Honest start: the last one rattled and hissed all night.": ["The last one rattled all night."],
+ # REVIEW_REJECT_BEATS / REVIEW_REJECT_BEATS_AI
+ "Full disclosure: I tried {n} {category_s} before this one. Not one lasted a week.":
+     ["I tried {n} {category_s} first. Not one lasted a week."],
+ "Before this one, I tried {n} {category_s}. Broken, returned, or lying in the listing.":
+     ["Before this one, I tried {n} {category_s}."],
+ "Full disclosure: I tried {n} {category_s} first. They slid in turns or cooked in the sun.":
+     ["I tried {n} {category_s} first. They slid or cooked."],
+ "Full disclosure: I tried {n} {category_s} first. They snapped mid-rep or rolled up.":
+     ["I tried {n} {category_s} first. They snapped or rolled."],
+ "Full disclosure: {n} other {category_s} made the shortlist. Each one got cut.":
+     ["{n} other {category_s} made the shortlist. All cut."],
+ "The shortlist had {n} other {category_s}. Broken, returned, or lying in the listing.":
+     ["The shortlist had {n} other {category_s}."],
+ "Full disclosure: {n} other {category_s} made the shortlist. They slide in turns or cook in the sun.":
+     ["{n} other {category_s} made the shortlist. They slide or cook."],
+ "Full disclosure: {n} other {category_s} made the shortlist. They snap mid-rep or roll up.":
+     ["{n} other {category_s} made the shortlist. They snap or roll."],
+ # ADVICE_BEATS
+ "The number-one mistake: {mistake}. Everyone does it.": ["The number-one mistake: {mistake}."],
+ "Here's the fix — {fix}. Takes thirty seconds.": ["The fix: {fix}."],
+ "{authority} figured this out years ago: {authority_quote}.": ["The rule: {authority_quote}."],
+ "I audited fifty {topic_noun} videos. Same pattern every time: {pattern}.":
+     ["Same pattern every time: {pattern}."],
+ "The algorithm rewards {reward}. Most people optimize for {wrong}.":
+     ["The algorithm rewards {reward}, not {wrong}."],
+ "Two things separate videos that pop from videos that die: {thing1} and {thing2}.":
+     ["Two things matter: {thing1} and {thing2}."],
+}
 
 # D8 (judge loop, cycle 4): journey grammar for SELF-CHALLENGE concepts.
 # Product-slot templates ("Day N of {product} testing", "the {category} test
@@ -1331,6 +1481,8 @@ _ABSTINENCE_SLOTS = {
         "surprise": ("the hardest part was the first 48 hours — and the "
                      "quietest evenings ended up being the win"),
         "verdict_label": "SCREEN TIME: 6h14m → 47min",
+        # D142: <=3-token card surprise; D89: the CTA's one-word swap noun
+        "card_surprise": "calm evenings", "swap": "scroll",
         "events": "CHALLENGE_EVENTS",
         "frame0": "screen-time graph",
     },
@@ -1342,6 +1494,7 @@ _ABSTINENCE_SLOTS = {
         "surprise": ("the headaches only lasted 4 days — and my afternoons "
                      "got quieter, not louder"),
         "verdict_label": "SLEEP + ENERGY: crash gone",
+        "card_surprise": "headaches: 4 days", "swap": "coffee",
         "frame0": "coffee cup mid-pour",
         "events": [
             "the 3pm headache I tried to bargain with",
@@ -1359,6 +1512,7 @@ _ABSTINENCE_SLOTS = {
         "surprise": ("the cravings only lasted 5 days — and food started "
                      "tasting louder"),
         "verdict_label": "ENERGY: crashes gone",
+        "card_surprise": "cravings: 5 days", "swap": "sugar",
         "frame0": "open snack drawer",
         "events": [
             "the evening craving I tried to negotiate with",
@@ -1376,6 +1530,7 @@ _ABSTINENCE_SLOTS = {
         "surprise": ("week 2 sleep was the thing I didn't expect — and my "
                      "mornings got easier"),
         "verdict_label": "SLEEP + WALLET: both up",
+        "card_surprise": "week-2 sleep", "swap": "nightcap",
         "frame0": "full drink on the bar",
         "events": [
             "the Friday night I almost poured one",
@@ -1403,6 +1558,14 @@ CHALLENGE_EVENTS = [
  "replacing the scroll with a walk, and the walk won",
  "the hour I used to lose to the feed — I got it back",
 ]
+# D137 (pipeline v2): the AI lane's form of the event lines that match
+# lexicon.AI_FIRST_PERSON ("I tried", "I used") — same beat, curator voice.
+AI_EVENT_REWRITES = {
+ "the hour I used to lose to the feed — I got it back":
+     "the hour the feed used to eat — it comes back",
+ "the 3pm headache I tried to bargain with": "the 3pm headache that tries to bargain",
+ "the evening craving I tried to negotiate with": "the evening craving that tries to negotiate",
+}
 CHALLENGE_HOOKS = [  # ≤8-word first sentence enforced at pick_hook
  "I stopped {noun} for {span}. Here's what actually happened.",
  "Thirty days with no {noun}. The quiet won.",
@@ -1669,7 +1832,7 @@ def pick_hook(ctx, rng):
 def build_beats(ctx, duration, rng, fmt, presenter="ai"):
     D = duration
     beats = []
-    deck = RehookDeck(rng)
+    deck = RehookDeck(rng, ai=(presenter == "ai"))   # D137
     # D85 (judge loop, cycle 20): the borrowed-authority template "{authority}
     # said it best — {authority_quote}." fired for niches with NO mapped
     # authority — the placeholder "the best in the game said it best — design
@@ -1687,6 +1850,13 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
     advice_bank = Bank(rng, ADVICE_BEATS)
     story_bank = Bank(rng, STORY_BEATS)
     def t(x): return round(x, 1)
+    # D143: initialised up front (replaces the locals().get() hack) — every
+    # branch that pins a payoff card sets it. *_alts are the spoken variants
+    # (longest first) the timeline budget may swap in; series_next is the
+    # CTA's promised next episode (D146).
+    payoff_on_screen = None
+    payoff_alts = bait_alts = cta_alts = None
+    series_next = None
     # D13 (judge loop, cycle 6): FORMAT ≠ CONTENT MODE, v2. Concept routing is
     # tri-state: product prompts get product beats, advice topics get advice
     # beats, challenges get journey grammar — regardless of camera format
@@ -1694,20 +1864,34 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
     concept = ctx.get("concept", "product")
     # D47 (judge loop, cycle 13): routine is its own content mode — neither
     # product-demo nor story grammar applies.
+    # D13 (pipeline v2): the last clause routed CHALLENGE concepts in demo/
+    # review/transformation formats into PRODUCT grammar — "Verdict: BUY —
+    # deeper sleep, no 3pm crash.", "for anyone burned by cheap challenges",
+    # "Test result: ... logged on camera." (D44), and "comment CHALLENGE"
+    # while the caption asks for DAY1. Journey grammar now fires for every
+    # challenge regardless of camera format, as the D13 doctrine states.
     mode = "product" if concept in ("product", "showcase") else \
            "advice" if concept == "advice" else \
            "routine" if concept == "routine" else \
+           "story" if concept == "challenge" else \
            "product" if fmt in ("demo", "review", "transformation") else "story"
     # 3-layer hook stack: visual 0-0.5s, verbal 0.5-1.5s, lock by 3s
     # D35 (judge loop, cycle 11): pick_hook gates the industry-secret hook
     # out of demo/review formats — it needs the format in ctx.
     ctx["fmt"] = fmt
+    # D137 (pipeline v2): pick_hook's AI curator voice reads the presenter
+    # from ctx (GEN-B hook engine) — set before the hook is drawn.
+    ctx["presenter"] = presenter
     # D40 (judge loop, cycle 12): the transformation payoff names the same
     # day-count the hook drew ("DAY 1 vs DAY N") — pre-draw once into ctx so
     # hook and payoff stay consistent; _render_hook_line reads it back.
     if fmt == "transformation":
         ctx["ndays"] = rng.choice([3, 7, 14, 30])
     fam, hookline = pick_hook(ctx, rng)
+    # D63/D144 (pipeline v2): the frame-0 overlay below is cut from the hook
+    # line — cut it from the SPOKEN form generate() ships (the voice pass is
+    # idempotent), so a contraction can't split the overlay from the hook.
+    hookline = humanize_dialogue(hookline)
     # D33 (judge loop, cycle 11): AUDIO-PRODUCT DEMO GRAMMAR. Sound products
     # are AUDIO-LED — the reference class (josh.harmon "Ratatouille Sounds",
     # 409K likes, 1,030 comments) lets the product's actual sound be heard
@@ -1776,17 +1960,12 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
         "on_screen": overlay_truncate(hookline.split('.')[0])})
     beats.append({"t": "0.5–3.0s", "type": "VERBAL HOOK + LOCK",
         "dialogue": hookline,
-        # D27 (judge loop, cycle 10): a review's contract is a verdict
-        # question ("worth it or skip"), not a surprise tease.
-        "payoff_contract": (f"Viewer is promised a verdict — worth it or skip "
-                            f"— delivered at ~{t(D*0.78)}s — never frontloaded."
-                            if fmt == "review" else
-                            # D39: transformation contract = the dated
-                            # before/after result, named in the hook.
-                            f"Viewer is promised the DAY 1 vs DAY "
-                            f"{ctx.get('ndays', 7)} transformation result — "
-                            f"delivered at ~{t(D*0.78)}s — never frontloaded."
-                            if fmt == "transformation" else
+        # D143/D94: "~{t(D*0.78)}s" is a placeholder — _fit_timeline re-times
+        # the "delivered at ~Xs" literal to the laid-out PAYOFF start.
+        # D13 (pipeline v2): concept contracts first — a routine or
+        # challenge in review/transformation format was promised a product
+        # verdict or a DAY 1 vs DAY N split its journey grammar never shows.
+        "payoff_contract": (
                             # D47 (judge loop, cycle 13): a routine's contract
                             # is the STREAK result — what the routine changed,
                             # named in the pinned day-counter hook.
@@ -1794,6 +1973,21 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
                             f"result — what {ctx.get('routine_label', 'the routine')} "
                             f"changed — delivered at ~{t(D*0.78)}s — never frontloaded."
                             if ctx.get("concept") == "routine" else
+                            # D8/D68: a challenge's contract is the Day-N verdict.
+                            f"Viewer is promised the Day {ctx.get('span_n', '30')} "
+                            f"verdict — delivered at ~{t(D*0.78)}s — never frontloaded."
+                            if ctx.get("concept") == "challenge" else
+                            # D27 (judge loop, cycle 10): a review's contract is a verdict
+                            # question ("worth it or skip"), not a surprise tease.
+                            f"Viewer is promised a verdict — worth it or skip "
+                            f"— delivered at ~{t(D*0.78)}s — never frontloaded."
+                            if fmt == "review" and mode == "product" else
+                            # D39: transformation contract = the dated
+                            # before/after result, named in the hook.
+                            f"Viewer is promised the DAY 1 vs DAY "
+                            f"{ctx.get('ndays', 7)} transformation result — "
+                            f"delivered at ~{t(D*0.78)}s — never frontloaded."
+                            if fmt == "transformation" and mode == "product" else
                             f"Viewer is promised a specific payoff, delivered at "
                             f"~{t(D*0.78)}s — never frontloaded."),
         "delivery": "Brisk, confident. Verbal hook ≤8 words total (D73 charter hook stack)."})
@@ -1802,7 +1996,6 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
         # D12 (judge loop, cycle 5): human-presenter scripts open with an
         # IMPERFECTION BEAT (3–5s) — visible flaw first per RULES.md E7. The
         # reference human class wins on authenticity; polished reads as an ad.
-        edu_base = 3
         if presenter == "human":
             # D23 (judge loop, cycle 9): imperfection pool is niche-scoped —
             # cycle 9 caught a category-wrong failure verb ("clogged" on bands)
@@ -1810,48 +2003,68 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
             imp_pool = IMPERFECTION_BEATS.get(
                 ctx.get("niche"), IMPERFECTION_BEATS["generic"])
             imperf_bank = Bank(rng, imp_pool)
-            imp = imperf_bank.draw().format(product=ctx["product"],
-                                           category=ctx["category"])
-            beats.append({"t": "3.0–5.0s", "type": "IMPERFECTION BEAT",
-                "dialogue": imp,
+            imp_t = imperf_bank.draw()
+            # D143 drive-by: number agreement ("I thought this eyelashes was
+            # a scam" shipped) — plural categories take these/were.
+            _pl = bool(re.search(r"[^s]s$", ctx["category"]))
+            imp_slots = dict(product=ctx["product"], category=ctx["category"],
+                             this_category=("these " if _pl else "this ") + ctx["category"],
+                             was="were" if _pl else "was")
+            # D143: no fixed window — _fit_timeline sizes it from its words;
+            # _alts are the bank's shorter spoken forms (never a mid-clause cut).
+            beats.append({"type": "IMPERFECTION BEAT",
+                "dialogue": imp_t.format(**imp_slots),
+                "_alts": _bank_variants(imp_t, imp_slots),
                 "delivery": "Candid, unpolished — the flaw first (E7, D12). "
                             "No cover-up, no polished read.",
                 # D96 (judge loop, cycle 23): the old "here's what I tested"
                 # was a meta-generic promise with no event (D2). The rehook
                 # now names the demo test event — the loop the demo beat
                 # closes two beats later.
-                "rehook": (f"Okay — with that out of the way: "
-                           f"{_demo_test_for(ctx)[0]}.")})
-            edu_base = 5
+                # D143: "Okay — with that out of the way:" was 7 tokens of
+                # filler in a 3–5s beat (D12); the event is the payload.
+                "rehook": f"So: {_demo_test_for(ctx)[0]}.",
+                # if every demo beat is budgeted out (15s transformation) the
+                # promise must still be answered by what follows (D45)
+                "_rh_needs": "DEMO BEAT",
+                "_rh_fallback": ("Now the proof: day 1 vs day "
+                                 f"{ctx.get('ndays', 7)}."
+                                 if fmt == "transformation" else "")})
         # D28 (judge loop, cycle 10): REVIEW-FORMAT REJECTION HISTORY. A
         # reviewer's credibility comes from named rejections, not from
         # testing one item — the reviewer names N items tried and how they
         # failed (failure verbs category-scoped like D23). Fires for both
         # presenters; the human presenter keeps its D12 beat above this one.
         if fmt == "review" and mode == "product":
-            rej_pool = REVIEW_REJECT_BEATS.get(
-                ctx.get("niche"), REVIEW_REJECT_BEATS["generic"])
-            rej = rng.choice(rej_pool).format(
-                product=ctx["product"], category=ctx["category"],
-                category_s=plural(ctx["category"]),
-                n=rng.choice([2, 3, 4]))
-            rj_start = edu_base
-            beats.append({"t": f"{t(rj_start)}–{t(rj_start + 2.0)}s", "type": "REJECTION HISTORY",
-                "dialogue": rej,
+            # D137: the AI lane draws the curator-framed pool.
+            _rej_src = REVIEW_REJECT_BEATS_AI if presenter == "ai" else REVIEW_REJECT_BEATS
+            rej_pool = _rej_src.get(ctx.get("niche"), _rej_src["generic"])
+            rej_t = rng.choice(rej_pool)
+            rej_slots = dict(product=ctx["product"], category=ctx["category"],
+                             category_s=plural(ctx["category"]),
+                             n=rng.choice([2, 3, 4]))
+            beats.append({"type": "REJECTION HISTORY",
+                "dialogue": rej_t.format(**rej_slots),
+                "_alts": _bank_variants(rej_t, rej_slots),
+                # D143: optional under a ~35s body (dropped before any
+                # essential line is trimmed), last-resort droppable above.
+                "_drop": _DROP_OPTIONAL + 10 if D - 3.0 < 35 else 10,
                 "delivery": "Candid reviewer register — the credibility beat (D28).",
                 # D41 (judge loop, cycle 15): the old re-hook ("Here's the one
                 # that survived.") restated the beat's own closing line
                 # ("This is the one that survived.") — shipped twice despite
                 # the D57 gate design. Re-hooks open the NEXT beat, never echo
                 # the current one.
-                "rehook": "And here's why it survived."})
-            edu_base += 2
+                "rehook": "Here's why this one survived."})
         # education beats (F103: educational > evaluative sales pitch for personas)
         n_edu = max(1, int(D // 18))
         for i in range(n_edu):
-            start = edu_base + i * (D * 0.32 / n_edu)
-            edu = edu_bank.draw().format(
+            edu_t = edu_bank.draw()
+            edu_slots = dict(
                 product=ctx["product"], category=ctx["category"],
+                # D143 drive-by: "Most {category} fail" rendered "Most car
+                # vacuum fail" — the bank line takes the plural now.
+                category_s=plural(ctx["category"]),
                 problem=f"the thing every {singular(ctx['category'])} gets wrong",
                 flaw="they optimize for the spec sheet, not real daily use",
                 mechanism="it removes the friction between you and the result",
@@ -1860,8 +2073,12 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
                 check1="build quality that survives daily use",
                 check2="setup under five minutes",
                 check3="does the core job without gimmicks")
-            beats.append({"t": f"{t(start)}–{t(start + D*0.30/n_edu)}s", "type": "EDUCATION BEAT",
-                "dialogue": edu,
+            beats.append({"type": "EDUCATION BEAT",
+                "dialogue": edu_t.format(**edu_slots),
+                "_alts": _bank_variants(edu_t, edu_slots),
+                # D143: extra edu beats are optional (dropped first, later
+                # ones before earlier ones); the first is a last resort.
+                "_drop": _DROP_OPTIONAL + 20 + i if i else 20,
                 "delivery": "Unhurried, warm — trust-building register (F138).",
                 # D15 (judge loop, cycle 6, extended cycle 8): re-hook defaults are
                 # category-aware — "I dim the room" on a pet roller or "I flip
@@ -1872,13 +2089,16 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
                 # D86: neutral-default actions are noun phrases — exclude the
                 # verb-phrase-only "when I" template (pets/compound verb-phrase
                 # actions lose that one template; never ungrammatical).
-                "rehook": deck.draw(no_when_i=True).format(action=ctx.get(
+                # D93 (pipeline v2): at 45–60s every edu beat re-promised the
+                # same edu_action; later edu beats promise their own event.
+                "rehook": deck.draw(no_when_i=True).format(action=(ctx.get(
                     "edu_action",
-                    f"the {ctx['category']} detail the box never shows, up close"))})
+                    f"the {ctx['category']} detail the box never shows, up close")
+                    if i == 0 else _EDU_NEXT_TEASES[(i - 1) % len(_EDU_NEXT_TEASES)].format(
+                        category=ctx["category"])))})
         # demo beats
         n_demo = max(1, int(D // 16))
         for i in range(n_demo):
-            start = D*0.38 + i * (D*0.30 / n_demo)
             # D96 (judge loop, cycle 23): the beat's test slots draw the demo
             # test event — never the old label defaults ("the side-by-side" /
             # "night-and-day difference" / "I put it through the real-world
@@ -1889,11 +2109,19 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
             # job, on camera, round two" with no round one. A script numbers
             # tests only if it numbers at least two; the slot is neutralized
             # when there is a single demo beat.
-            demo = demo_bank.draw().format(
+            demo_t = demo_bank.draw()
+            # D143 (P3 at 45–60s): three of the four demo templates end on
+            # the same {result} sentence, so 2–3 demo beats repeated it
+            # verbatim; later rounds report their own outcome.
+            if i:
+                _dr = _DEMO_LATER_RESULTS[(i - 1) % len(_DEMO_LATER_RESULTS)]
+            demo_slots = dict(
                 product=ctx["product"], action=_dt,
                 result=_dr,
                 test1=_dt, result1=_dr,
-                test2=(f"{_dt}, round two" if n_demo > 1 else _dt),
+                # D90/D111 (pipeline v2): "round two" only on a beat that IS
+                # round two — the index-numbered "Test 1: ..., round two." shipped.
+                test2=(f"{_dt}, round two" if n_demo > 1 and i >= 1 else _dt),
                 result2=_dr,
                 # D36: price may be None (int(None) crashes); the {expensive}
                 # demo template is gated on named_competitor (D26) anyway.
@@ -1913,35 +2141,85 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
                 # template's singular "detail", not repeat it.
                 detail=(_d117_mech(ctx) if _d117_mech(ctx)
                         else "finished details, not cost-cut"))
-            # D90 (judge loop, cycle 21): "Test one:"/"Test two:" ordinals were
-            # template-fixed but the draw is index-unaware — seed 924's single
-            # demo beat said "Test two" while on_screen said "TEST 1" (D65's
-            # de-overlap pass indexes by i). The ordinal now comes from the
-            # beat index so spoken and on-screen numbering always agree.
-            # D111-implementation (gauntlet, cycle 12): a single-test script
-            # numbers nothing - seed 811's lone demo beat shipped "Test 1"
-            # with no "Test 2" and failed the D111 gate. Strip the ordinal
-            # when there is only one demo beat.
-            if n_demo == 1:
-                demo = re.sub(r"^Test (one|two):\s*", "", demo)
-                # the stripped test text starts lowercase ("the lock doing
-                # its real job.") - sentence-case the beat open.
-                demo = demo[:1].upper() + demo[1:] if demo else demo
-            else:
-                demo = re.sub(r"^Test (one|two):", f"Test {i+1}:", demo)
-            # D90b: pool result strings start lowercase ("zero friction after
-            # a week of use") and render after a period as "...test. zero
-            # friction" — sentence-case the draw at the same site.
-            demo = re.sub(r"(?<=\. )([a-z])",
-                          lambda m: m.group(1).upper(), demo)
+
+            def _demo_line(s, i=i):
+                # D90 (judge loop, cycle 21): "Test one:"/"Test two:" ordinals were
+                # template-fixed but the draw is index-unaware — seed 924's single
+                # demo beat said "Test two" while on_screen said "TEST 1" (D65's
+                # de-overlap pass indexes by i). The ordinal now comes from the
+                # beat index so spoken and on-screen numbering always agree.
+                # D111-implementation (gauntlet, cycle 12): a single-test script
+                # numbers nothing - seed 811's lone demo beat shipped "Test 1"
+                # with no "Test 2" and failed the D111 gate. Strip the ordinal
+                # when there is only one demo beat.
+                if n_demo == 1:
+                    s = re.sub(r"^Test (one|two):\s*", "", s)
+                    # the stripped test text starts lowercase ("the lock doing
+                    # its real job.") - sentence-case the beat open.
+                    s = s[:1].upper() + s[1:] if s else s
+                else:
+                    s = re.sub(r"^Test (one|two):", f"Test {i+1}:", s)
+                # D90b: pool result strings start lowercase ("zero friction after
+                # a week of use") and render after a period as "...test. zero
+                # friction" — sentence-case the draw at the same site.
+                # D90b (pipeline v2): also after "? " and "! " — "See that?
+                # visible before-and-after proof." shipped lowercase.
+                return re.sub(r"(?<=[.?!] )([a-z])",
+                              lambda m: m.group(1).upper(), s)
+            demo_alts = [_demo_line(v) for v in _bank_variants(demo_t, demo_slots)]
+            demo = demo_alts[0]
             # D33 (judge loop, cycle 11): audio products get one audio-led
             # demo beat — the first demo is always "listen", never "watch".
             # The sound the mic will actually hear is NAMED, not gestured at.
             if is_audio and i == 0:
                 demo = (f"Turn your volume up — listen: this {ctx['category']} "
                         f"fills the whole room. Hear that? No crackle, no hiss.")
-            beats.append({"t": f"{t(start)}–{t(start + D*0.28/n_demo)}s", "type": "DEMO BEAT",
+                demo_alts = [demo, f"Volume up: this {ctx['category']} fills "
+                                   f"the room. No crackle.",
+                             "Volume up. Hear that? No crackle."]
+            # D41 (pipeline v2): ctx["demo_action"] IS the demo test (D96), so
+            # the re-hook re-promised the beat it closes ("Here's where it gets
+            # interesting: the resistance bands set doing its real job." after
+            # "Watch: the resistance bands set doing its real job."). An
+            # echoing action is replaced by the NEXT event: the next test, the
+            # dated split-screen, or the verdict/result the payoff delivers.
+            _post_demo = (f"the day-{ctx.get('ndays', 7)} split-screen"
+                          if fmt == "transformation" else
+                          "the verdict" if fmt == "review" else
+                          "the one everyone keeps asking about"
+                          if ctx.get("concept") == "showcase" else
+                          "the week-one result")
+            _rh_t = deck.draw(no_when_i=True)
+            _rh_action = ctx.get(
+                "demo_action",
+                ((f"every {ctx['category']}, side by side — and the one "
+                  "everyone keeps asking about")
+                 if (ctx.get("concept") == "showcase"
+                     and "the box never shows" in ctx.get(
+                         "edu_action",
+                         f"the {ctx['category']} detail the box never "
+                         "shows, up close"))
+                 else "the detail the box never shows, up close"))
+            # D93: the default action IS the demo test — even when this beat's
+            # line doesn't voice it, the imperfection re-hook already promised
+            # it, so the demo channel opens the next loop instead; later demo
+            # beats never re-promise the first one's event either.
+            _echo = _echoes(_rh_action, demo) or _rh_action == _dt or i > 0
+            if _echo:
+                _rh_action = (_DEMO_NEXT_TEASES[i % len(_DEMO_NEXT_TEASES)]
+                              if i < n_demo - 1 else _post_demo)
+            beats.append({"type": "DEMO BEAT",
                 "dialogue": demo,
+                "_alts": demo_alts,
+                # D143: extra demo beats are optional; the first is essential
+                # except in transformation, where the dated EVIDENCE beat is
+                # the genre contract (D25) and the demo is a last resort.
+                "_drop": (_DROP_OPTIONAL + 10 + i if i else
+                          15 if fmt == "transformation" else None),
+                # when a later demo beat is budgeted out, this one becomes the
+                # last demo and its re-hook must promise what now follows
+                "_rh_last": (_rh_t.format(action=_post_demo)
+                             if _echo and i < n_demo - 1 else None),
                 # D111 (gauntlet, cycle 12): display-only "TEST 1" counts as
                 # dangling numbering — single-test scripts carry bare "TEST".
                 "on_screen": ("TEST" if n_demo == 1 else "TEST " + str(i+1)),
@@ -1974,16 +2252,7 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
                 # box-detail close-up on a roundup, it opens a distinct loop
                 # instead: the side-by-side plus the crowd-favorite find
                 # (the payoff card's own surprise, held back).
-                "rehook": deck.draw(no_when_i=True).format(action=ctx.get(
-                    "demo_action",
-                    ((f"every {ctx['category']}, side by side — and the one "
-                       "everyone keeps asking about")
-                     if (ctx.get("concept") == "showcase"
-                         and "the box never shows" in ctx.get(
-                             "edu_action",
-                             f"the {ctx['category']} detail the box never "
-                             "shows, up close"))
-                     else "the detail the box never shows, up close")))})
+                "rehook": _rh_t.format(action=_rh_action)})
         # D25 (judge loop, cycle 9): TRANSFORMATION EVIDENCE GRAMMAR — the
         # genre's contract is dated visual proof, never narration-only
         # transformation. Every transformation script pins an evidence beat
@@ -1999,17 +2268,31 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
             # comments) is real-human bodies. In the AI lane the evidence beat
             # is CURATOR-FRAMED: the split-screen documents someone else's
             # logged journey; the persona analyzes, never embodies.
-            ev_dialogue = (f"Same body, same light — DAY 1 on the left, "
+            # D36 (pipeline v2 — RULES D36): "Same body, same light" shipped
+            # on hair wax, door locks and lunch bags (gate 2: 'same body' on a
+            # non-body transformation). The line names the REAL subject
+            # ("same hair, same light"), "same angle" when the prompt names
+            # none; "body" only when the prompt is about a body.
+            _subj = _d36_subject(ctx.get("_prompt") or ctx.get("product", ""))
+            _nd = ctx.get('ndays', 7)
+            ev_dialogue = (f"Same {_subj}, same light — DAY 1 on the left, "
                            f"today on the right. That's not a filter; that's "
                            f"{_det(ctx['product'])}, every day.") \
                 if presenter == "human" else \
-                (f"Their Day 1, their Day {ctx.get('ndays', 7)} — one creator's "
-                 f"full log with {_det(ctx['product'])}. Same body, same "
+                (f"Their Day 1, their Day {_nd} — one creator's "
+                 f"full log with {_det(ctx['product'])}. Same {_subj}, same "
                  f"light — the split doesn't lie.")
-            ev_start = D*0.68
-            beats.append({"t": f"{t(ev_start)}–{t(ev_start + D*0.14)}s",
-                "type": "EVIDENCE BEAT",
+            # D143: shorter spoken forms of the same proof for tight budgets
+            ev_alts = ([ev_dialogue,
+                        f"Same {_subj}, same light: day 1 on the left, day {_nd} on the right.",
+                        f"Same {_subj}, same light. Day 1 left, day {_nd} right."]
+                       if presenter == "human" else
+                       [ev_dialogue,
+                        f"Their day 1, their day {_nd}: same {_subj}, same light.",
+                        f"Their day 1 vs day {_nd}. Same {_subj}, same light."])
+            beats.append({"type": "EVIDENCE BEAT",
                 "dialogue": ev_dialogue,
+                "_alts": ev_alts,
                 # D122 (gauntlet cycle 15): on_screen is render-exactly overlay
                 # copy (make_shotlist renders it verbatim as "ON-SCREEN TEXT
                 # (render exactly, ...)") — the old template burned the
@@ -2025,7 +2308,11 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
                 # The deck's "Watch {action}" template rendered "Watch zoom in
                 # on the pad" (cycle 12) — ungrammatical. The evidence re-hook
                 # is pinned to a grammatical template instead of the deck.
-                "rehook": "Okay, but why does it actually work? Watch the close-up that proves it."})
+                # D93 (pipeline v2): the pin WAS the deck's REHOOKS[6] frame
+                # ("Okay, but why does it actually work? Watch ...") — a
+                # near-duplicate whenever the deck also dealt that template.
+                # Its own frame now, still answered by the payoff (D45).
+                "rehook": "Now the close-up that settles it."})
         # D5 (judge loop cycle 2): payoff must name the SAME specific measurable
         # as the hook contract — no "the one thing Xs are supposed to do".
         # D27 (judge loop, cycle 10): REVIEW-FORMAT VERDICT GRAMMAR. A review's
@@ -2034,6 +2321,10 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
         # closes on BUY / SKIP / WHO-FOR. BUY always names who_for (saves-
         # driver); the payoff pins an on-screen VERDICT card.
         payoff_on_screen = None
+        # D137: the AI lane speaks the curator form of a first-person proof
+        # ("I woke up before the alarm" -> "the room is bright before the alarm").
+        _proof = _spoken_proof(ctx, presenter)
+        _sp = _short_product(ctx)
         if fmt == "review":
             # D56 (judge loop, cycle 15): POSITIVE PROOF IS SPOKEN. The old
             # template shipped durability-only negative proof
@@ -2046,13 +2337,21 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
             # pipeline v2 crash fix: challenge/showcase/routine/advice ctx has
             # no purpose_proof/who_for (KeyError on every review × non-product
             # run, baseline 36/990) — concept-safe fallbacks.
-            payoff = (f"Verdict: BUY — "
-                      f"{ctx.get('purpose_proof') or ctx.get('measured_short') or 'it did the job'}.")
-            _who = ctx.get('who_for') or DEFAULT_WHO.format(
-                category=ctx['category'], category_s=plural(ctx['category']))
-            payoff_on_screen = (f"VERDICT: BUY — for {_who} · "
-                                f"expected {ctx.get('expected_flop') or 'it to flop'}, "
-                                f"but {ctx.get('surprise') or 'it held up'}")
+            # D143: spoken variants, longest first (D62: <=11 tokens).
+            payoff_alts = [f"Verdict: BUY — {_proof}.",
+                           f"Verdict: BUY. {_cap(_proof)}.",
+                           f"BUY. {_cap(_proof)}.", "Verdict: BUY."]
+            # D142 (pipeline v2): the old card was the full who-for sentence
+            # + "expected <flop clause>, but <surprise clause>" — 24–34 words
+            # (D103) at ~40 chars/s. The short card keeps D27/D56/D83's
+            # elements — label, who-for, flop → surprise — in <=12 tokens.
+            _who = _card_who(ctx)
+            _flop, _surp = _card_flop(ctx)
+            payoff_on_screen = _pick_card(
+                ([f"VERDICT: BUY for {_who} · expected {_flop} → {_surp}",
+                  f"VERDICT: BUY for {_who} · {_flop} → {_surp}"] if _who else []) +
+                [f"VERDICT: BUY · expected {_flop} → {_surp}",
+                 f"VERDICT: BUY · {_flop} → {_surp}", f"VERDICT: BUY · {_surp}"])
         elif fmt == "transformation":
             # D40 (judge loop, cycle 12): TRANSFORMATION PAYOFF = TRANSFORMATION
             # RESULT. Cycle 12's payoff delivered durability A7-subversion
@@ -2062,12 +2361,18 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
             # subverted expectation is category-true abandonment, never
             # durability, never price (D26/D36).
             nd = ctx.get("ndays", 7)
-            flop = f"this to be a very expensive clothes rack by day {min(nd, 4)}"
-            payoff = (f"So here's the payoff I promised: DAY 1 vs DAY {nd} — "
-                      f"{nd} days of {_det(ctx['product'])}, one result on screen. "
-                      f"I expected {flop}, but the log never missed a day.")
-            payoff_on_screen = f"DAY 1 | DAY {nd}"  # D120: no "(split-screen)"
-            # staging note in render-exactly overlay copy (see evidence beat).
+            # D143/D62 (pipeline v2): the old spoken payoff was ~35 tokens
+            # ("So here's the payoff I promised: DAY 1 vs DAY 7 — 7 days of
+            # ..., one result on screen. I expected this to be a very
+            # expensive clothes rack by day 4, but the log never missed a
+            # day.") — the clothes-rack flop was walking-pad copy on every
+            # product. Spoken names the dated result; the abandonment
+            # subversion (D40) rides the card.
+            payoff_alts = [f"Day 1 vs day {nd}: that's the {nd}-day difference.",
+                           f"Day 1 vs day {nd}: the difference.", f"Day 1 vs day {nd}."]
+            # D120: no "(split-screen)" staging note in render-exactly overlay
+            # copy (see evidence beat). D142/D83: label + flop → surprise.
+            payoff_on_screen = f"DAY 1 | DAY {nd} · expected skips → {nd}/{nd} days"
         else:
             # D62 (judge loop, cycle 16 — extends D43/D56): DEMO PAYOFF SPLIT
             # CONTRACT. Cycle 14's 53-word review payoff was unperformable;
@@ -2099,20 +2404,31 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
             # don't test: spoken names the full list (D62 ≤11 tokens, D35
             # contract pairing intact), the card keeps the D83 de-overlap
             # shape under a LIST label. Demo/product formats keep TEST.
+            # D142 (pipeline v2): the cards below were "TEST: {product} ·
+            # expected {expected_flop}, but {surprise}" — 24–34 words at up to
+            # ~40 chars/s. Short card, same D83 elements (label, short
+            # product, flop → surprise), <=12 tokens, never the spoken line.
+            _flop, _surp = _card_flop(ctx)
             if ctx.get("concept") == "showcase":
-                payoff = (f"That's the full roundup — "
-                          f"{ctx.get('measured_claim')}.")
-                payoff_on_screen = (f"FULL LIST: {ctx['product']} · "
-                                    f"expected {ctx['expected_flop']}, "
-                                    f"but {ctx['surprise']}")
+                _claim = ctx.get("measured_claim") or "every item in one list"
+                payoff_alts = [f"That's the full roundup — {_claim}.",
+                               f"Full roundup: {_claim}.", "That's the full roundup."]
+                payoff_on_screen = _pick_card(
+                    [f"FULL LIST: {_sp} · expected {_flop} → {_surp}",
+                     f"FULL LIST · expected {_flop} → {_surp}",
+                     f"FULL LIST: {_sp} · {_surp}"])
             else:
-                payoff = (f"Test result: {ctx.get('purpose_proof') or ctx['measured_claim']}.")
-                payoff_on_screen = (f"TEST: {ctx['product']} · "
-                                    f"expected {ctx['expected_flop']}, "
-                                    f"but {ctx['surprise']}")
+                payoff_alts = [f"Test result: {_proof}.", f"Result: {_proof}."]
+                payoff_on_screen = _pick_card(
+                    [f"TEST: {_sp} · expected {_flop} → {_surp}",
+                     f"TEST · expected {_flop} → {_surp}",
+                     f"TEST: {_sp} · {_flop} → {_surp}", f"TEST: {_sp} · {_surp}"])
+        payoff_alts = _cap_tokens(payoff_alts, 11)   # D62/D68 spoken budget
+        payoff = payoff_alts[0]
         # D1 (judge loop cycle 1): comment-word CTA engine — product-mode comment
         # bait is ALWAYS the comment-word template, never a random draw (random
         # draw let "follow for part 2" win, which D1 replaced).
+        _cw = _cta_word(ctx)  # D107: beauty sub-category scoped
         bait = COMMENT_BAIT[4].format(
             opt1=f"budget {ctx['category']}", opt2=f"premium {ctx['category']}",
             opt3="going without",
@@ -2120,7 +2436,10 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
             category=ctx["category"],
             # D34 (judge loop, cycle 11): comment word = niche noun ("SLEEP"),
             # never the generic container noun ("MACHINE").
-            cta_word=_cta_word(ctx))  # D107: beauty sub-category scoped
+            cta_word=_cw)
+        # D143: shorter follow-first forms (B4a order kept, D88 <=9 tokens)
+        bait_alts = [bait, f"Follow, comment {_cw} for the link list.",
+                     f"Follow, comment {_cw} for the list.", f"Follow, comment {_cw}."]
         # D36: the old hardcoded "it's under twenty bucks" was a fabricated
         # price claim when the prompt named no price — the urgency degrades
         # to a non-price close when price is None.
@@ -2158,25 +2477,51 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
             urgency=(f"it's under {ctx['price']} bucks" if ctx.get("price")
                      else "this one's going in my bio"),
             next=_next)
+        cta_alts = [cta, f"Part 2: {_next}.", "Follow for part 2."]   # D143 (D89 <=6 tokens)
+        # D146: the part-2 promise is planned — generate() writes it into
+        # script["series_plan"].
+        series_next = _next
     elif mode == "advice":
-        topic = ctx["product"]
         n_adv = max(2, int(D // 14))
+        # D44 (pipeline v2): the re-hook action was the camera command "show
+        # the analytics" — spoken in every advice re-hook ("...: show the
+        # analytics."). Presenter-neutral noun-phrase events instead (D58/
+        # D86: no "when I" frame), one per beat so no promise repeats (D93).
+        _adv_actions = ["the analytics from a real account",
+                        "the retention graph that proves it",
+                        "the one-line fix, live"]
         for i in range(n_adv):
-            start = 3 + i * (D * 0.62 / n_adv)
-            adv = advice_bank.draw().format(
+            adv_t = advice_bank.draw()
+            adv_slots = dict(
                 mistake="leading with your logo instead of the payoff",
                 fix="state the viewer's reward in the first sentence",
                 authority=auth,
                 authority_quote="borrow trust, then earn your own",
-                topic_noun=topic, pattern="the hook promises, the video never delivers",
+                # D143 drive-by: {topic_noun} was the whole prompt ("I audited
+                # fifty why your hooks fail videos").
+                topic_noun=singular(ctx["category"]),
+                pattern="the hook promises, the video never delivers",
                 reward="watch time", wrong="likes",
                 thing1="a payoff contract", thing2="a re-hook every 8 seconds")
-            beats.append({"t": f"{t(start)}–{t(start + D*0.60/n_adv)}s", "type": "TEACHING BEAT",
-                "dialogue": adv,
+            beats.append({"type": "TEACHING BEAT",
+                "dialogue": adv_t.format(**adv_slots),
+                "_alts": _bank_variants(adv_t, adv_slots),
+                # D143: teaching beats past the second are optional; the
+                # second is a last resort, the first is essential.
+                "_drop": (_DROP_OPTIONAL + 20 + i if i >= 2 else
+                          20 if i == 1 else None),
                 "delivery": "Unhurried, warm — then punch the re-hook (F138 + Robins).",
-                "rehook": deck.draw().format(action="show the analytics")})
-        payoff = (f"So the payoff: fix the first 3 seconds — visual trigger, "
-                  f"one-line hook, payoff contract — and {topic} stops being luck.")
+                "rehook": deck.draw(no_when_i=True).format(
+                    action=_adv_actions[i % len(_adv_actions)])})
+        # D62-class (pipeline v2): the old advice payoff was ~20 tokens and
+        # rendered the whole prompt as its subject ("... and why your hooks
+        # fail stops being luck."). Spoken <=11 tokens; the three parts of
+        # the fix ride the card (information rides text, 85% muted).
+        payoff_alts = ["The payoff: fix the first 3 seconds. Luck stops mattering.",
+                       "Fix the first 3 seconds. Luck stops mattering.",
+                       "Fix the first 3 seconds."]
+        payoff = payoff_alts[0]
+        payoff_on_screen = "FIRST 3 SECONDS: trigger · hook · contract"
         # D15 (judge loop, cycle 6): D10 MODE-AWARE CTA. The advice branch drew the
         # link-list comment-word template — advice topics have nothing to link
         # (same mode-blind class as cycle 4's challenge fix). Advice CTA content
@@ -2184,9 +2529,17 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
         # D16 (judge loop, cycle 6): advice CTA content is a guide/checklist,
         # never a link list. B4a (judge loop, cycle 15): follow-first order
         # applies here too — the follow is the price of the payload.
-        bait = (f"Hit follow, comment {ctx['category'].upper()} — I'll send you "
-                f"the free 3-second {ctx['category']}-fix checklist.")
-        cta = "Follow for the daily breakdown — tomorrow I'm auditing a real account live."
+        # D88/D89 (pipeline v2): the bait was 14 tokens and the CTA 13 — both
+        # unperformable in their windows. Same payloads, spoken length.
+        _cw = ctx['category'].upper()
+        bait_alts = [f"Hit follow, comment {_cw} for the free checklist.",
+                     f"Follow, comment {_cw} for the checklist.",
+                     f"Follow, comment {_cw}."]
+        bait = bait_alts[0]
+        cta_alts = ["Follow, tomorrow: a live account audit.",
+                    "Tomorrow: a live account audit.", "Tomorrow: a live audit."]
+        cta = cta_alts[0]
+        series_next = "a live account audit"   # D146
     elif mode == "routine":
         # D47 (judge loop, cycle 13): ROUTINE GRAMMAR. A personal routine is
         # not a product and not a challenge — the reference grammar is
@@ -2201,36 +2554,45 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
         # unperformable scripts ship silently otherwise. D44: dialogue is
         # spoken — no stage directions ("show the X", "on camera").
         t_label = ctx["routine_time"]
+        # D143: each act carries a shorter spoken form (unhurried delivery
+        # = 2.5 wps, so three full acts + re-hooks overran a 30s body).
+        # D137: "cold water on my face" is a lived-experience claim in the
+        # AI lane — the curator form drops the "my".
+        _face = "on my face" if presenter == "human" else "to the face"
         acts = [
             (f"{t_label}: alarm off, feet on the floor before my brain wakes up.",
+             [f"{t_label}: alarm off, feet on the floor."],
              f"{t_label.upper()} FIRST WIN",
              "That's the first win. Here's the second."),
-            ("Twenty minutes later — cold water on my face. No phone for the first hour.",
+            (f"Twenty minutes later — cold water {_face}. No phone for the first hour.",
+             ["Cold water, then no phone for the first hour.",
+              "No phone for the first hour."],
              "NO PHONE, FIRST HOUR",
              "Here's the one nobody talks about."),
             ("One hour later — I'm at my desk before the city wakes up.",
+             ["At my desk before the city wakes up."],
              "BEAT THE CITY",
              "And here's what fourteen mornings did."),
         ]
-        base = 3.0
         if presenter == "human":
             # Routine imperfection = relapse honesty, not product failure.
             # D43: 2.5s window → ≤7 words at conversational pace.
             imp = rng.choice([
                 f"Day {ctx['streak']}: I slept straight through it.",
                 "Tuesday I snoozed an hour. Almost quit."])
-            beats.append({"t": f"{t(base)}–{t(base + 2.5)}s", "type": "IMPERFECTION BEAT",
+            beats.append({"type": "IMPERFECTION BEAT",
                 "dialogue": imp,
                 "delivery": "Candid, unpolished — relapse first (E7, D12).",
                 "rehook": f"{t_label} — here's how it actually starts."})
-            base = 5.5
-        # 5.5s / 5.5s / 5.0s ritual windows; dialogue kept ≤13 words so it
-        # fits at conversational pace (D43: ~3 wps).
-        for i, (dlg, card, rh) in enumerate(acts):
-            start = base + i * 5.5 if i < 2 else base + 11.0
-            end = start + (5.5 if i < 2 else 5.0)
-            beats.append({"t": f"{t(start)}–{t(end)}s", "type": "RITUAL BEAT",
+        # D143: ritual windows are content-sized by _fit_timeline (the old
+        # fixed 5.5s/5.5s/5.0s windows ignored the words). The first act is
+        # essential; the middle act goes before the last (whose re-hook
+        # tees up the payoff) when even the short forms cannot fit.
+        for i, (dlg, short, card, rh) in enumerate(acts):
+            beats.append({"type": "RITUAL BEAT",
                 "dialogue": dlg,
+                "_alts": [dlg] + short,
+                "_drop": (None, 22, 21)[i],
                 "on_screen": card,
                 "delivery": "Present-tense, unhurried — let them co-live it (F45 ritual).",
                 "rehook": rh})
@@ -2239,11 +2601,17 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
         # expectation (A7/D35). No em-dash — it counts as a spoken token.
         payoff = (f"Day {ctx['streak']}: {ctx['measured_claim']}. "
                   f"Expected {ctx['expected_flop']}.")
+        payoff_alts = [payoff, f"Day {ctx['streak']}: {ctx['measured_claim']}."]  # D143
         # B4a (beauty audit): follow-before-keyword CTA; the payload is the
         # routine checklist (D46: no link list, no bio link — one funnel).
         # Shared 2.7s bait window → ≤9 words.
         bait = (f"Follow, then comment ROUTINE for the {t_label} checklist.")
         cta = f"Tomorrow: Day {int(ctx['streak']) + 1}. Same time."
+        # D143 short forms; D146: the next-day check-in is a planned episode
+        bait_alts = [bait, "Follow, then comment ROUTINE for the checklist.",
+                     "Follow, comment ROUTINE."]
+        cta_alts = [cta, f"Tomorrow: Day {int(ctx['streak']) + 1}."]
+        series_next = f"Day {int(ctx['streak']) + 1}"
     else:  # story / pov-vlog
         if ctx.get("concept") == "challenge":
             # D8/D10 (judge loop, cycle 4): JOURNEY GRAMMAR for self-challenge
@@ -2281,9 +2649,14 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
             # branch). Bank draws unique events per script.
             ev_bank = Bank(rng, _event_src)
             for i in range(n_st):
-                start = 3 + i * (D * 0.62 / n_st)
+                _ev = ev_bank.draw()
+                if presenter == "ai":
+                    # D137: curator form of a first-person event ("the 3pm
+                    # headache I tried to bargain with" -> "... that tries to
+                    # bargain") — the AI lane never claims it lived the day.
+                    _ev = AI_EVENT_REWRITES.get(_ev, _ev)
                 st = ch_bank.draw().format(
-                    n=i+1, event=ev_bank.draw(), **_beat_kw
+                    n=i+1, event=_ev, **_beat_kw
                 ).replace("1 days in", "1 day in")
                 # D69: sentence-case the event after a period — the event
                 # bank is lowercase by design ("the old habit..."), and the
@@ -2297,10 +2670,15 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
                 # happens when I day 1 — the moment I almost quit."
                 # shipped). Both pins are spoken-safe (D44), event-specific
                 # (D2), and answered by the next beat (D45).
-                rh = ("Day 1 is where it almost fell apart." if i == 0
-                      else f"Day {i+1}: the moment I almost quit.")
-                beats.append({"t": f"{t(start)}–{t(start + D*0.60/n_st)}s", "type": "STORY BEAT",
+                # D93 (pipeline v2): 3+ day beats (45s+) repeated "Day N: the
+                # moment I almost quit." — each day gets its own pinned promise.
+                rh = _CHALLENGE_REHOOK_PINS[min(i, len(_CHALLENGE_REHOOK_PINS) - 1)].format(d=i + 1)
+                beats.append({"type": "STORY BEAT",
                     "dialogue": st,
+                    # D143: the first day beat is essential, the second a
+                    # last resort, any further ones optional.
+                    "_drop": (None if i == 0 else 20 if i == 1
+                              else _DROP_OPTIONAL + 20 + i),
                     "delivery": "Conversational, present-tense. Let the audience co-experience (F45 ritual).",
                     "rehook": rh})
             # D68 (D62-split, judge loop, cycle 17 — closes the cycle-16 OPEN
@@ -2309,7 +2687,17 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
             # tokens names the measured verdict; the card carries noun +
             # subversion for the 85% watching muted.
             payoff = f"Day {span_n} verdict: {ctx['measured_short']}."
-            payoff_on_screen = ctx["verdict_card"]
+            payoff_alts = [payoff, f"Day {span_n}: {ctx['measured_short']}."]  # D143
+            # D142 (pipeline v2): ctx["verdict_card"] is the full label +
+            # expected-flop sentence + surprise sentence (~30 tokens, ~45
+            # chars/s). Short card: label · flop → surprise, <=12 tokens.
+            if ctx.get("challenge_type") == "practice":
+                payoff_on_screen = f"DAY {span_n} · expected a day-4 quit → showed up anyway"
+            else:
+                _as = _ABSTINENCE_SLOTS[ctx.get("abstinence_class") or "screen"]
+                payoff_on_screen = _pick_card(
+                    [f"{_as['verdict_label'].split(':')[0]} · expected a day-3 cave → {_as['card_surprise']}",
+                     f"{_as['verdict_label'].split(':')[0]} · {_as['card_surprise']}"])
             # D70 (judge loop, cycle 17): the old challenge bait ("Comment DAY1
             # — start your own 30-day count on {noun}. I'll check in.") was
             # ~15 words in the 2.7s window (~330 wpm, D43 unperformable) and
@@ -2318,6 +2706,8 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
             # every-format miss). Now 9 words, follow-first, join-the-count
             # (D10) intact; the noun detail lives in the caption echo (D59).
             bait = "Follow, then comment DAY1 — start your own count."
+            bait_alts = [bait, "Follow, then comment DAY1 to start your count.",
+                         "Follow, comment DAY1 to join.", "Follow, comment DAY1."]
             # D67: practice CTA teases the near-break, not "what I replaced
             # the {noun} with" — there is nothing being replaced.
             # D89b (judge loop, cycle 21): the old forms were 9-10 words in
@@ -2325,9 +2715,16 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
             # unperformable). The D7 serialization promise and the D67
             # near-break tease survive at 6 words; noun detail lives in the
             # beats and caption.
-            cta = ("Tomorrow: my near-break day. No lies."
-                   if ctx.get("challenge_type") == "practice" else
-                   f"Tomorrow: my {noun} replacement. No lies.")
+            # D89 (pipeline v2): "my {noun} replacement" broke on multi-word
+            # nouns ("Tomorrow: my buying coffee replacement. No lies." = 7
+            # tokens, ungrammatical) — the vice class names the swap.
+            if ctx.get("challenge_type") == "practice":
+                series_next = "my near-break day"
+            else:
+                series_next = (f"my {_ABSTINENCE_SLOTS[ctx.get('abstinence_class') or 'screen']['swap']}"
+                               f" replacement")
+            cta = f"Tomorrow: {series_next}. No lies."
+            cta_alts = [cta, f"Tomorrow: {series_next}."]
         else:
                 # D6/D7 (judge loop, cycle 3): the story branch bypassed every enforcement
             # gate from cycles 1-2 (D1 comment-word, D2 event-specific re-hooks, D5
@@ -2337,7 +2734,6 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
             # contract, never a substitution for the current one.
             n_st = max(2, int(D // 14))
             for i in range(n_st):
-                start = 3 + i * (D * 0.62 / n_st)
                 st = story_bank.draw().format(
                     n=i+1, quest=f"testing {ctx['product']}",
                     event="it did something I didn't expect",
@@ -2348,16 +2744,27 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
                 # meta-reference like "I show what happened next".
                 rehook_action = (f"Day {i+1} of {ctx['product']} testing — "
                                  f"the {ctx['category']} test the box never shows")
-                beats.append({"t": f"{t(start)}–{t(start + D*0.60/n_st)}s", "type": "STORY BEAT",
+                beats.append({"type": "STORY BEAT",
                     "dialogue": st,
+                    "_drop": (None if i == 0 else 20 if i == 1
+                              else _DROP_OPTIONAL + 20 + i),   # D143
                     "delivery": "Conversational, present-tense. Let the audience co-experience (F45 ritual).",
                     "rehook": deck.draw().format(action=rehook_action)})
             # D7: payoff delivered in-session at ~72-85%, names the same measurable
             # as the hook contract, subverts a named expectation (A7). No "the thing
             # I'll show you tomorrow" — deferral is a broken contract, not retention.
-            payoff = (f"Day {n_st} verdict on {ctx['product']}: {ctx['measured_claim']} — "
-                      f"and here's what surprised me: I expected {ctx['expected_flop']}, "
-                      f"but {ctx['surprise']}.")
+            # D62-class (pipeline v2): the old line was ~40 tokens ("Day 2
+            # verdict on X: <measured_claim> — and here's what surprised me: I
+            # expected <flop>, but <surprise>."). Spoken <=11 tokens names the
+            # measured result; flop → surprise rides the card (D83).
+            _proof = _spoken_proof(ctx, presenter)
+            payoff_alts = _cap_tokens([f"Day {n_st} verdict: {_proof}.",
+                                       f"Verdict: {_proof}."], 11)
+            payoff = payoff_alts[0]
+            _flop, _surp = _card_flop(ctx)
+            payoff_on_screen = _pick_card(
+                [f"DAY {n_st}: {_short_product(ctx)} · expected {_flop} → {_surp}",
+                 f"DAY {n_st} · expected {_flop} → {_surp}", f"DAY {n_st} · {_surp}"])
             # D1 every-format gate: product-ish story formats get the comment-word
             # engine, never "comment what I test next".
             bait = COMMENT_BAIT[4].format(
@@ -2366,48 +2773,472 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
                 hottake=f"most {ctx['category']}s are overpriced for what they actually do",
                 category=ctx["category"],
                 cta_word=ctx["category"].upper())
+            _cw = ctx["category"].upper()
+            bait_alts = [bait, f"Follow, comment {_cw} for the link list.",
+                         f"Follow, comment {_cw}."]
             # D7 serialization clause: the next-episode tease is a NEW named promise,
             # made in the CTA beat — it never replaces the episode-N payoff.
-            cta = (f"Comment {ctx['category'].upper()} — I'll send you the link list. "
-                   f"Tomorrow's test: frozen fruit in the {ctx['category']} — no lies.")
+            # D46/D89/D146 (pipeline v2): the old CTA re-ran the link-list
+            # funnel the bait already owns (two payloads), was ~20 tokens,
+            # and promised "frozen fruit in the {category}" on lamps and
+            # locks. One serialized promise, <=6 tokens, planned.
+            series_next = "the torture test"
+            cta = f"Follow, part 2: {series_next}."
+            cta_alts = [cta, f"Part 2: {series_next}.", "Follow for part 2."]
     # payoff delivery
     # D27 (judge loop, cycle 10): review scripts pin the verdict on screen.
-    payoff_beat = {"t": f"{t(D*0.72)}–{t(D*0.85)}s", "type": "PAYOFF",
+    payoff_beat = {"type": "PAYOFF",
         "dialogue": payoff,
+        # D143: spoken variants for the post-payoff budget (D7 band)
+        "_alts": payoff_alts or [payoff],
         "delivery": "Slow down. Let the result land. No scripted laugh (F142)."}
-    if locals().get("payoff_on_screen"):
+    if payoff_on_screen:
         payoff_beat["on_screen"] = payoff_on_screen
+        payoff_beat["_os_alts"] = _card_variants(payoff_on_screen)   # D142
     beats.append(payoff_beat)    # comment bait
-    beats.append({"t": f"{t(D*0.85)}–{t(D*0.94)}s", "type": "COMMENT BAIT",
+    beats.append({"type": "COMMENT BAIT",
         "dialogue": bait,
+        "_alts": bait_alts or [bait],
         "note": "Deliberate disagreement / fill-in-blank = comment engine (playbook §17)."})
     # CTA — late, never opening (playbook: 215/349 viral reels have no CTA; make yours explicit but last)
-    beats.append({"t": f"{t(D*0.94)}–{t(D)}s", "type": "CTA",
+    beats.append({"type": "CTA",
         "dialogue": cta,
+        "_alts": cta_alts or [cta],
         "delivery": "Brisk 160–180 wpm (F86)."})
-    # D65 (2026-09-27, prompt-pipeline regression): DE-OVERLAP PASS. The old
-    # fixed-fraction anchors (edu at edu_base, demo at D*0.38, evidence at
-    # D*0.68, payoff at D*0.72) overlapped by construction for common inputs
-    # (seed 902–906: edu/demo shared 2.6s on EVERY seed; transformation evidence
-    # overlapped the payoff) — the pipeline's D55 gate failed every fresh maker
-    # run loudly. Geometry fix only, no content change: walk beats in timeline
-    # order and push any beat that starts inside the previous beat's window to
-    # start where the previous ends. D43 (dialogue fits its window) is a
-    # separate content-budgeting problem — filed as pipeline-feedback for the
-    # judge loop; the gates keep failing loudly on it until the copy is
-    # budgeted.
-    beats.sort(key=lambda b: _bt(b))
-    cursor = 0.0
-    for b in beats:
-        s, e = _bt(b)
-        if s is None:
+    # D146: the promised next episode, for generate()'s series_plan
+    ctx["_series_next"] = series_next
+    # D143 (pipeline v2 — replaces the D65 de-overlap pass): TIMELINE FROM
+    # CONTENT. The old fixed-fraction anchors (edu at edu_base, demo at D*0.38,
+    # evidence at D*0.68, payoff D*0.72–0.85, bait D*0.85–0.94, CTA D*0.94–D,
+    # a 2.0s imperfection window for 20–34 words) never looked at the words,
+    # and D65 then shifted beats forward without re-timing the contract —
+    # 687/990 runs failed D43, 627 D74, 279 D94, 270 D78. Body beats are now
+    # appended in NARRATIVE ORDER with no window; _fit_timeline budgets the
+    # copy, sizes every window from its own words (vsp.timing.layout: tiled
+    # 3.0s→D, payoff inside the D7 72–85% band) and re-times the hook's
+    # "delivered at ~Xs" contract to the real payoff start (D94).
+    hook, body = _fit_timeline(beats[:2], beats[2:], D, presenter)
+    return fam, hook + body
+
+
+# ------------------------------------------------ D143 content budget helpers
+_DROP_OPTIONAL = 30   # D143: a beat whose _drop rank is >= this is OPTIONAL
+# D12/D88/D114/D89/D62/D68 doctrine budgets (gate tokens: whitespace split,
+# an em dash counts) — the first variant inside the cap is the one that ships.
+_TYPE_WORD_CAP = {"IMPERFECTION BEAT": 12, "COMMENT BAIT": 9, "CTA": 6, "PAYOFF": 11}
+_CARD_TOKENS, _CARD_CHARS = 12, 66   # D142/D103 card budget (R09: <=70 chars)
+_D12_MAX_S = 5.0                     # D12: imperfection beat is 3–5s
+
+
+def _gate_words(text):
+    return len((text or "").split())
+
+
+def _ai_claims(text):
+    """D137: True if text matches a lexicon.AI_FIRST_PERSON pattern."""
+    from vsp.lexicon import AI_FIRST_PERSON
+    return any(rx.search(text or "") for rx in AI_FIRST_PERSON)
+
+
+def _bank_variants(tmpl, slots):
+    """D143: the bank line plus its BEAT_SHORT_FORMS, rendered with the same
+    slots (longest first)."""
+    return [tmpl.format(**slots)] + [s.format(**slots)
+                                     for s in BEAT_SHORT_FORMS.get(tmpl, ())]
+
+
+def _cap(s):
+    return s[:1].upper() + s[1:] if s else s
+
+
+def _cap_tokens(alts, n):
+    """D62/D68: keep the variants inside the n-token spoken budget; if none
+    fits, the longest boundary cut of the shortest one (never mid-clause)."""
+    from vsp import timing
+    ok = [a for a in alts if _gate_words(a) <= n]
+    if ok:
+        return ok
+    cut = timing.fit_words(alts[-1], n)
+    return [cut] if cut else [alts[-1]]
+
+
+def _spoken_proof(ctx, presenter):
+    """D56 positive proof, in the AI lane's curator voice (D137)."""
+    p = (ctx.get("purpose_proof") or ctx.get("measured_short")
+         or "it did the job")
+    return AI_PROOF_REWRITES.get(p, p) if presenter == "ai" else p
+
+
+def _short_product(ctx):
+    """D142/D83: <=2-word product name for cards ("LED sunrise alarm lamp"
+    -> "alarm lamp", "car trash can with lid" -> "trash can")."""
+    p = re.sub(r"\s+with\s+.*$", "", ctx.get("product") or ctx.get("category", ""))
+    p = re.sub(r"^(?:these|this|the|a|an|my)\s+", "", p.strip(), flags=re.I)
+    w = p.split()
+    if len(w) <= 2:
+        return p
+    if w[-1].lower() in ("set", "kit", "pack", "bundle"):
+        w = w[:-1]
+    tail = w[-2:]
+    if len(tail) == 2 and (len(tail[0]) <= 1 or tail[0].lower().endswith("ing")):
+        tail = tail[-1:]
+    return " ".join(tail)
+
+
+def _card_flop(ctx):
+    """D142: (<=3-token flop, <=3-token surprise) for the payoff card."""
+    if ctx.get("concept") == "showcase":
+        return SHOWCASE_CARD
+    cat = ctx.get("category", "")
+    return next((v for k, v in CATEGORY_CARD.items() if k in cat), DEFAULT_CARD)
+
+
+def _card_who(ctx):
+    cat = ctx.get("category", "")
+    return next((v for k, v in CATEGORY_WHO_SHORT.items() if k in cat), None)
+
+
+def _pick_card(cands):
+    """D142/D103: first candidate inside <=12 tokens ('·', '—', '→' count)
+    and the char cap; else the shortest."""
+    for c in cands:
+        if _gate_words(c) <= _CARD_TOKENS and len(c) <= _CARD_CHARS:
+            return c
+    return min(cands, key=lambda c: (_gate_words(c), len(c)))
+
+
+def _card_variants(card):
+    """D142: shorter forms of a 'LABEL · ... · expected FLOP → SURPRISE' card
+    for tight windows (a card needs len/20 s on screen) — longest first."""
+    if not card:
+        return []
+    segs = [s.strip() for s in card.split(" · ")]
+    out = [card, card.replace("expected ", "")]
+    tail = segs[-1]
+    if len(segs) > 1 and "→" in tail:
+        out.append(f"{segs[0]} · {tail.split('→')[-1].strip()}")
+    if len(segs) > 1:
+        out.append(segs[0])
+    uniq = []
+    for c in out:
+        if c and c not in uniq and _gate_words(c) <= _CARD_TOKENS:
+            uniq.append(c)
+    return sorted(uniq, key=lambda c: -len(c))
+
+
+def _d36_subject(prompt):
+    """RULES D36: the transformation's real subject — "body" only when the
+    prompt is about a body, else vsp.repair's subject map ("hair", "skin",
+    "room", ...), else the neutral "angle"."""
+    if "body" in (prompt or "").lower():
+        return "body"
+    from vsp import repair
+    return repair.d36_subject({"prompt": prompt or ""})
+
+
+def _norm_words(text):
+    return re.findall(r"[a-z0-9']+", (text or "").lower())
+
+
+def _echoes(a, b):
+    """D41: True if line a restates line b (contained, or >=half of a's
+    word trigrams appear in b)."""
+    na, nb = _norm_words(a), _norm_words(b)
+    if not na or not nb:
+        return False
+    if " ".join(na) in " ".join(nb):
+        return True
+    ta = {tuple(na[i:i + 3]) for i in range(len(na) - 2)}
+    tb = {tuple(nb[i:i + 3]) for i in range(len(nb) - 2)}
+    return bool(ta) and len(ta & tb) / len(ta) >= 0.5
+
+
+# D44: a spoken slot never ends on a camera location ("... — logged on
+# camera.", "..., measured, on camera.") — the shot list owns the camera.
+_CAMERA_TAIL = re.compile(r"(?:,|\s[\u2014\u2013])?\s*(?:(?:logged|measured|"
+                          r"screen-recorded),?\s+)?on camera(?=[.,!?;]|$)")
+
+
+def _spoken(s):
+    """Final spoken form: D63 voice pass, D44 camera-tail scrub, D90b
+    sentence casing (after '. ', '? ' and '! ') and a capital open."""
+    if not s:
+        return s
+    s = _CAMERA_TAIL.sub("", humanize_dialogue(s))
+    s = re.sub(r"(?<=[.?!] )([a-z])", lambda m: m.group(1).upper(), s)
+    return _cap(s.strip())
+
+
+def _fix_promises(body):
+    """D45/D41 after a beat is budgeted out: a demo re-hook that promised the
+    next test now promises what follows (_rh_last); a re-hook whose promised
+    beat type is gone falls back (_rh_fallback, or nothing)."""
+    for i, b in enumerate(body):
+        # a budget-dropped re-hook is kept in _rh_orig for the restore pass —
+        # fix whichever field holds it
+        f = "_rh_orig" if b.get("_rh_dropped") else "rehook"
+        nxt = body[i + 1].get("type") if i + 1 < len(body) else None
+        if b.get("_rh_last") and nxt != b.get("type"):
+            b[f] = b.pop("_rh_last")
+        need = b.get("_rh_needs")
+        if need and not any(x.get("type") == need for x in body[i + 1:]):
+            b[f] = b.get("_rh_fallback") or ""
+            b.pop("_rh_needs", None)
+    # D111: a lone surviving demo beat numbers nothing ("TEST 1" with no
+    # "TEST 2" once the second demo is budgeted out)
+    demos = [b for b in body if b.get("type") == "DEMO BEAT"]
+    if len(demos) == 1 and re.match(r"TEST \d+$", demos[0].get("on_screen") or ""):
+        d = demos[0]
+        d["on_screen"] = "TEST"
+        strip = lambda s: _cap(re.sub(r"^Test \d+:\s*", "", s or ""))  # noqa: E731
+        d["dialogue"] = strip(d.get("dialogue"))
+        d["_alts"] = [strip(a) for a in d.get("_alts") or []]
+
+
+def _fit_timeline(hook, body, duration, presenter="ai"):
+    """D143: final spoken form -> content budget -> content-sized layout ->
+    payoff contract re-timed. Returns (hook_stack, body_beats).
+
+    Budget (vsp.timing.min_window per beat: dialogue + re-hook words at the
+    delivery's gate rate + 0.3s, on-screen text at <=20 cps): the body must
+    fit D-3.0s, and for the D7 band the pre-payoff beats must end by 0.85*D
+    while PAYOFF+BAIT+CTA fit in 0.28*D (then the rubric's 68–88% band, then
+    feasibility only). Reductions, gentlest first: shorter PAYOFF/BAIT/CTA
+    variants (post region) · drop OPTIONAL beats (extra edu/demo, a rejection
+    history under a ~35s body) · shorter bank variants · drop the costliest
+    re-hook (one always stays past 15s) · trim a line at a sentence/clause
+    boundary (vsp.timing.fit_words) · finally, for feasibility only, drop a
+    last-resort beat. vsp.repair.retime is the fallback if still infeasible.
+    """
+    from vsp import timing
+    D = float(duration)
+    start = 3.0
+    B = D - start
+    ai = presenter == "ai"
+    body = [dict(b) for b in body]
+    # 1. final spoken form first: the gates measure what ships (D63 runs here
+    #    and again in generate() — it is idempotent).
+    for b in body:
+        for k in ("rehook", "_rh_last", "_rh_fallback"):
+            if b.get(k):
+                b[k] = _spoken(b[k])
+        alts = [_spoken(a) for a in [b.get("dialogue")] + list(b.get("_alts") or []) if a]
+        uniq = []
+        for a in alts:
+            if a not in uniq:
+                uniq.append(a)
+        if ai:   # D137: never ship a variant that claims lived experience
+            uniq = [a for a in uniq if not _ai_claims(a)] or uniq
+            for k in ("rehook", "_rh_last", "_rh_fallback"):
+                if b.get(k) and _ai_claims(b[k]):
+                    b[k] = ""
+        if b.get("type") == "PAYOFF":
+            # D143: boundary cuts of the spoken payoff ("Test result: before
+            # and after." from "..., side by side.") as last-resort variants
+            # for sub-25s bands — never mid-clause (fit_words), >=4 tokens.
+            for a in list(uniq):
+                for n in range(_gate_words(a) - 1, 3, -1):
+                    cut = timing.fit_words(a, n)
+                    if cut and cut not in uniq and _gate_words(cut) >= 4:
+                        uniq.append(cut)
+        uniq.sort(key=lambda a: -_gate_words(a))       # stable: longest first
+        cap = _TYPE_WORD_CAP.get(b.get("type"))
+        if cap and uniq:
+            inside = [a for a in uniq if _gate_words(a) <= cap]
+            if not inside:
+                cut = timing.fit_words(uniq[-1], cap)
+                inside = [cut] if cut else uniq[-1:]
+            uniq = inside
+        if uniq and b.get("type") == "IMPERFECTION BEAT":
+            # D12: the confession + its re-hook are a 3–5s beat — only the
+            # variants that fit 5.0s with the re-hook may ship (the restore
+            # pass must not bring a longer one back); if none does, the
+            # shortest ships and the re-hook goes past 5.5s.
+            fit5 = [a for a in uniq
+                    if timing.min_window(dict(b, dialogue=a)) <= _D12_MAX_S]
+            uniq = fit5 or uniq[-1:]
+            if b.get("rehook") and \
+                    timing.min_window(dict(b, dialogue=uniq[0])) > _D12_MAX_S + 0.5:
+                b["rehook"] = ""
+                b["_rh_dropped"] = True
+        if uniq:
+            b["dialogue"], b["_alts"] = uniq[0], uniq
+    # 2. D41/D93: a re-hook never restates its own beat or another re-hook
+    seen = set()
+    for b in body:
+        rh = b.get("rehook")
+        if not rh:
             continue
-        if s < cursor - 0.05:
-            shift = cursor - s
-            b["t"] = f"{t(s + shift)}–{t(e + shift)}s"
-            s, e = s + shift, e + shift
-        cursor = max(cursor, e)
-    return fam, beats
+        key = " ".join(_norm_words(rh))
+        if _echoes(rh, b.get("dialogue")) or key in seen:
+            b["rehook"] = ""
+            b["_rh_dropped"] = True
+        seen.add(key)
+
+    # 3. budget loop
+    def pay_idx():
+        return next((i for i, b in enumerate(body) if b.get("type") == "PAYOFF"),
+                    len(body))
+
+    def regions():
+        m = [timing.min_window(b) for b in body]
+        k = pay_idx()
+        return sum(m[:k]), sum(m[k:]), m, k
+
+    def next_alt(b):
+        # the next shorter spoken variant — or card variant — that actually
+        # shrinks the beat's minimum window (words are never spent for nothing)
+        base = timing.min_window(b)
+        cur = _gate_words(b.get("dialogue"))
+        for a in b.get("_alts") or []:
+            if _gate_words(a) < cur and \
+                    timing.min_window(dict(b, dialogue=a)) < base - 1e-9:
+                b["dialogue"] = a
+                return True
+        cur_os = len(b.get("on_screen") or "")
+        for c in b.get("_os_alts") or []:
+            if len(c) < cur_os and \
+                    timing.min_window(dict(b, on_screen=c)) < base - 1e-9:
+                b["on_screen"] = c
+                return True
+        return False
+
+    rot = [0]
+
+    def post_alt():   # CTA -> BAIT -> PAYOFF, one step each in turn
+        k = pay_idx()
+        order = [i for ty in ("CTA", "COMMENT BAIT", "PAYOFF")
+                 for i in range(k, len(body)) if body[i].get("type") == ty]
+        for j in range(len(order)):
+            i = order[(rot[0] + j) % len(order)]
+            if next_alt(body[i]):
+                rot[0] = (rot[0] + j + 1) % len(order)
+                return True
+        return False
+
+    def drop(lo, hi):
+        k = pay_idx()
+        c = [(b["_drop"], i) for i, b in enumerate(body[:k])
+             if b.get("_drop") is not None and lo <= b["_drop"] < hi]
+        if not c:
+            return False
+        del body[max(c)[1]]
+        _fix_promises(body)
+        return True
+
+    def drop_cta():
+        # sub-18s only, and only once every post-payoff variant is spent:
+        # PAYOFF+BAIT+CTA cannot fit the 28% post-payoff band at their
+        # floors (3 x 1.5s > 0.28*15s); the comment bait already carries the
+        # follow ask (playbook: 215/349 viral reels ship no CTA) — D7 wins.
+        i = next((j for j, b in enumerate(body) if b.get("type") == "CTA"), None)
+        if i is None or sum(1 for b in body if b.get("type") != "CTA") < 3:
+            return False
+        del body[i]
+        return True
+
+    def pre_alt():
+        _, _, m, k = regions()
+        return any(next_alt(body[i]) for i in sorted(range(k), key=lambda i: -m[i]))
+
+    def drop_rehook():
+        _, _, m, k = regions()
+        have = [i for i, b in enumerate(body) if b.get("rehook")]
+        if D > 15 and len(have) <= 1:
+            return False           # the rubric's "no re-hooks" floor past 15s
+        c = [i for i in have if i < k]
+        if not c:
+            return False
+        i = max(c, key=lambda i: (_gate_words(body[i]["rehook"])
+                                  / timing.wps(body[i].get("delivery")), i))
+        body[i]["_rh_orig"] = body[i]["rehook"]
+        body[i]["rehook"] = ""
+        body[i]["_rh_dropped"] = True
+        return True
+
+    def trim(post=False):   # sentence/clause boundary only (fit_words), >=3 words kept
+        _, _, m, k = regions()
+        for i in sorted(range(len(body) if post else k), key=lambda i: -m[i]):
+            d = body[i].get("dialogue") or ""
+            n = _gate_words(d)
+            new = timing.fit_words(d, n - 1) if n > 4 else None
+            if new and 3 <= _gate_words(new) < n:
+                body[i]["dialogue"] = new
+                return True
+        return False
+
+    levels = [(0.72, 0.85), (0.68, 0.88), None]
+    lvl = 0
+    for _ in range(500):
+        pre, post, m, k = regions()
+        band = levels[lvl]
+        tot_over = pre + post > B + 1e-6
+        if band is None:
+            if not tot_over:
+                break
+            post_over, pre_over = False, True
+        else:
+            post_over = post > (1 - band[0]) * D + 1e-6
+            pre_over = tot_over or pre > band[1] * D - start + 1e-6
+            if not (post_over or pre_over):
+                break
+        if post_over and post_alt():
+            continue
+        if post_over and D < 18 and drop_cta():
+            continue
+        if pre_over:
+            if drop(_DROP_OPTIONAL, 10 ** 6) or pre_alt() or drop_rehook() or trim():
+                continue
+            if band is None and (drop(0, _DROP_OPTIONAL) or trim(post=True)):
+                continue
+            if tot_over and post_alt():
+                continue
+        if band is None:
+            break
+        lvl += 1
+
+    # 4. restore: the greedy reductions can over-cut (a short variant taken
+    #    before a re-hook drop made it unnecessary) — give back, in narrative
+    #    order, the longest line / card / re-hook the reached budget allows.
+    def holds():
+        pre, post, _, _ = regions()
+        band = levels[lvl]
+        return pre + post <= B + 1e-6 and (band is None or (
+            post <= (1 - band[0]) * D + 1e-6 and
+            pre <= band[1] * D - start + 1e-6))
+
+    if holds():
+        # with no band reached, a longer post-payoff line only moves the
+        # payoff earlier — restore the pre-payoff beats only
+        scope = body if levels[lvl] is not None else body[:pay_idx()]
+        for field, alts_key in (("dialogue", "_alts"), ("on_screen", "_os_alts")):
+            for b in scope:
+                cur = b.get(field) or ""
+                longer = [a for a in b.get(alts_key) or [] if len(a) > len(cur)
+                          and (field == "on_screen" or _gate_words(a) > _gate_words(cur))]
+                for a in longer:          # longest first
+                    b[field] = a
+                    if holds():
+                        break
+                    b[field] = cur
+        for b in body:
+            if b.get("_rh_orig") and not b.get("rehook"):
+                b["rehook"] = b["_rh_orig"]
+                if not holds():
+                    b["rehook"] = ""
+    # 5. ship only public keys; lay out; re-time the contract (D94)
+    body = [{k: v for k, v in b.items() if not k.startswith("_") and
+             not (k == "rehook" and not v)} for b in body]
+    laid, info = timing.layout(body, D, start=start)
+    hook = timing.retime_contract(hook, info["payoff_start"])
+    if not info["feasible"]:
+        # last resort (tiny durations): the proven trim loop — relayout,
+        # boundary trims, re-hook drops, restore over-trims (vsp.repair)
+        from vsp import repair
+        s, _ = repair.retime({"duration_s": duration, "hook_stack": hook,
+                              "beats": laid})
+        hook, laid = s["hook_stack"], s["beats"]
+    return hook, laid
 
 def _bt(b):
     """Parse a beat's 't' window ('3.0–7.4s') -> (start, end). Module-level so the
@@ -2596,6 +3427,7 @@ def generate(prompt, presenter="ai", fmt="demo", duration=30, seed=None, use_res
     # edition bottle") are never product text — strip them before parsing so
     # no raw {slot} can reach a template or the viewer.
     ctx = parse_prompt(re.sub(r"\s+", " ", re.sub(r"[{}]", "", prompt)).strip())
+    ctx["_prompt"] = prompt   # D36: the evidence line names the prompt's subject
     fam, beats = build_beats(ctx, duration, rng, fmt, presenter)
     # D63: spoken-voice pass over every spoken string before the script ships —
     # gates below measure the final spoken words, not the raw templates.
@@ -2618,7 +3450,17 @@ def generate(prompt, presenter="ai", fmt="demo", duration=30, seed=None, use_res
         "hook_stack": beats[0:2], "beats": beats[2:],
         "caption": caption,
         "research_notes": research_notes(ctx, presenter, fmt, fam),
+        # D145: what actually rendered the hook (GEN-B's pick_hook sets it)
+        "hook_source": ctx.get("hook_source") or "template",
     }
+    # D146: a CTA that promises the next episode ("Follow, part 2: the
+    # torture test." / "Tomorrow: Day 15.") ships its plan — an unplanned
+    # series promise is a broken contract.
+    cta_line = next((b.get("dialogue") or "" for b in script["beats"]
+                     if b.get("type") == "CTA"), "")
+    if ctx.get("_series_next") and re.search(r"\bpart (?:2|two)\b|\btomorrow\b",
+                                             cta_line, re.I):
+        script["series_plan"] = {"next": ctx["_series_next"], "cta": cta_line}
     if presenter == "ai":
         script["disclosure"] = PERSONA_DISCLOSURE
     else:
