@@ -4374,6 +4374,13 @@ def generate(prompt, presenter="ai", fmt="demo", duration=30, seed=None, use_res
         script["disclosure"] = PERSONA_DISCLOSURE
     else:
         script["delivery_note"] = HUMAN_NOTE
+    # pipeline v2.1 creative layer: direction (vibe/tone), hook variants,
+    # discovery packaging — additive keys; absent modules add nothing.
+    try:
+        from vsp import creative as _creative
+        _creative.enrich(script, ctx=ctx, seed=seed, maker=sys.modules[__name__])
+    except ImportError:
+        pass
     return script
 
 def render_text(s):
