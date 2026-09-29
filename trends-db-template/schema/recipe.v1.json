@@ -1,0 +1,499 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "recipe.v1.json",
+ "title": "recipe v1",
+ "type": "object",
+ "description": "Synthesised trend recipe (derived/recipes.jsonl)",
+ "properties": {
+  "schema_version": {
+   "type": "integer",
+   "enum": [
+    1
+   ]
+  },
+  "recipe_id": {
+   "type": "string",
+   "pattern": "^rcp-\\d{8}-\\d{2,3}$"
+  },
+  "date": {
+   "type": "string",
+   "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+   "format": "date"
+  },
+  "created_at": {
+   "type": "string",
+   "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+   "format": "date-time"
+  },
+  "operator": {
+   "type": "string",
+   "enum": [
+    "ride",
+    "transplant",
+    "combine",
+    "substitute",
+    "reverse",
+    "serialize",
+    "constrain",
+    "escalate",
+    "mashup",
+    "invent"
+   ]
+  },
+  "title": {
+   "type": "string",
+   "maxLength": 160
+  },
+  "rationale": {
+   "type": "string",
+   "maxLength": 320
+  },
+  "niche": {
+   "type": "string",
+   "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+  },
+  "lanes": {
+   "type": "array",
+   "description": "feasible presenter lanes",
+   "items": {
+    "type": "string",
+    "enum": [
+     "ai",
+     "human"
+    ]
+   },
+   "minItems": 1
+  },
+  "trend_keys": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "pattern": "^(?:sound|format|tag|topic):[a-z0-9][a-z0-9._-]{0,63}$"
+   },
+   "maxItems": 10
+  },
+  "stage": {
+   "type": "string",
+   "enum": [
+    "emerging",
+    "rising",
+    "peak",
+    "saturated",
+    "declining",
+    "steady",
+    "outlier",
+    "invented"
+   ]
+  },
+  "speed": {
+   "type": [
+    "string",
+    "null"
+   ],
+   "enum": [
+    "moment",
+    "signal",
+    "force",
+    null
+   ]
+  },
+  "score": {
+   "type": "number",
+   "minimum": 0,
+   "maximum": 1
+  },
+  "score_parts": {
+   "type": "object",
+   "properties": {
+    "evidence": {
+     "type": "number",
+     "minimum": 0,
+     "maximum": 1
+    },
+    "velocity": {
+     "type": "number",
+     "minimum": 0,
+     "maximum": 1
+    },
+    "novelty": {
+     "type": "number",
+     "minimum": 0,
+     "maximum": 1
+    },
+    "feasibility": {
+     "type": "number",
+     "minimum": 0,
+     "maximum": 1
+    }
+   },
+   "required": [
+    "evidence",
+    "velocity",
+    "novelty",
+    "feasibility"
+   ],
+   "additionalProperties": false
+  },
+  "hook_archetypes": {
+   "type": "array",
+   "description": "ordered; empty = no hook steering",
+   "items": {
+    "type": "string",
+    "enum": [
+     "curiosity-gap",
+     "bold-claim",
+     "negative-command",
+     "proof-first",
+     "transformation",
+     "story-time",
+     "contrarian-reframe",
+     "identity-reveal",
+     "problem-agitate",
+     "question",
+     "comparison",
+     "pov",
+     "newness",
+     "confession",
+     "price-anchor",
+     "listicle",
+     "challenge",
+     "day-counter",
+     "showcase"
+    ]
+   },
+   "maxItems": 4
+  },
+  "frame0_visual_type": {
+   "type": [
+    "string",
+    "null"
+   ],
+   "enum": [
+    "product-in-action",
+    "result-reveal",
+    "before-after-split",
+    "problem-state",
+    "pov-hands",
+    "face-reaction",
+    "text-first",
+    "unboxing",
+    "comparison",
+    "day-counter",
+    "satisfying-macro",
+    null
+   ]
+  },
+  "vibe": {
+   "type": [
+    "string",
+    "null"
+   ],
+   "enum": [
+    "raw-ugc",
+    "clean-aesthetic",
+    "hype-energy",
+    "cozy-calm",
+    "expert-trust",
+    "playful-comedic",
+    "cinematic-premium",
+    "asmr-satisfying",
+    "story-vlog",
+    "before-after-reveal",
+    null
+   ]
+  },
+  "format": {
+   "type": [
+    "string",
+    "null"
+   ],
+   "enum": [
+    "demo",
+    "talking-head",
+    "pov-vlog",
+    "transformation",
+    "review",
+    null
+   ]
+  },
+  "duration_s": {
+   "type": [
+    "integer",
+    "null"
+   ],
+   "enum": [
+    15,
+    30,
+    45,
+    60,
+    null
+   ]
+  },
+  "beats_note": {
+   "type": "string",
+   "maxLength": 400
+  },
+  "audio_note": {
+   "type": "string",
+   "maxLength": 400
+  },
+  "text_note": {
+   "type": "string",
+   "maxLength": 400
+  },
+  "participation_note": {
+   "type": "string",
+   "maxLength": 400
+  },
+  "originality": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "maxLength": 220
+   },
+   "maxItems": 8,
+   "minItems": 2
+  },
+  "evidence": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "properties": {
+     "permalink": {
+      "type": "string",
+      "pattern": "^https://",
+      "format": "uri"
+     },
+     "platform": {
+      "type": "string",
+      "enum": [
+       "instagram",
+       "tiktok",
+       "youtube",
+       "pinterest",
+       "x",
+       "other"
+      ]
+     },
+     "tier": {
+      "type": [
+       "string",
+       "null"
+      ],
+      "enum": [
+       "emerging",
+       "nano",
+       "micro",
+       "mid",
+       "macro",
+       "mega",
+       null
+      ]
+     },
+     "outlier_x": {
+      "type": [
+       "number",
+       "null"
+      ],
+      "minimum": 0
+     },
+     "band": {
+      "type": [
+       "string",
+       "null"
+      ],
+      "enum": [
+       "normal",
+       "notable",
+       "outlier",
+       "breakout",
+       "mega",
+       "unscored",
+       null
+      ]
+     }
+    },
+    "required": [
+     "permalink",
+     "platform"
+    ],
+    "additionalProperties": false
+   },
+   "maxItems": 6
+  },
+  "risk": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "maxLength": 220
+   },
+   "maxItems": 10
+  },
+  "needs_real_person": {
+   "type": "boolean"
+  },
+  "fingerprint": {
+   "type": "string",
+   "pattern": "^[0-9a-f]{16}$"
+  },
+  "tokens": {
+   "type": "array",
+   "description": "novelty tokens (compared with used recipes)",
+   "items": {
+    "type": "string",
+    "maxLength": 80
+   },
+   "maxItems": 40,
+   "minItems": 1
+  },
+  "invent": {
+   "type": [
+    "object",
+    "null"
+   ],
+   "properties": {
+    "signature": {
+     "type": "object",
+     "properties": {
+      "name": {
+       "type": "string",
+       "maxLength": 60
+      },
+      "marker": {
+       "type": "string",
+       "maxLength": 160
+      },
+      "hashtag": {
+       "type": "string",
+       "pattern": "^#[a-z0-9]{3,40}$"
+      }
+     },
+     "required": [
+      "name",
+      "marker",
+      "hashtag"
+     ],
+     "additionalProperties": false
+    },
+    "slot": {
+     "type": "string",
+     "maxLength": 200
+    },
+    "hypothesis": {
+     "type": "string",
+     "maxLength": 400
+    },
+    "test_plan": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "maxLength": 240
+     },
+     "minItems": 3
+    },
+    "elements": {
+     "type": "object",
+     "properties": {
+      "participation": {
+       "type": "string",
+       "enum": [
+        "duet",
+        "stitch",
+        "template",
+        "challenge",
+        "comment_prompt",
+        "none"
+       ]
+      },
+      "format_key": {
+       "type": "string",
+       "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+      },
+      "emotion": {
+       "type": "string",
+       "enum": [
+        "awe",
+        "humor",
+        "surprise",
+        "relatable",
+        "aspirational",
+        "curiosity",
+        "satisfaction",
+        "nostalgia",
+        "outrage",
+        "fear",
+        "tension",
+        "other"
+       ]
+      },
+      "signature": {
+       "type": "string",
+       "maxLength": 60
+      }
+     },
+     "required": [
+      "participation",
+      "format_key",
+      "emotion",
+      "signature"
+     ],
+     "additionalProperties": false
+    }
+   },
+   "required": [
+    "signature",
+    "slot",
+    "hypothesis",
+    "test_plan",
+    "elements"
+   ],
+   "additionalProperties": false
+  },
+  "used": {
+   "type": "boolean"
+  },
+  "used_at": {
+   "type": [
+    "string",
+    "null"
+   ],
+   "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+   "format": "date-time"
+  },
+  "script_sha": {
+   "type": [
+    "string",
+    "null"
+   ],
+   "pattern": "^[0-9a-f]{8,64}$"
+  }
+ },
+ "required": [
+  "schema_version",
+  "recipe_id",
+  "date",
+  "created_at",
+  "operator",
+  "title",
+  "rationale",
+  "niche",
+  "lanes",
+  "trend_keys",
+  "stage",
+  "score",
+  "score_parts",
+  "hook_archetypes",
+  "beats_note",
+  "audio_note",
+  "text_note",
+  "participation_note",
+  "originality",
+  "evidence",
+  "risk",
+  "needs_real_person",
+  "fingerprint",
+  "tokens",
+  "used"
+ ],
+ "additionalProperties": false
+}

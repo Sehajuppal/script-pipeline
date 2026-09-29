@@ -1,0 +1,543 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "observation.v1.json",
+ "title": "observation v1",
+ "type": "object",
+ "description": "One observed short-form post: public metrics + our analysis",
+ "properties": {
+  "schema_version": {
+   "type": "integer",
+   "description": "record schema version",
+   "enum": [
+    1
+   ]
+  },
+  "obs_id": {
+   "type": "string",
+   "description": "sha1('<platform>:<post_id>') first 16 hex chars",
+   "pattern": "^[0-9a-f]{16}$"
+  },
+  "platform": {
+   "type": "string",
+   "enum": [
+    "instagram",
+    "tiktok",
+    "youtube",
+    "pinterest",
+    "x",
+    "other"
+   ]
+  },
+  "post_id": {
+   "type": "string",
+   "description": "platform post id (Instagram: the shortcode; derived from the permalink when possible)",
+   "maxLength": 128
+  },
+  "permalink": {
+   "type": "string",
+   "description": "https post page URL, never a media/CDN URL",
+   "pattern": "^https://",
+   "format": "uri"
+  },
+  "observed_at": {
+   "type": "string",
+   "description": "when the metrics were observed (UTC)",
+   "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+   "format": "date-time"
+  },
+  "posted_at": {
+   "type": [
+    "string",
+    "null"
+   ],
+   "description": "when the post was published (UTC)",
+   "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+   "format": "date-time"
+  },
+  "source": {
+   "type": "string",
+   "enum": [
+    "ig_graph_hashtag",
+    "ig_graph_bd",
+    "yt_data_api",
+    "tiktok_creative_center",
+    "agent_observed",
+    "user_shared",
+    "import"
+   ]
+  },
+  "analyst": {
+   "type": "string",
+   "description": "who filled the analysis fields",
+   "enum": [
+    "api",
+    "agent",
+    "human"
+   ]
+  },
+  "creator": {
+   "type": [
+    "object",
+    "null"
+   ],
+   "properties": {
+    "handle": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "lower-case handle without @ (YouTube without a custom URL: channel/<id>)",
+     "pattern": "^(?:[a-z0-9._-]{1,64}|channel/[A-Za-z0-9_-]{8,64})$"
+    },
+    "followers": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "followers / subscribers at observed_at",
+     "minimum": 0
+    },
+    "median_views_recent": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "median views of the creator's recent posts (>= 5 posts, each older than 7 days)",
+     "minimum": 0
+    },
+    "baseline_n": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "posts in that median",
+     "minimum": 0
+    },
+    "tier": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "from followers (filled)",
+     "enum": [
+      "emerging",
+      "nano",
+      "micro",
+      "mid",
+      "macro",
+      "mega",
+      null
+     ]
+    }
+   },
+   "additionalProperties": false
+  },
+  "metrics": {
+   "type": [
+    "object",
+    "null"
+   ],
+   "properties": {
+    "views": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "views / plays",
+     "minimum": 0
+    },
+    "likes": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "likes",
+     "minimum": 0
+    },
+    "comments": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "comments",
+     "minimum": 0
+    },
+    "shares": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "shares",
+     "minimum": 0
+    },
+    "saves": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "saves",
+     "minimum": 0
+    }
+   },
+   "additionalProperties": false
+  },
+  "niche": {
+   "type": [
+    "string",
+    "null"
+   ],
+   "description": "maker niche (vsp.router names)",
+   "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+   "maxLength": 40
+  },
+  "topic": {
+   "type": [
+    "string",
+    "null"
+   ],
+   "description": "short topic label",
+   "maxLength": 60
+  },
+  "language": {
+   "type": [
+    "string",
+    "null"
+   ],
+   "pattern": "^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$"
+  },
+  "region": {
+   "type": [
+    "string",
+    "null"
+   ],
+   "pattern": "^(?:[A-Z]{2}|global)$"
+  },
+  "duration_s": {
+   "type": [
+    "number",
+    "null"
+   ],
+   "minimum": 0,
+   "maximum": 3600
+  },
+  "hook": {
+   "type": [
+    "object",
+    "null"
+   ],
+   "properties": {
+    "first_words": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "<= 12-word excerpt of the spoken/caption hook",
+     "pattern": "^\\s*\\S+(?:\\s+\\S+){0,11}\\s*$",
+     "maxLength": 160
+    },
+    "archetype": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "creative_vocab.HOOK_ARCHETYPES id",
+     "enum": [
+      "curiosity-gap",
+      "bold-claim",
+      "negative-command",
+      "proof-first",
+      "transformation",
+      "story-time",
+      "contrarian-reframe",
+      "identity-reveal",
+      "problem-agitate",
+      "question",
+      "comparison",
+      "pov",
+      "newness",
+      "confession",
+      "price-anchor",
+      "listicle",
+      "challenge",
+      "day-counter",
+      "showcase",
+      null
+     ]
+    },
+    "frame0_visual": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "creative_vocab.VISUAL_TYPES id",
+     "enum": [
+      "product-in-action",
+      "result-reveal",
+      "before-after-split",
+      "problem-state",
+      "pov-hands",
+      "face-reaction",
+      "text-first",
+      "unboxing",
+      "comparison",
+      "day-counter",
+      "satisfying-macro",
+      null
+     ]
+    },
+    "on_screen_text": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "<= 8 words of frame-0 overlay text",
+     "pattern": "^\\s*\\S+(?:\\s+\\S+){0,7}\\s*$",
+     "maxLength": 100
+    }
+   },
+   "additionalProperties": false
+  },
+  "structure": {
+   "type": [
+    "object",
+    "null"
+   ],
+   "properties": {
+    "beats": {
+     "type": [
+      "array",
+      "null"
+     ],
+     "description": "short beat labels in order",
+     "items": {
+      "type": "string",
+      "maxLength": 40
+     },
+     "maxItems": 12
+    },
+    "cuts_per_10s": {
+     "type": [
+      "number",
+      "null"
+     ],
+     "minimum": 0,
+     "maximum": 40
+    },
+    "payoff_reveal": {
+     "type": [
+      "boolean",
+      "null"
+     ]
+    },
+    "loop": {
+     "type": [
+      "boolean",
+      "null"
+     ]
+    },
+    "series": {
+     "type": [
+      "boolean",
+      "null"
+     ]
+    }
+   },
+   "additionalProperties": false
+  },
+  "audio": {
+   "type": [
+    "object",
+    "null"
+   ],
+   "properties": {
+    "type": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "enum": [
+      "trending_sound",
+      "original_voiceover",
+      "original_sound",
+      "licensed_music",
+      "none",
+      null
+     ]
+    },
+    "sound_id": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "pattern": "^[A-Za-z0-9._:-]{1,64}$"
+    },
+    "sound_title": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "maxLength": 100
+    }
+   },
+   "additionalProperties": false
+  },
+  "format_key": {
+   "type": [
+    "string",
+    "null"
+   ],
+   "description": "reusable template slug, e.g. pov-reveal",
+   "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+   "maxLength": 48
+  },
+  "participation": {
+   "type": [
+    "string",
+    "null"
+   ],
+   "enum": [
+    "duet",
+    "stitch",
+    "template",
+    "challenge",
+    "comment_prompt",
+    "none",
+    null
+   ]
+  },
+  "cta": {
+   "type": [
+    "string",
+    "null"
+   ],
+   "enum": [
+    "comment_keyword",
+    "follow",
+    "link_in_bio",
+    "save",
+    "share",
+    "none",
+    "other",
+    null
+   ]
+  },
+  "emotion": {
+   "type": [
+    "string",
+    "null"
+   ],
+   "enum": [
+    "awe",
+    "humor",
+    "surprise",
+    "relatable",
+    "aspirational",
+    "curiosity",
+    "satisfaction",
+    "nostalgia",
+    "outrage",
+    "fear",
+    "tension",
+    "other",
+    null
+   ]
+  },
+  "vibe": {
+   "type": [
+    "string",
+    "null"
+   ],
+   "description": "creative_vocab.VIBES id",
+   "enum": [
+    "raw-ugc",
+    "clean-aesthetic",
+    "hype-energy",
+    "cozy-calm",
+    "expert-trust",
+    "playful-comedic",
+    "cinematic-premium",
+    "asmr-satisfying",
+    "story-vlog",
+    "before-after-reveal",
+    null
+   ]
+  },
+  "replicability": {
+   "type": [
+    "integer",
+    "null"
+   ],
+   "description": "1 = hard to copy, 5 = anyone",
+   "minimum": 1,
+   "maximum": 5
+  },
+  "production_cost": {
+   "type": [
+    "string",
+    "null"
+   ],
+   "enum": [
+    "low",
+    "med",
+    "high",
+    null
+   ]
+  },
+  "needs_real_person": {
+   "type": [
+    "boolean",
+    "null"
+   ],
+   "description": "dance, face reaction, real-person challenge"
+  },
+  "trend_keys": {
+   "type": [
+    "array",
+    "null"
+   ],
+   "description": "sound:<id> format:<slug> tag:<hashtag> topic:<slug>",
+   "items": {
+    "type": "string",
+    "pattern": "^(?:sound|format|tag|topic):[a-z0-9][a-z0-9._-]{0,63}$"
+   },
+   "maxItems": 20
+  },
+  "notes": {
+   "type": [
+    "string",
+    "null"
+   ],
+   "description": "our own analysis",
+   "maxLength": 280
+  },
+  "retention": {
+   "type": [
+    "object",
+    "null"
+   ],
+   "properties": {
+    "purge_after": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "delete after (yt_data_api: observed_at + 30 days)",
+     "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+     "format": "date-time"
+    }
+   },
+   "additionalProperties": false
+  }
+ },
+ "required": [
+  "schema_version",
+  "obs_id",
+  "platform",
+  "post_id",
+  "permalink",
+  "observed_at",
+  "source",
+  "analyst"
+ ],
+ "additionalProperties": false
+}

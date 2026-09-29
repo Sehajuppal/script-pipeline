@@ -1,0 +1,8 @@
+# Data files: LF line endings, diffable text.
+# No merge=union on purpose: a purge (deletion request) must never be undone
+# by a merge that re-adds the removed lines.
+* text=auto eol=lf
+*.jsonl text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+derived/** linguist-generated=true

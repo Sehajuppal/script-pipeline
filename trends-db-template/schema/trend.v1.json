@@ -1,0 +1,499 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "trend.v1.json",
+ "title": "trend v1",
+ "type": "object",
+ "description": "Trend card (derived/trends.json -> trends[])",
+ "properties": {
+  "key": {
+   "type": "string",
+   "pattern": "^(?:sound|format|tag|topic):[a-z0-9][a-z0-9._-]{0,63}$"
+  },
+  "kind": {
+   "type": "string",
+   "enum": [
+    "sound",
+    "format",
+    "tag",
+    "topic"
+   ]
+  },
+  "label": {
+   "type": "string",
+   "maxLength": 120
+  },
+  "first_seen": {
+   "type": "string",
+   "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+   "format": "date"
+  },
+  "last_seen": {
+   "type": "string",
+   "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+   "format": "date"
+  },
+  "span_days": {
+   "type": "integer",
+   "minimum": 0
+  },
+  "creators_total": {
+   "type": "integer",
+   "minimum": 2
+  },
+  "creators_7d": {
+   "type": "integer",
+   "minimum": 0
+  },
+  "creators_prev7d": {
+   "type": "integer",
+   "minimum": 0
+  },
+  "creators_3d": {
+   "type": "integer",
+   "minimum": 0
+  },
+  "growth": {
+   "type": "number",
+   "minimum": 0
+  },
+  "median_outlier_x": {
+   "type": [
+    "number",
+    "null"
+   ],
+   "description": "median views / creator median (median basis only)",
+   "minimum": 0
+  },
+  "median_multiple": {
+   "type": [
+    "number",
+    "null"
+   ],
+   "description": "median multiple, any basis",
+   "minimum": 0
+  },
+  "small_medium_share": {
+   "type": [
+    "number",
+    "null"
+   ],
+   "minimum": 0,
+   "maximum": 1
+  },
+  "platforms": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "enum": [
+     "instagram",
+     "tiktok",
+     "youtube",
+     "pinterest",
+     "x",
+     "other"
+    ]
+   }
+  },
+  "niches": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+   }
+  },
+  "examples": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "pattern": "^[0-9a-f]{16}$"
+   },
+   "maxItems": 5
+  },
+  "stage": {
+   "type": "string",
+   "enum": [
+    "emerging",
+    "rising",
+    "peak",
+    "saturated",
+    "declining",
+    "steady"
+   ]
+  },
+  "speed": {
+   "type": "string",
+   "enum": [
+    "moment",
+    "signal",
+    "force"
+   ]
+  },
+  "evergreen": {
+   "type": "boolean"
+  },
+  "jump_in": {
+   "type": "string",
+   "maxLength": 200
+  },
+  "evidence_score": {
+   "type": "number",
+   "minimum": 0
+  },
+  "profile": {
+   "type": "object",
+   "properties": {
+    "format_key": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "archetype": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "enum": [
+      "curiosity-gap",
+      "bold-claim",
+      "negative-command",
+      "proof-first",
+      "transformation",
+      "story-time",
+      "contrarian-reframe",
+      "identity-reveal",
+      "problem-agitate",
+      "question",
+      "comparison",
+      "pov",
+      "newness",
+      "confession",
+      "price-anchor",
+      "listicle",
+      "challenge",
+      "day-counter",
+      "showcase",
+      null
+     ]
+    },
+    "archetypes": {
+     "type": [
+      "array",
+      "null"
+     ],
+     "items": {
+      "type": "string",
+      "enum": [
+       "curiosity-gap",
+       "bold-claim",
+       "negative-command",
+       "proof-first",
+       "transformation",
+       "story-time",
+       "contrarian-reframe",
+       "identity-reveal",
+       "problem-agitate",
+       "question",
+       "comparison",
+       "pov",
+       "newness",
+       "confession",
+       "price-anchor",
+       "listicle",
+       "challenge",
+       "day-counter",
+       "showcase"
+      ]
+     }
+    },
+    "frame0_visual": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "enum": [
+      "product-in-action",
+      "result-reveal",
+      "before-after-split",
+      "problem-state",
+      "pov-hands",
+      "face-reaction",
+      "text-first",
+      "unboxing",
+      "comparison",
+      "day-counter",
+      "satisfying-macro",
+      null
+     ]
+    },
+    "emotion": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "enum": [
+      "awe",
+      "humor",
+      "surprise",
+      "relatable",
+      "aspirational",
+      "curiosity",
+      "satisfaction",
+      "nostalgia",
+      "outrage",
+      "fear",
+      "tension",
+      "other",
+      null
+     ]
+    },
+    "participation": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "enum": [
+      "duet",
+      "stitch",
+      "template",
+      "challenge",
+      "comment_prompt",
+      "none",
+      null
+     ]
+    },
+    "cta": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "enum": [
+      "comment_keyword",
+      "follow",
+      "link_in_bio",
+      "save",
+      "share",
+      "none",
+      "other",
+      null
+     ]
+    },
+    "audio_type": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "enum": [
+      "trending_sound",
+      "original_voiceover",
+      "original_sound",
+      "licensed_music",
+      "none",
+      null
+     ]
+    },
+    "sound_title": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "maxLength": 100
+    },
+    "vibe": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "enum": [
+      "raw-ugc",
+      "clean-aesthetic",
+      "hype-energy",
+      "cozy-calm",
+      "expert-trust",
+      "playful-comedic",
+      "cinematic-premium",
+      "asmr-satisfying",
+      "story-vlog",
+      "before-after-reveal",
+      null
+     ]
+    },
+    "replicability": {
+     "type": [
+      "number",
+      "null"
+     ],
+     "minimum": 1,
+     "maximum": 5
+    },
+    "production_cost": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "enum": [
+      "low",
+      "med",
+      "high",
+      null
+     ]
+    },
+    "needs_real_person": {
+     "type": "boolean"
+    },
+    "duration_s": {
+     "type": [
+      "number",
+      "null"
+     ],
+     "minimum": 0
+    },
+    "cuts_per_10s": {
+     "type": [
+      "number",
+      "null"
+     ],
+     "minimum": 0
+    },
+    "payoff_reveal": {
+     "type": "boolean"
+    },
+    "loop": {
+     "type": "boolean"
+    },
+    "series": {
+     "type": "boolean"
+    },
+    "beats": {
+     "type": [
+      "array",
+      "null"
+     ],
+     "items": {
+      "type": "string",
+      "maxLength": 40
+     },
+     "maxItems": 8
+    },
+    "tags": {
+     "type": [
+      "array",
+      "null"
+     ],
+     "items": {
+      "type": "string"
+     },
+     "maxItems": 5
+    }
+   },
+   "required": [
+    "needs_real_person",
+    "payoff_reveal",
+    "loop",
+    "series"
+   ],
+   "additionalProperties": false
+  },
+  "related": {
+   "type": [
+    "array",
+    "null"
+   ],
+   "description": "keys whose posts overlap >= 80%: the same trend's other elements",
+   "items": {
+    "type": "string",
+    "pattern": "^(?:sound|format|tag|topic):[a-z0-9][a-z0-9._-]{0,63}$"
+   },
+   "maxItems": 6
+  },
+  "signals": {
+   "type": [
+    "object",
+    "null"
+   ],
+   "properties": {
+    "best_rank": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "minimum": 1
+    },
+    "posts": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "minimum": 0
+    },
+    "growth_pct": {
+     "type": [
+      "number",
+      "null"
+     ]
+    },
+    "regions": {
+     "type": [
+      "array",
+      "null"
+     ],
+     "items": {
+      "type": "string"
+     }
+    },
+    "dates": {
+     "type": [
+      "array",
+      "null"
+     ],
+     "items": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "format": "date"
+     }
+    },
+    "source": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "enum": [
+      "ig_graph_hashtag",
+      "ig_graph_bd",
+      "yt_data_api",
+      "tiktok_creative_center",
+      "agent_observed",
+      "user_shared",
+      "import",
+      null
+     ]
+    }
+   },
+   "additionalProperties": false
+  }
+ },
+ "required": [
+  "key",
+  "kind",
+  "label",
+  "first_seen",
+  "last_seen",
+  "span_days",
+  "creators_total",
+  "creators_7d",
+  "creators_prev7d",
+  "creators_3d",
+  "growth",
+  "platforms",
+  "niches",
+  "examples",
+  "stage",
+  "speed",
+  "evergreen",
+  "jump_in",
+  "evidence_score",
+  "profile"
+ ],
+ "additionalProperties": false
+}
