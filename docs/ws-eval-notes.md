@@ -1,6 +1,6 @@
-# WS-EVAL notes — v2.1 creative-layer evaluator (branch ws/eval)
+# WS-EVAL notes (ws/eval)
 
-**Commits** (on d903c22): 157ab6d lexicon · 0aeb1ec gate-1 rules + 69 cases · ddce108 gate-2 rules + synthetic v2.1 brief · b076889 rubric R21–R28 · 92ea16b creative_eval · 28687ed scorecard · fc8aabc schema · a1a88df shape errors in gates · 9bd5fc1 units/e2e/selfchecks · a129925 RULES §68 + coverage · 70c6137 frame-0 audit · 58b20e6 e2e tags · 62604d1 review fixes · feab58c §68 refinements · this notes commit.
+**Commits** (on d903c22): 157ab6d lexicon · 0aeb1ec gate-1 rules · ddce108 gate-2 rules · b076889 rubric · 92ea16b creative_eval · 28687ed scorecard · fc8aabc schema · a1a88df gate shape errors · 9bd5fc1 self-test · a129925 RULES §68 · 70c6137 frame-0 audit · 58b20e6 e2e tags · 62604d1 review fixes · feab58c §68 refinements · this notes commit.
 
 **Rules** (all errors, appended after the existing rules)
 
