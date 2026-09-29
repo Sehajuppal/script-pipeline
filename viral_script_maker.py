@@ -116,6 +116,156 @@ HOOKS = {
    'I was wrong about {product}.',                   # GEN-B short form
  ],
 }
+
+# ------------------------------------------- approved hook packs (WS-INT)
+# learned/hook_packs/*.json (vsp.config.hook_packs_dir(), written by
+# `python3 -m vsp.improve evolve`) extend HOOKS once, at import. A pack loads
+# only with "status": "approved" and "schema_version": 1. A template joins
+# HOOKS[family] only if the family already exists, it is a one-line string
+# of <= 120 chars, and every {slot} in it is a plain slot that some built-in
+# HOOKS template already uses (HOOK_SLOTS, computed from the table above —
+# never hard-coded — so no new slot, attribute lookup or positional field
+# can reach _render_hook_line's str.format). Duplicates are skipped. A bad
+# pack or template is skipped with a stderr warning, never a crash. Pack
+# templates then face exactly the built-in screens in _hook_candidates (the
+# 8-word budget, the gate lexicon, the D144 overlay check).
+# VSP_NO_HOOK_PACKS=1 disables loading (the improvement engine's A/B switch).
+HOOK_PACK_SCHEMA = 1
+HOOK_PACK_MAX_CHARS = 120
+_PACK_SLOT_RE = re.compile(r"\{([A-Za-z_][A-Za-z0-9_]*)\}")
+HOOK_SLOTS = frozenset(s for _lines in HOOKS.values() for _t in _lines
+                       for s in _PACK_SLOT_RE.findall(_t))
+HOOK_PACKS_LOADED = []      # ids of approved packs that added >= 1 template
+HOOK_PACK_WARNINGS = []     # what was skipped, and why (also on stderr)
+_LEARNED_LAST = {}          # the last pick_hook's learned provenance
+
+
+def hook_template_problem(t, known=HOOK_SLOTS):
+    """Why a hook-pack template is unusable, or None when it is usable."""
+    if not isinstance(t, str) or not t.strip():
+        return "not a non-empty string"
+    if "\n" in t or "\r" in t:
+        return "contains a newline"
+    if len(t) > HOOK_PACK_MAX_CHARS:
+        return f"{len(t)} chars > {HOOK_PACK_MAX_CHARS}"
+    unknown = sorted(set(_PACK_SLOT_RE.findall(t)) - set(known))
+    if unknown:
+        return "unknown slot(s) " + ", ".join("{%s}" % s for s in unknown)
+    if "{" in _PACK_SLOT_RE.sub("", t) or "}" in _PACK_SLOT_RE.sub("", t):
+        return "stray brace or non-plain {field}"
+    return None
+
+
+def load_hook_packs(dirpath=None, hooks=None, known=None, warn=True):
+    """Append the approved packs' valid templates to `hooks` (default HOOKS)
+    in place. -> (loaded pack ids, {family: [added templates]}, warnings).
+    Files load in sorted name order; never raises."""
+    hooks = HOOKS if hooks is None else hooks
+    known = HOOK_SLOTS if known is None else known
+    loaded, added, warns = [], {}, []
+
+    def _warn(msg):
+        warns.append(msg)
+        if warn:
+            try:
+                sys.stderr.write(f"viral_script_maker: hook pack {msg}\n")
+            except Exception:
+                pass
+
+    try:
+        if dirpath is None:
+            try:
+                from vsp import config as _cfg
+                dirpath = _cfg.hook_packs_dir()
+            except Exception:
+                dirpath = os.path.join(os.environ.get("VSP_LEARNED_DIR") or os.path.join(
+                    os.path.dirname(os.path.abspath(__file__)), "learned"), "hook_packs")
+        if not os.path.isdir(dirpath):
+            return loaded, added, warns
+        names = sorted(n for n in os.listdir(dirpath) if n.endswith(".json"))
+    except Exception as e:
+        _warn(f"directory {dirpath}: {type(e).__name__}: {e} — none loaded")
+        return loaded, added, warns
+    seen = {" ".join(t.split()) for lines in hooks.values() for t in lines
+            if isinstance(t, str)}
+    for name in names:
+        try:
+            with open(os.path.join(dirpath, name), encoding="utf-8") as f:
+                pack = json.load(f)
+            if not isinstance(pack, dict):
+                _warn(f"{name}: not a JSON object — skipped")
+                continue
+            status = pack.get("status")
+            if status != "approved":
+                if status not in ("proposed", "rejected"):
+                    _warn(f"{name}: status {status!r} is not approved — skipped")
+                continue
+            if pack.get("schema_version") != HOOK_PACK_SCHEMA:
+                _warn(f"{name}: schema_version {pack.get('schema_version')!r} "
+                      f"!= {HOOK_PACK_SCHEMA} — skipped")
+                continue
+            pid = pack.get("id")
+            if not isinstance(pid, str) or not pid.strip():
+                _warn(f"{name}: no id — skipped")
+                continue
+            if pid in loaded:
+                _warn(f"{name}: duplicate id {pid!r} — skipped")
+                continue
+            fams = pack.get("families")
+            if not isinstance(fams, dict):
+                _warn(f"{name}: 'families' is not an object — skipped")
+                continue
+            n_add = 0
+            for fam in sorted(k for k in fams if isinstance(k, str)):
+                tmpls = fams[fam]
+                if fam not in hooks:
+                    _warn(f"{name}: unknown family {fam!r} — skipped")
+                    continue
+                if not isinstance(tmpls, list):
+                    _warn(f"{name}: {fam}: templates are not a list — skipped")
+                    continue
+                for t in tmpls:
+                    why = hook_template_problem(t, known)
+                    if why:
+                        _warn(f"{name}: {fam}: {str(t)[:60]!r}: {why} — skipped")
+                        continue
+                    norm = " ".join(t.split())
+                    if norm in seen:
+                        continue          # duplicate: already in the pool
+                    seen.add(norm)
+                    hooks[fam].append(norm)
+                    added.setdefault(fam, []).append(norm)
+                    n_add += 1
+            if n_add:
+                loaded.append(pid)
+            else:
+                _warn(f"{name}: approved pack {pid!r} added no templates")
+        except Exception as e:  # a bad pack never breaks the maker
+            _warn(f"{name}: {type(e).__name__}: {e} — skipped")
+    return loaded, added, warns
+
+
+if os.environ.get("VSP_NO_HOOK_PACKS") != "1":
+    _hp_ids, _hp_added, _hp_warns = load_hook_packs()
+    HOOK_PACKS_LOADED.extend(_hp_ids)
+    HOOK_PACK_WARNINGS.extend(_hp_warns)
+
+
+def learned_provenance():
+    """Learned state behind the LAST generate() call — {"priors_used":
+    {family: {alpha, beta, n}}} when priors steered its hook pick, and
+    {"hook_packs": [ids]} when approved packs are loaded; {} otherwise, so
+    a run without learned state is byte-identical. pipeline.py records it
+    in script.json."""
+    out = {}
+    if _LEARNED_LAST.get("priors_used"):
+        out["priors_used"] = {f: dict(v) for f, v in
+                              sorted(_LEARNED_LAST["priors_used"].items())}
+    if HOOK_PACKS_LOADED:
+        out["hook_packs"] = list(HOOK_PACKS_LOADED)
+    return out
+
+
 NICHE_KEYWORDS = {
  # D11 (judge loop, cycle 5): pet-family products get their own niche FIRST —
  # "pet hair remover roller" was misclassified as beauty by the "hair" keyword
