@@ -2654,6 +2654,8 @@ _HOOK_VERDICT = re.compile(r"worth it|verdict|or skip|keep or return|should you 
 # headlines barely better than chance (hooks-deep-dive §1.2/§4.2: 54%), so
 # smaller gaps are noise, not strength.
 HOOK_STRENGTH_MARGIN = 0.08
+# v2.1 D161: tickets for the only keyword-speaking line among equals
+HOOK_KW_WEIGHT = 3
 # the niche's family (NICHE_HOOK / the live research family) gets this many
 # tickets in the draw among equals — a preference, not a veto: with strength
 # ties it used to take the whole draw, and one research category seen 4
@@ -3400,8 +3402,14 @@ def pick_hook(ctx, rng):
         # v2.1 D161/DISC-01: among those equals, a line that speaks the
         # discovery keyword by 3.0 s (search indexes speech) — quality,
         # strength and the learned prior still rank first; same single draw
-        best = [c for c in best if c.get("kw")] or best
-        wts = [HOOK_PREF_WEIGHT if c["score"][4] else 1 for c in best]
+        # (two or more keyword lines: only those; a single one gets
+        # HOOK_KW_WEIGHT tickets, so one template cannot become every run's
+        # hook — run-to-run variety, best-of-N and learning keep options)
+        kwb = [c for c in best if c.get("kw")]
+        if len(kwb) >= 2:
+            best = kwb
+        wts = [(HOOK_PREF_WEIGHT if c["score"][4] else 1) *
+               (HOOK_KW_WEIGHT if c.get("kw") and len(kwb) == 1 else 1) for c in best]
         pick = best[-1]
         r = hrng.randrange(sum(wts))
         for c, wt in zip(best, wts):

@@ -41,6 +41,7 @@ _CACHE = {}
 MOVE_KW = ("push-in", "push in", "pan", "tilt", "dolly", "handheld", "tracking", "move")
 STATIC_MAX = 3.5
 SUB_MIN_S, SUB_MAX_S = 1.2, 3.1          # direction pacing bounds for sub-shots
+SUB_MAX_CALM_S = 4.5                     # v2.1: calm vibes hold longer, moving shots
 LEGACY_SUB_S = 2.5                       # make_shotlist.SUBSHOT_TARGET_S
 SCALE_ORDER = ("WS", "MWS", "MS", "MCU", "CU", "ECU")   # wide -> tight
 FORMATS = ("demo", "talking-head", "pov-vlog", "transformation", "review")
@@ -397,9 +398,26 @@ def effective(tid, lane, proof):
     return tid
 
 
+def sub_max(script):
+    """Longest sub-shot for this script: 3.1 s, or — for a calm direction
+    (avg_shot_s band starting at >= 2.5 s: clean-aesthetic, expert-trust,
+    cozy-calm, asmr) — the band's upper end up to 4.5 s, so the cut plan
+    can reach the average shot length the direction asks for (a static
+    shot over the vibe's own cap becomes a slow push-in, D48)."""
+    d = script.get("direction") if isinstance(script, dict) else None
+    rng = ((d.get("pacing") or {}).get("avg_shot_s")) if isinstance(d, dict) else None
+    try:
+        if isinstance(rng, (list, tuple)) and len(rng) >= 2 and float(rng[0]) >= 2.5:
+            return max(SUB_MAX_S, min(SUB_MAX_CALM_S, float(rng[1])))
+    except (TypeError, ValueError):
+        pass
+    return SUB_MAX_S
+
+
 def subshot_target(script):
     """Sub-shot length: direction.pacing.avg_shot_s (midpoint, bounded to
-    1.2-3.1 s) when the script carries a direction, else the legacy 2.5 s."""
+    1.2 s .. sub_max) when the script carries a direction, else the legacy
+    2.5 s."""
     pacing = ((script.get("direction") or {}).get("pacing") or {}) \
         if isinstance(script.get("direction"), dict) else {}
     rng = pacing.get("avg_shot_s")
@@ -412,10 +430,10 @@ def subshot_target(script):
             return None
     except (TypeError, ValueError):
         return None
-    return min(SUB_MAX_S, max(SUB_MIN_S, v))
+    return min(sub_max(script), max(SUB_MIN_S, v))
 
 
-def _n_cuts(beat, dur, target, recipe_len, legacy_split):
+def _n_cuts(beat, dur, target, recipe_len, legacy_split, smax=SUB_MAX_S):
     """How many sub-shots a beat window gets."""
     if beat in NEVER_CUT:
         return 1
@@ -432,7 +450,7 @@ def _n_cuts(beat, dur, target, recipe_len, legacy_split):
     if dur > STATIC_MAX:
         k = max(k, 2)
     k = max(1, k)
-    while k < 26 and dur / k > SUB_MAX_S:
+    while k < 26 and dur / k > smax:
         k += 1
     while k > 2 and dur / k < SUB_MIN_S:
         k -= 1
@@ -509,6 +527,7 @@ def build_ctx(script, shots=None, ctx=None):
     moves = ((direction or {}).get("camera") or {}).get("movement") if direction else None
     c["pref_moves"] = tuple(m for m in (moves or []) if isinstance(m, str))
     c["target"] = subshot_target(script)
+    c["sub_max"] = sub_max(script)
     c["fit_text"] = " ".join(x for x in (script.get("prompt") or "", c.get("product_short") or "") if x)
     cad = data()["SHOT_RULES"]["cadence"].get(vibe) or {}
     c["max_static_s"] = float(cad.get("max_static_s") or STATIC_MAX)
@@ -778,7 +797,7 @@ def _slots(groups, c):
         dur = g["e"] - g["s"]
         rec = recipe(c["format"], c["concept"], g["beat"])
         k = _n_cuts(g["beat"], _dur(g["s"], g["e"]), c["target"],
-                    len(rec.get("shots") or []), g["legacy_parts"] > 1)
+                    len(rec.get("shots") or []), g["legacy_parts"] > 1, c["sub_max"])
         head0 = None
         if gi == 0:
             # frame 0 is its own short shot; an overlong opening beat (malformed
@@ -787,7 +806,7 @@ def _slots(groups, c):
             if _dur(g["s"], g["e"]) > STATIC_MAX:
                 rest = dur - 1.0
                 kr = max(1, _n_cuts(g["beat"] if g["beat"] not in NEVER_CUT else "", rest,
-                                    c["target"], 3, True) if rest > STATIC_MAX else 1)
+                                    c["target"], 3, True, c["sub_max"]) if rest > STATIC_MAX else 1)
                 k = 1 + kr
                 head0 = 1.0
         loop = False
@@ -1190,9 +1209,23 @@ def plan(script, shots, ctx=None):
                            "the copy claims a time-span result: a real date or reading must show it"):
                 break
     _human_by_3s(out, c)
+    _static_cap(out, c)
     _setups(out, c)
     _coverage(out, c)
     return out
+
+
+def _static_cap(out, c):
+    """v2.1: after every swap pass, no static shot outlasts the vibe's own
+    cap (SHOT_RULES.cadence max_static_s = direction.pacing.max_static_s):
+    it becomes a slow push-in (framing and shot type kept). Explicit
+    maker shots keep their own camera text."""
+    for sh in out:
+        if sh.get("explicit") or sh.get("move") != "static":
+            continue
+        if _dur(sh["s"], sh["e"]) > c["max_static_s"] + 1e-9:
+            sh["move"] = "push-in"
+            sh["camera"] = "Camera: " + _cine(sh["scale"], sh["angle"], "push-in") + "."
 
 
 def _alts_for(sh, c):
@@ -2191,10 +2224,11 @@ def selfcheck():
                 if "### Shot 99" in b or "same body copy" in b:
                     probs.append("forbidden stub line leaked")
                 tgt = subshot_target(s2)
+                smax = sub_max(s2)
                 for sh in shots:
                     if is_sub(sh) and sh["shot_type"] != "loop-return-frame":
                         d = sh["e"] - sh["s"]
-                        if not (SUB_MIN_S - 0.05 <= d <= SUB_MAX_S + 0.05):
+                        if not (SUB_MIN_S - 0.05 <= d <= smax + 0.05):
                             probs.append(f"pacing: sub-shot {sh['n']} is {d:.2f}s (target {tgt:.2f})")
                             break
                 curve = s2["direction"]["energy_curve"]
