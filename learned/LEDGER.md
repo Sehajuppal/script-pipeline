@@ -33,3 +33,14 @@ code to pass, never pushes to main and never merges its own PRs.
 - took 73.4 s
 - evidence: `learned/CYCLE.md`, `learned/DIAGNOSIS.md`, `learned/TASKS.md`
 
+## 2026-09-29 18:51:16Z · verify · 8d7f87d (8d7f87d5394b) → HEAD (cefcf7c19f1d) · ACCEPT
+
+- budget small (seeds 1), yardstick = base tree
+- golden: e2e 1.0→1.0 (flips +0/−0, p=1) · shippable 1.0→1.0 · rubric 93.2→98.9 Δ +5.71 [+4.82, +6.60] · audit 95.1→95.8 · compliance 0 · hooks changed 168/330 · distinct 0.5909→0.6333 · distinct-2 0.1941→0.2102
+- holdout: e2e 1.0→1.0 (flips +0/−0, p=1) · shippable 1.0→1.0 · rubric 92.8→97.9 Δ +5.15 [+4.40, +5.92] · audit 93.3→94.1 · compliance 0 · hooks changed 187/350 · distinct 0.5543→0.58 · distinct-2 0.187→0.1948
+- golden: hook distinct ratio 0.5909 → 0.6333 (+0.0424) · distinct-2 0.1941 → 0.2102 (+0.0161) · per-cell seed diversity None → None
+- holdout: hook distinct ratio 0.5543 → 0.58 (+0.0257) · distinct-2 0.187 → 0.1948 (+0.0078) · per-cell seed diversity None → None
+- self-test green (3.9.25 rc 0, 3.12.14 rc 0)
+- weakening guard: 0 finding(s); guarded files changed: none; yardstick changed: none
+- evidence: `learned/verify/20260929T184339Z-8d7f87d5394b-cefcf7c19f1d/evidence.json`, `learned/verify/20260929T184339Z-8d7f87d5394b-cefcf7c19f1d/evidence.md`
+

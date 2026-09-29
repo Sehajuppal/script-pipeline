@@ -63,11 +63,11 @@ The v2.1 harness (rubric R01–R28) ran the same 990 runs for each version (33 p
 |---|---|---|---|---|
 | end-to-end pass | 0.0% | 100.0% | 100.0% | 100.0% |
 | crashes | 9.7% | 0.0% | 0.0% | 0.0% |
-| rubric mean (R01–R28) | 56.2 | 77.6 | 98.7 | 97.7 |
+| rubric mean (R01–R28) | 56.2 | 77.6 | 98.9 | 97.9 |
 | generic fallback hooks | 58.4% | 0.0% | 0.0% | 0.0% |
 | hook diversity (distinct-2) | 0.023 | 0.078 | 0.094 | 0.087 |
 | hook strength (independent scorer) | 45.3 | 62.9 | 75.5 | 72.7 |
-| openings per script (A + alternates) | 0 | 0 | 4.7 | 4.6 |
+| openings per script (A + alternates) | 0 | 0 | 4.5 | 4.5 |
 | search keyword by 3 s + caption + tag | 0% | 0% | 93.2% | 76.8% |
 | typed, D157-clean shot plan | 0% | 0% | 100% | 100% |
 | compliance flags (AI lived-experience claims etc.) | 162 | 0 | 0 | 0 |

@@ -3236,6 +3236,12 @@ rule was removed or loosened; `tools/rule_coverage.py --check` passes.
     function-word trigrams (the product words are dropped), so shared codas
     such as "… Here's the after." are caught.
   - The old 1/3-Jaccard fallback level is gone.
+  - The card an opening ships with is scored in selection, and head-noun
+    cards rank first.
+  - Alternates clear HOOK-08's floor by the scorer tie margin (0.58). A
+    5th opening needs 0.65.
+  - The first `vsp.improve verify` of this pass rejected the build: audit
+    R23 regressed, golden audit mean 95.1 → 94.4. The floors fixed it.
   - A new-archetype pass runs before any repeat. Strict → text-distinct →
     legacy fallbacks mean no script loses the variants it had.
 - **Keyword by 3 s (R24, D161).**
@@ -3273,7 +3279,7 @@ rule was removed or loosened; `tools/rule_coverage.py --check` passes.
   creative docs and summary keys checked) + no-clobber, plus every module
   selfcheck. Green on Python 3.9 and 3.12.
 - fast_eval, golden + holdout × 15/30/60 s × 2 seeds (4,080 runs): e2e
-  100%, 0 gate failures, rubric mean 91.6 → 97.8.
+  100%, 0 gate failures, rubric mean 91.6 → 98.0.
 
   | check | fails before | fails after |
   |---|---|---|
@@ -3281,6 +3287,7 @@ rule was removed or loosened; `tools/rule_coverage.py --check` passes.
   | R22 | 2991 | 168 |
   | R24 | 2244 | 789 |
   | R27 | 360 | 0 |
+  | R23 (audit) | 984 | 1040 |
 
   Maker-level distinct primary hooks per 1,360 runs fell 725 → 650. That
   is the keyword preference's cost, stated rather than hidden.
@@ -3289,19 +3296,28 @@ rule was removed or loosened; `tools/rule_coverage.py --check` passes.
   | metric | baseline | v2.0 | v2.1 |
   |---|---|---|---|
   | e2e | 0% | 100% | 100% |
-  | rubric (R01–R28) | 56.2 | 77.6 | 98.7 |
+  | rubric (R01–R28) | 56.2 | 77.6 | 98.9 |
   | distinct hooks | 3.5% | 28.5% | 38.5% |
   | distinct-2 | 0.0229 | 0.0784 | 0.0935 |
   | independent hook strength | 45.3 | 62.9 | 75.5 |
 
   Other v2.1 golden figures:
-  - 4.73 openings per script
+  - 4.55 openings per script
   - keyword placement 93.2%
   - shot plan pass 100%
   - cadence inside the direction's band 72.8%
 
-  Holdout (1,050 runs, never tuned on): e2e 100%, rubric 97.7, keyword
+  Holdout (1,050 runs, never tuned on): e2e 100%, rubric 97.9, keyword
   placement 76.8%.
+- Acceptance: `python3 -m vsp.improve verify --base 8d7f87d --cand cefcf7c`
+  returned ACCEPT.
+  - golden rubric Δ +5.71 [+4.82, +6.60]
+  - golden audit 95.1 → 95.8
+  - holdout rubric 92.8 → 97.9, audit 93.3 → 94.1
+  - self-test green on 3.9 and 3.12
+  - weakening guard: 0 findings
+
+  Evidence: `learned/verify/20260929T184339Z-*`.
 - Open (documented, not gated):
   - R23 disagreement on transformation loops (evaluator vs generator
     scorer)
