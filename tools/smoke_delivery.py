@@ -251,6 +251,63 @@ def section_select(a, R):
           f"{pct(won, len(rows))}")
 
 
+# -------------------------------------------------------------------- flow
+def section_flow(a, R):
+    """The recommended stage 3-9 wiring, in-process: select.run with the
+    gate cascade -> (no winner) repair best_failing in order -> bundle ->
+    gate 2 -> exports + schema. Seed 701, all golden x formats x presenters."""
+    from vsp import select, schema, captions
+    from vsp.repair import repair
+    from vsp.rubric import score
+    golden = load_golden(os.path.join(ROOT, "evals", "golden.jsonl"))
+    if a.limit:
+        golden = golden[:a.limit]
+    fmts = FORMATS if a.formats == "all" else a.formats.split(",")
+    prs = PRESENTERS if a.presenters == "all" else a.presenters.split(",")
+    n = ok = via_select = via_repair = 0
+    fails = collections.Counter()
+    t0 = time.time()
+    for g in golden:
+        for f in fmts:
+            for p in prs:
+                n += 1
+
+                def gen_fn(seed, _g=g, _f=f, _p=p):
+                    return vsm.generate(_g["prompt"], presenter=_p, fmt=_f,
+                                        duration=30, seed=seed)
+                res = select.run(gen_fn, 701, a.candidates, select.gate_cascade, score)
+                script = res["script"]
+                if script is None:
+                    for idx in res["best_failing"]:
+                        s2, log, passed = repair(res["scripts"][idx], select.gate_cascade)
+                        if passed:
+                            script = s2
+                            break
+                    if script is None:
+                        best = res["scripts"][res["best_failing"][0]] \
+                            if res["best_failing"] else None
+                        for m in (select.gate_cascade(repair(best, select.gate_cascade)[0])
+                                  if best else ["no candidate"]):
+                            fails[rule_id(m)] += 1
+                        continue
+                    via_repair += 1
+                else:
+                    via_select += 1
+                bundle, shots, vo = make_shotlist.build_bundle(script)
+                if gates.gate1(script) or gates.gate2(bundle, script) or schema.validate(script):
+                    fails["post-check"] += 1
+                    continue
+                captions.build_cues(script, shots)
+                ok += 1
+    R["flow"] = {"runs": n, "pass": ok, "via_select": via_select,
+                 "via_repair": via_repair, "fail_rules": dict(fails.most_common()),
+                 "seconds": round(time.time() - t0, 1)}
+    print(f"[flow] select(gate_cascade, N={a.candidates}) -> repair -> bundle -> gate 2: "
+          f"e2e pass {pct(ok, n)} (winner by selection {via_select}, by repair "
+          f"{via_repair}); failures {dict(fails.most_common())}; "
+          f"{R['flow']['seconds']}s")
+
+
 # ------------------------------------------------------------------ replay
 def section_replay(a, R):
     from vsp import manifest
@@ -302,7 +359,7 @@ def main():
     ap.add_argument("--presenters", default="all")
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--sections",
-                    default="gate2,captions,exports,schema,select,replay")
+                    default="gate2,captions,exports,schema,select,flow,replay")
     ap.add_argument("--candidates", type=int, default=8)
     ap.add_argument("--select-prompts", type=int, default=10)
     ap.add_argument("--replay-samples", type=int, default=3)
@@ -327,6 +384,8 @@ def main():
             section_schema(a, R)
         if "select" in secs:
             section_select(a, R)
+        if "flow" in secs:
+            section_flow(a, R)
     finally:
         os.environ.clear()
         os.environ.update(old_env)
