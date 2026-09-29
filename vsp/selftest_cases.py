@@ -522,7 +522,9 @@ def _unit_priors_reader():
         p = os.path.join(d, "priors.json")
         if P.load_priors(p) is not None:
             probs.append("missing priors file did not return None")
-        for bad in ("{not json", "[1, 2]", '{"schema_version": 2, "families": {}}',
+        # unknown schema versions are rejected (v1 and v2 are the known
+        # ones since pipeline v2.1 — the case used to probe with 2)
+        for bad in ("{not json", "[1, 2]", '{"schema_version": 99, "families": {}}',
                     '{"schema_version": 1, "families": []}'):
             _write_json(p, bad)
             os.utime(p, None)

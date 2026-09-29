@@ -67,21 +67,76 @@ def _table(t):
     return out
 
 
+SCHEMA_VERSIONS = (1, 2)
+# v2 (pipeline v2.1) adds learned sections beyond hook families:
+#   "sections": {"<section>": {"by_niche": {niche: {key: {alpha, beta, n}}},
+#                              "global": {key: {alpha, beta, n}}}}
+# sections: "archetype" (HOOK_ARCHETYPES ids), "visual_type" (frame-0
+# VISUAL_TYPES ids), "vibe" (VIBES ids), "tone" (TONES ids). v1 files stay
+# valid; "families"/"global" keep their v1 meaning (hook families).
+SECTIONS = ("archetype", "visual_type", "vibe", "tone")
+
+
+def _section(s):
+    if not isinstance(s, dict):
+        return None
+    by = s.get("by_niche", {})
+    return {"by_niche": {n: _table(t) for n, t in by.items()
+                         if isinstance(n, str) and isinstance(t, dict)}
+            if isinstance(by, dict) else {},
+            "global": _table(s.get("global", {}))}
+
+
 def normalise(raw):
-    """Parsed JSON -> normalised priors dict, or None if not schema v1."""
-    if not isinstance(raw, dict) or raw.get("schema_version") != SCHEMA_VERSION:
+    """Parsed JSON -> normalised priors dict, or None if not schema v1/v2."""
+    if not isinstance(raw, dict) or raw.get("schema_version") not in SCHEMA_VERSIONS:
         return None
     fams = raw.get("families", {})
     glob = raw.get("global", {})
     if not isinstance(fams, dict) or not isinstance(glob, dict):
         return None
-    return {"schema_version": SCHEMA_VERSION,
-            "metric": raw.get("metric") if isinstance(raw.get("metric"), str) else None,
-            "updated_at": raw.get("updated_at")
-            if isinstance(raw.get("updated_at"), str) else None,
-            "families": {n: _table(t) for n, t in fams.items()
-                         if isinstance(n, str) and isinstance(t, dict)},
-            "global": _table(glob)}
+    out = {"schema_version": raw.get("schema_version"),
+           "metric": raw.get("metric") if isinstance(raw.get("metric"), str) else None,
+           "updated_at": raw.get("updated_at")
+           if isinstance(raw.get("updated_at"), str) else None,
+           "families": {n: _table(t) for n, t in fams.items()
+                        if isinstance(n, str) and isinstance(t, dict)},
+           "global": _table(glob)}
+    secs = raw.get("sections", {})
+    out["sections"] = {k: v for k, v in
+                       ((k, _section(secs.get(k))) for k in SECTIONS)
+                       if v is not None} if isinstance(secs, dict) else {}
+    return out
+
+
+def posterior_for(priors, section, niche, key):
+    """-> (alpha, beta, n) | None for any learned section. section "family"
+    reads the v1 hook-family tables (same as posterior()); the others read
+    priors["sections"][section], niche table first, then its global table."""
+    if not isinstance(priors, dict):
+        return None
+    if section == "family":
+        return posterior(priors, niche, key)
+    sec = (priors.get("sections") or {}).get(section)
+    if not isinstance(sec, dict):
+        return None
+    tbl = (sec.get("by_niche") or {}).get(niche)
+    e = _entry(tbl.get(key)) if isinstance(tbl, dict) else None
+    if e is None:
+        g = sec.get("global") or {}
+        e = _entry(g.get(key)) if isinstance(g, dict) else None
+    if e is None:
+        return None
+    return e["alpha"], e["beta"], e["n"]
+
+
+def mean_for(priors, section, niche, key, min_n=MIN_N):
+    """Posterior mean when n >= min_n, else None (deterministic ranking)."""
+    post = posterior_for(priors, section, niche, key)
+    if post is None or post[2] < min_n:
+        return None
+    a, b, _ = post
+    return a / (a + b)
 
 
 def disabled():
