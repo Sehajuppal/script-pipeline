@@ -322,9 +322,14 @@ def _concept_of(script):
 
 def hook_info(script=None, ctx=None, maker=None):
     """Everything score_hook needs about the script, computed once."""
-    ctx = ctx or {}
     script = script or {}
     maker = maker or _maker()
+    if not ctx and script.get("prompt") and maker is not None:
+        try:          # re-scoring a finished script: the same context
+            ctx = ctx_from_script(script, maker)
+        except Exception:  # noqa: BLE001
+            ctx = None
+    ctx = ctx or {}
     presenter = str(ctx.get("presenter") or script.get("presenter") or "").strip().lower()
     prompt = str(ctx.get("prompt_text") or ctx.get("_prompt") or script.get("prompt") or "")
     concept = ctx.get("concept") or (_concept_of(script) if script else "product")
@@ -334,6 +339,11 @@ def hook_info(script=None, ctx=None, maker=None):
         if ctx.get(k):
             nums.add(str(ctx[k]))
     pt = payoff_type(script, ctx) if (ctx or script) else "measurable-demo"
+    if ctx and maker is not None and hasattr(maker, "_hook_payoff"):
+        try:
+            pt = maker._hook_payoff(ctx)
+        except Exception:  # noqa: BLE001
+            pass
     if pt in ("measurable-demo", "verdict"):
         nums |= {"7", "seven"}
     if pt == "transformation":
@@ -1481,6 +1491,10 @@ def _selfcheck_body(chk, time):
         if hv else "None")
     chk("no ctx: a script without a hook stack gives None (never raises)",
         variants({"prompt": "x"}) is None and variants(None) is None)
+    rescored = [(v["id"], v["score"], score_hook(v["verbal"], v["overlay"], v["visual_type"], s2)[0])
+                for s2 in [dict(s, hook_variants=hv)] for v in (hv or [])]
+    chk("score_hook(verbal, overlay, visual_type, script) re-scores every stored variant",
+        bool(rescored) and all(a == b for _, a, b in rescored), str(rescored[:3]))
     md = render_md(hv, s)
     chk("render_md: table, protocol, metrics, Bayesian stop rule",
         all(k in md for k in ("| ID |", "## Test protocol", "Trial Reels", "reels_skip_rate",
