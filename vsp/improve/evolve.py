@@ -524,8 +524,24 @@ def product_niches(vsm):
     return out
 
 
+# common product head nouns (beyond the maker's niche keywords), so trending
+# products in reels' hooks/captions are recognised by mining and golden-refresh
+PRODUCT_HEADS = frozenset("""mask scrubber board mat bottle brush bag case charger
+stand holder mount lamp fan heater humidifier diffuser purifier vacuum mop blender
+kettle toaster fryer grill pan pot knife sharpener scale timer clock watch band ring
+necklace bracelet wallet backpack tote pillow pillowcase blanket towel robe slippers
+socks sneakers boots jacket hoodie leggings glasses sunglasses headphones earbuds
+speaker keyboard mouse monitor webcam microphone tripod gimbal drone camera projector
+tablet stylus cable adapter hub organizer rack shelf hanger bin basket container jar
+dispenser tumbler mug cup straw filter shaker roller massager serum cream cleanser
+toner moisturizer sunscreen patch lipstick mascara eyeliner sponge curler
+straightener dryer clip comb wax shampoo conditioner perfume candle collar leash
+harness feeder fountain crate scraper inflator starter protector planner notebook
+journal lock pad bands stone kit set tracker purse sprayer steamer iron""".split())
+
+
 def product_nouns(vsm, rows):
-    nouns = set()
+    nouns = set(PRODUCT_HEADS)
     for kws in (getattr(vsm, "NICHE_KEYWORDS", {}) or {}).values():
         for kw in kws:
             w = kw.replace("\\b", "")
