@@ -89,29 +89,57 @@ NICHE_KEYWORDS = {
           # fall-through, ninth occurrence) — "bird"/"feeder" matched nothing.
           # Birding/wildlife products belong to the pets caption community.
           r"\bbird\b", r"\bbirds\b", r"\bfeeder\b", r"\bbirdhouse\b"],
+ # D11 (GEN-B, pipeline v2): every niche loop matches through _kw_hit —
+ # plain entries match at a WORD START ("lamp" never matches "clamp",
+ # "hair" never "chair", "tent" never "content"), regex entries are
+ # re.search'ed. Entries whose word-start form still over-matches
+ # ("led"->"ledger", "fan"->"fancy", "light"->"lightweight") are whole-word
+ # regexes; compounds the word-start rule would lose ("headphones") are
+ # listed explicitly.
  "gadgets": ["gadget","tech","lamp","alarm","charger","earbud","speaker","keyboard",
-             "mouse","light","led","projector","drone","smartwatch","phone","desk","cable","fan",
+             "mouse",r"\blights?\b|\blighting\b",r"\bled\b","projector","drone",
+             "smartwatch","phone","headphone","earphone","smartphone","microphone",
+             "iphone","ipad","tablet","camera","headset","webcam","doorbell",
+             "desk","cable",r"\bfans?\b",
              "laptop"],  # D110: +laptop (D11 class)
- "tools": ["tool","kitchen","clean","organize","organizer","knife","drill",
+ # D11 (GEN-B): "clean" whole-word forms only — the word-start stem also
+ # claimed "cleanser" (a skincare product).
+ "tools": ["tool","kitchen",r"\bclean(?:s|ing|er|ers)?\b","organize","organizer",
+          "knife","drill",
           "waffle","fryer","toaster","kettle","blender","cookware",
-          "lunch", "mealprep"],  # D98, D110: +lunch/+mealprep (D11 class)
+          "lunch", "mealprep",  # D98, D110: +lunch/+mealprep (D11 class)
+          # D11 (GEN-B): "electric milk frother" fell to niche=default
+          # (#viral #fyp #ugc); the router's lexicon + research voters both
+          # route it tools (kitchen appliance class). Cleaning/kitchen
+          # objects from the router's tools vocabulary join.
+          "frother","mop","vacuum",r"\btrash\b",r"\bcutting boards?\b"],
  "finance": ["finance","money","budget","invest","debt","credit","bank"],
- "fitness": ["fitness","workout","gym","protein","posture","exercise","yoga","run",
+ "fitness": ["fitness","workout","gym","protein","posture","exercise","yoga",
+          # D11 (GEN-B): "run" as a raw substring claimed "brunch"/"prune"/
+          # "trunk"; whole-word run/runs/running/runner(s) only.
+          r"\brun(?:s|ning|ners?)?\b",
           # D24 (judge loop, cycle 9): "resistance bands set" fell to
           # niche=default → #viral #fyp #ugc (the D11/D14/D18/D20
           # fall-through bug, fifth occurrence). Equipment keywords now route.
-          "resistance","band","dumbbell","kettlebell","treadmill",
+          # D11 (GEN-B): band/bands whole-word — never "bandana"/"bandage".
+          "resistance",r"\bbands?\b","dumbbell","kettlebell","treadmill",
           "pull-up","pullup","chin-up",
           # D38 (judge loop, cycle 12): "walking pad" fell to gadgets via
           # "desk" (seventh fall-through) — the compound is caught by the
           # D37 pre-check above; bare "walking"/"cardio"/"steps" route here.
           "walking","cardio","steps"],
- "beauty": ["beauty","skincare","makeup","serum","cream","hair",
+ # D11 (GEN-B): "cream" never claims "ice cream" (food); +cleanser.
+ "beauty": ["beauty","skincare","makeup","serum",r"(?<!ice )\bcreams?\b","hair",
+            "cleanser",
              # D72 (judge loop, cycle 18): "magnetic eyelashes" fell to
              # niche=default -> #viral #fyp #ugc (the D11-family fall-through,
              # eighth occurrence). Lash products are beauty's core review
              # community (#beautytok #lashreview).
-             "lash","lashes","eyelash","lipstick","moisturizer"],  # D107: +lipstick/+moisturizer (D11 class)
+             "lash","lashes","eyelash","lipstick","moisturizer",  # D107: +lipstick/+moisturizer (D11 class)
+             # D11 (GEN-B): "silk pillowcase" fell to niche=default; silk
+             # sleep goods sell to the hair/skin community (router lexicon +
+             # research voters: beauty). Beauty precedes home in this loop.
+             "silk"],
  # D14 (judge loop, cycle 6): ingestible/wellness products ("sleep gummies")
  # fell through to niche=default → generic #viral #fyp #ugc. Wellness is a
  # real caption community (#sleeptok #wellnesstok) and a trust-sensitive class.
@@ -121,7 +149,7 @@ NICHE_KEYWORDS = {
  "wellness": ["sleep","gumm","melatonin","magnesium","supplement","vitamin",
               "hydrat","wellness","selfcare","self-care","relax",
               "anxiety","stress","meditat","cbd","probiotic",
-              "noise","snore","lullab"],
+              "noise","snore","snoring","lullab"],
  # D18 (judge loop, cycle 7): "car headrest hook" fell through to
  # niche=default → #viral #fyp #ugc. Automotive is a real caption community
  # (anatomy-automotive notes). Short tokens use word-boundary regexes like
@@ -140,22 +168,74 @@ NICHE_KEYWORDS = {
  # niche detection entirely). Room-tour/listicle content is a real caption
  # community (#homefinds #apartmenttherapy). Placed last in the loop so
  # gadget/tool keywords win on mixed prompts ("LED desk lamp" stays gadgets).
+ # D11 (GEN-B): these regexes sat inside the plain `kw in low` substring
+ # loop, which can never match "\b...", so NO product prompt could ever
+ # reach home ("portable door lock" -> default). _kw_hit re-searches them.
+ # Furniture/door/bedding nouns join (router lexicon + research voters
+ # route "door lock" / "office chair" home); "desk" stays gadgets (earlier
+ # in the loop), mirroring the router's tie-break order.
  "home": [r"\bhome\b", r"\bapartment\b", r"\bbedroom\b", r"\bliving ?room\b",
-          r"\bcloset\b", r"\bbathroom\b", r"\bdecor\b"],
- "food": ["food","recipe","cook","snack","coffee","meal"],
- "education": ["learn","course","study","language","exam"],
- "commentary": ["news","politics","drama","tea"],
+          r"\bcloset\b", r"\bbathroom\b", r"\bdecor\b",
+          r"\bchairs?\b", r"\bdoors?\b", r"\bsofas?\b", r"\bcouch(?:es)?\b",
+          r"\bpillows?\b", r"\bpillowcases?\b", r"\bblankets?\b",
+          r"\bcurtains?\b", r"\brugs?\b", r"\bshel(?:f|ves)\b",
+          r"\bfurniture\b", r"\bbedding\b"],
+ # D11 (GEN-B): +sugar — "I quit sugar for 21 days" routes food like the
+ # coffee challenge (router lexicon + research voters agree). +tea/matcha/
+ # ice cream: the drink/dessert sense ("matcha tea set" was commentary via
+ # "tea"); "spill THE tea" stays commentary's.
+ "food": ["food","recipe","cook","snack","coffee","meal","sugar",
+          r"(?<!the )\btea\b","matcha",r"\bice cream\b"],
+ # D11 (GEN-B): "exam" whole-word ("example" is not a study topic).
+ "education": ["learn","course","study","language",r"\bexams?\b"],
+ # D11 (GEN-B): "tea" whole-word — the raw substring claimed "steamer",
+ # "team", "instead".
+ "commentary": ["news","politics","drama",r"\btea\b"],
  # D134 (judge loop, cycle 35): OUTDOORS niche — "portable camping lantern"
  # fell through to niche=default → generic #viral #fyp #ugc (the
  # D11-family fall-through, fourteenth occurrence; "light"/"lamp" gadgets
  # keywords never match "lantern"/"camping"). Outdoor gear is a real
  # caption community (#campingtok). Placed LAST so gadget/tool keywords win
  # on mixed prompts ("LED camping lantern" stays gadgets via "led", per
- # the D20 ordering philosophy). Plain-substring-safe tokens (no
- # word-boundary regexes in this loop — see line ~789).
+ # the D20 ordering philosophy). Word-start tokens (GEN-B: _kw_hit — "tent"
+ # no longer claims "content"; "flashlight"/"headlamp" now reach outdoors
+ # instead of gadgets' "light"/"lamp" substrings).
  "outdoors": ["camp","camping","tent","outdoor","hik","lantern","flashlight",
               "headlamp","backpack","firewood"],
 }
+
+# D11 (GEN-B, pipeline v2): ONE keyword matcher for every niche loop. The old
+# loops used `kw in low` (raw substring): "ergonomic office chair" routed to
+# beauty via "hair", "phone clamp" matched "lamp", and the regex entries
+# (pets/automotive/home) could never match inside those loops. Regex entries
+# (anything with a regex metacharacter) are re.search'ed; plain entries match
+# at a word start so stems keep working ("hik" -> hiking, "gumm" -> gummies).
+_KW_RX_META = re.compile(r"[\\()\[\]?|+*^$]")
+
+def _kw_hit(kw, text):
+    if _KW_RX_META.search(kw):
+        return re.search(kw, text) is not None
+    return re.search(r"(?<![a-z0-9])" + re.escape(kw), text) is not None
+
+def _niche_for(low, skip=()):
+    """D11 (GEN-B): first NICHE_KEYWORDS niche (dict order) with a keyword
+    hit in `low`, skipping `skip`; "default" when nothing matches."""
+    for nk, kws in NICHE_KEYWORDS.items():
+        if nk in skip:
+            continue
+        if any(_kw_hit(kw, low) for kw in kws):
+            return nk
+    return "default"
+
+# D11 (GEN-B): category-map keys (CATEGORY_MECHANISM_FAIL / _WHO /
+# _PURPOSE_PROOF / _DEMO_TEST) were matched as raw substrings of the
+# category — "clamp" pulled the lamp's bulb mechanism, "bracelet" the brace's
+# straps. A key now matches a whole word of the category plus an inflection
+# (s/es/ies/y: "gumm" -> gummies, "band" -> bands); the one compound the maps
+# rely on ("eyelashes" -> "lash") keeps its "eye" head.
+def _key_hit(key, text):
+    return re.search(r"(?<![a-z0-9])(?:eye)?" + re.escape(key) +
+                     r"(?:s|es|ies|y)?(?![a-z0-9])", text.lower()) is not None
 NICHE_HOOK = {  # from the playbook's niche mapping
  "gadgets": "curiosity-gap", "tech": "curiosity-gap", "tools": "curiosity-gap",
  "pets": "transformation",  # D11: pet products demo a visible before/after
@@ -627,7 +707,15 @@ HUMAN_NOTE = (
 UTILITARIAN_HINTS = {"gadget","tech","tool","software","lamp","charger","app","earbud",
   "speaker","keyboard","mouse","projector","cable","fan","humidifier","vacuum","mop",
   "kitchen","clean","organize","sleep","alarm","led","phone","desk","car","home",
-  "waffle","fryer","toaster","kettle","blender","cookware"}  # D98 appliance nouns
+  "waffle","fryer","toaster","kettle","blender","cookware",  # D98 appliance nouns
+  # D11 (GEN-B): hints now match whole words (+plural) via _key_hit, so the
+  # inflected forms the substring test used to catch are listed, plus the
+  # functional objects the router's fit voter (vsp/router._UTIL) counts.
+  "cleaning","cleaner","organizer","headphone","stand","clamp","lock",
+  "inflator","lantern","flashlight","frother","lunch","trash","feeder",
+  "corrector","chair","ergonomic","bank","headlamp"}
+# D11 (GEN-B): whole-word matched (_key_hit) — "spa" no longer fires on
+# "space"/"spatula", "dress" on "address", "wine" on "swine".
 HEDONIC_HINTS = {"perfume","luxury","makeup","fashion","dress","watch","jewelry",
   "resort","spa","wine","experience","romantic"}
 
@@ -733,7 +821,14 @@ def parse_prompt(prompt):
     # ("Thirty days with no the habit"). Challenge now needs a SECOND
     # signal: the verb regex, "N days", or "no X for". Bare "things in my X"
     # is a SHOWCASE (product-roundup listicle) — the julianna_claire class.
-    things_in_my = re.search(r"\bthings in my\s+([a-z ]+?)(?:\s+that\s|\s+which\s|\s*$)", low0)
+    # D84/D141 (GEN-B): a price clause inside the listicle title ("things in
+    # my kitchen under $30 that just make sense") broke the [a-z ] domain
+    # match and fell to PRODUCT grammar (category="sense"); the clause is
+    # skipped here — the price itself is already in its own slot.
+    things_in_my = re.search(
+        r"\bthings in my\s+([a-z ]+?)"
+        r"(?:\s+(?:under|below|for under|for less than)\s+\$?\d+(?:\.\d+)?)?"
+        r"(?:\s+that\s|\s+which\s|\s*$)", low0)
     is_challenge = (bool(ch) or act_behav or bool(vice) or
         (bool(things_in_my) and not bool(ch) and not act_behav and
          bool(re.search(r"\b\d+\s*days?\b|\bno\s+\w+(?:\s+\w+)?\s+for\b", low0))))
@@ -826,11 +921,12 @@ def parse_prompt(prompt):
                 "verdict_card": verdict_card,
                 "surprise": surprise}
         low = ctx0["product"].lower()
-        niche = "default"
-        for nk, kws in NICHE_KEYWORDS.items():
-            if any(kw in low for kw in kws):
-                niche = nk; break
-        ctx0["niche"] = niche
+        # D11 (GEN-B): word-start/regex matching (_niche_for) — the raw
+        # substring loop could never match the regex entries. "home" is
+        # skipped here: in a challenge "at home" is where the streak happens
+        # ("cooking every meal at home" stays food, D67), not the home-decor
+        # caption community.
+        ctx0["niche"] = _niche_for(low, skip=("home",))
         return ctx0
     # D22 (judge loop, cycle 8): SHOWCASE/LISTICLE CONCEPT CLASS. "Things in
     # my apartment that just make sense" is a product-roundup, not a challenge
@@ -861,8 +957,12 @@ def parse_prompt(prompt):
                 # D37-class fabrication: cheapest relative to what? The
                 # no-price surprise names the overlooked item instead — the
                 # same underdog angle, with no price order to defend.
-                "surprise": ((f"the cheapest item — under ${price} — is the one "
-                              "everyone keeps asking about") if price
+                # D141 (GEN-B, pipeline v2): with a price, "the cheapest item"
+                # is still an absolute ranking claim (lexicon.ABSOLUTE bans
+                # "cheapest") — the prompt's price anchors the find instead,
+                # no ranking.
+                "surprise": ((f"the under-${price} find is the one everyone "
+                              "keeps asking about") if price
                              else ("the one I almost skipped is the one "
                                    "everyone keeps asking about"))}
         # D20 (judge loop, cycle 8): regex pre-check for the home niche — its
@@ -886,11 +986,8 @@ def parse_prompt(prompt):
                                    for rx in NICHE_KEYWORDS["home"])
                      else "default")
         if niche == "default":
-            for nk, kws in NICHE_KEYWORDS.items():
-                if nk in ("pets", "automotive", "home"):
-                    continue
-                if any(kw in low for kw in kws):
-                    niche = nk; break
+            # D11 (GEN-B): word-start/regex matching (_niche_for).
+            niche = _niche_for(low, skip=("pets", "automotive", "home"))
         ctx1["niche"] = niche
         return ctx1
     # D47 (judge loop, cycle 13): ROUTINE/DAILY-VLOG CONCEPT CLASS. "my 5AM
@@ -942,10 +1039,16 @@ def parse_prompt(prompt):
         topic = re.sub(r"^(make (me )?a (script|video) (about|for|on)\s*)", "",
                        p.strip(), flags=re.I).strip()
         low = topic.lower()
-        niche = "default"
-        for nk, kws in NICHE_KEYWORDS.items():
-            if any(kw in low for kw in kws):
-                niche = nk; break
+        # D11 (GEN-B): creator-craft advice ("why your hooks fail") fell to
+        # niche=default (#viral #fyp #ugc); the router's lexicon + research
+        # voters route it education. Creator terms only count on the ADVICE
+        # branch — on a product, "hooks" is a wall hook, not a lesson.
+        if re.search(r"\b(hooks?|views|followers|algorithm|content|creators?|"
+                     r"reels?|captions?|thumbnails?|engagement|audience|"
+                     r"videos?)\b", low):
+            niche = "education"
+        else:
+            niche = _niche_for(low)  # D11 (GEN-B): word-start/regex matching
         toks = [t for t in re.findall(r"[a-zA-Z]+", low)
                 if t not in {"a","an","the","my","for","with","and","of","to","your","about","why","how"}]
         # D15 note: advice "category" is the topic's HEAD noun (first keyword),
@@ -958,7 +1061,15 @@ def parse_prompt(prompt):
     # parsed product="camera" (the cycle-4/13 (about|for|on) bug class, new
     # variant: preposition-as-substring). "before work" and "motion" are not
     # prepositions.
-    m2 = re.search(r'(?:\babout\b|\bfor\b|\bon\b)\s+(?:a|an|the|my)?\s*(.+)', p, re.I)
+    # D11/D77 (GEN-B, pipeline v2): the about/for/on strip is a REQUEST-
+    # framing strip ("make a script about a $12 lamp", "a video on X") — it
+    # also fired on the product's own use-context and parsed "phone clamp for
+    # desk" as product="desk" (hooks and payoff about a desk). It now needs a
+    # request noun right before the preposition, or the preposition opening
+    # the prompt.
+    m2 = re.search(r'(?:^|\b(?:script|video|reel|post|tiktok|ad|clip|content|'
+                   r'caption|short)s?\s+)(?:about|for|on)\s+(?:a|an|the|my)?\s*(.+)',
+                   p, re.I)
     product = (m2.group(1).strip().rstrip('.') if m2 else p).strip()
     product = re.sub(r'^(make (me )?a (script|video) (about|for|on)\s*)', '', product, flags=re.I)
     product = re.sub(r'^(a|an|the|my)\s+', '', product, flags=re.I)
@@ -990,13 +1101,13 @@ def parse_prompt(prompt):
     elif re.search(r"\b(power bank|battery bank|power station)\b", low):
         niche = "gadgets"
     else:
-        for nk, kws in NICHE_KEYWORDS.items():
-            if nk in ("pets", "automotive"):
-                continue
-            if any(kw in low for kw in kws):
-                niche = nk; break
-    fit = "utilitarian" if any(h in low for h in UTILITARIAN_HINTS) else \
-          "hedonic" if any(h in low for h in HEDONIC_HINTS) else "neutral"
+        # D11 (GEN-B): word-start/regex matching — "chair" no longer routes
+        # beauty via "hair", and the home regexes can finally match.
+        niche = _niche_for(low, skip=("pets", "automotive"))
+    # D11 (GEN-B): fit hints match whole words (+ plural) — the substring test
+    # read "car" in "scarf", "app" in "happy", "led" in "curled".
+    fit = "utilitarian" if any(_key_hit(h, low) for h in UTILITARIAN_HINTS) else \
+          "hedonic" if any(_key_hit(h, low) for h in HEDONIC_HINTS) else "neutral"
     # category = content noun of the product name ("sunrise alarm lamp" -> "lamp")
     # D30 (judge loop, cycle 11): when the tail token is a generic container
     # noun ("machine"/"device"/"gadget"/"tool"/"item"/"kit"/"set"), keep the
@@ -1005,7 +1116,13 @@ def parse_prompt(prompt):
     # industry"), a meaningless comment word ("Comment MACHINE"), and weak
     # templates downstream. Up to 3 trailing tokens.
     stop = {"a","an","the","my","for","with","and","of","12","20","30"}
-    toks = [t for t in re.findall(r"[a-zA-Z]+", product.lower()) if t not in stop]
+    # D11 (GEN-B): the category is the OBJECT's noun, never the use-context
+    # tail — "phone clamp for desk" derived category="desk" ("the desk
+    # doing its real job"). A trailing "for ..." phrase names where/who it is
+    # for and is cut before the tail pick; "with ..." stays (D76: the
+    # reviewed differentiator — "car trash can with lid" -> "lid").
+    cat_src = re.split(r"\s+for\s+", product, maxsplit=1, flags=re.I)[0] or product
+    toks = [t for t in re.findall(r"[a-zA-Z]+", cat_src.lower()) if t not in stop]
     GENERIC_TAIL = {"machine","device","gadget","tool","item","thing","kit",
                     "set","system","unit","product"}
     if len(toks) >= 2 and toks[-1] in GENERIC_TAIL:
@@ -1026,8 +1143,10 @@ def parse_prompt(prompt):
     # code formatted only tuple index 0 — index 1 kept a raw {category}
     # placeholder that rendered LITERALLY in the payoff ("fail the way cheap
     # {category_s} always fail"). Every element is formatted now.
+    # D11 (GEN-B): map keys match whole category words (_key_hit) — "clamp"
+    # no longer inherits the lamp's bulb, "bracelet" the brace's straps.
     mech = next(
-        (v for k, v in CATEGORY_MECHANISM_FAIL.items() if k in category),
+        (v for k, v in CATEGORY_MECHANISM_FAIL.items() if _key_hit(k, category)),
         tuple(e.format(category=category, category_s=plural(category))
               for e in DEFAULT_MECHANISM_FAIL))
     part, fail_verb, zeroed = mech
@@ -1043,7 +1162,7 @@ def parse_prompt(prompt):
     # {category} test, up close" — see _demo_test_for. Event-shaped
     # positive-proof fallback instead (D25/D95 family).
     _dt_pair = next(
-        (v for k, v in CATEGORY_DEMO_TEST.items() if k in category),
+        (v for k, v in CATEGORY_DEMO_TEST.items() if _key_hit(k, category)),  # D11 (GEN-B)
         # D58-repair (gauntlet, cycle 12): was "doing its real job, on camera"
         # — same spoken-slot violation as _demo_test_for's fallback (D44 on
         # seed 811). Event-shaped, no camera direction.
@@ -1070,7 +1189,8 @@ def parse_prompt(prompt):
             "who_for": (compound_slots["who_for"]
                         if compound_slots and "who_for" in compound_slots
                         else next(
-                            (v for k, v in CATEGORY_WHO.items() if k in category),
+                            (v for k, v in CATEGORY_WHO.items()
+                             if _key_hit(k, category)),  # D11 (GEN-B)
                             DEFAULT_WHO.format(category=category,
                                              category_s=plural(category)))),
             # D56 (judge loop, cycle 15): positive-proof clause for review
@@ -1082,7 +1202,7 @@ def parse_prompt(prompt):
                               if compound_slots and "purpose_proof" in compound_slots
                               else next(
                                   (v for k, v in CATEGORY_PURPOSE_PROOF.items()
-                                   if k in category),
+                                   if _key_hit(k, category)),  # D11 (GEN-B)
                                   DEFAULT_PURPOSE_PROOF)),
             # D11 (judge loop, cycle 5): the two hardcoded rehook {action} slots
             # ("I dim the room" / "I flip it over") defeated D2's event-specific
