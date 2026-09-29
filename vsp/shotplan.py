@@ -1281,17 +1281,13 @@ def _setup_key(sh, c):
     step = data()["STEP"].get(tid, 8)
     if tid == "jump-cut-punch-in":
         step = 4
-    if tid == "split-before-after":
-        step = 2
-    support = "overhead mount" if sh["angle"] == "overhead" else (
-        "handheld" if sh["move"] in ("handheld", "tracking", "whip-pan", "speed-ramp") else "stand")
     if c["lane"] == "ai":
         if sh.get("real_footage"):
             return (0, "film", step, sh["light_preset"])
         refs = "persona" if "face" in sh["needs"] else ("hands" if "hands" in sh["needs"] else "product")
         order = {"product": 1, "hands": 2, "persona": 3}[refs]
         return (order, "render", refs, sh["light_preset"])
-    return (step, sh["light_preset"], support)
+    return (step, sh["light_preset"])
 
 
 def _setups(out, c):
@@ -1509,10 +1505,17 @@ def _setup_label(sh, A):
     if sh["shot_type"] == "jump-cut-punch-in":
         step = 4
     names = {s["step"]: s["name"] for s in data()["SHOOT_PLAN_RULES"]["setup_order"]}
-    support = "overhead mount" if sh["angle"] == "overhead" else (
-        "handheld, stabilisation on" if sh["move"] in ("handheld", "tracking", "whip-pan", "speed-ramp")
-        else "phone on a stand")
-    return f"{names.get(step, 'pick-ups')} ({support})"
+    return names.get(step, "pick-ups")
+
+
+def _support(sh):
+    if sh.get("angle") == "overhead":
+        return "overhead mount"
+    if sh.get("move") in ("handheld", "speed-ramp"):
+        return "stabilisation on"
+    if sh.get("move") in ("tracking", "whip-pan"):
+        return "handheld, stabilisation on"
+    return "on a stand"
 
 
 def shoot_plan_md(script, shots, A):
@@ -1550,7 +1553,8 @@ def shoot_plan_md(script, shots, A):
             else:
                 how = Lb["human_instructions"]
             L.append(f"  - Shot {sh['n']} ({sh['t']}) {sh['shot_type']} ({sh['scale']}, "
-                     f"{MOVE_WORDS.get(sh['move'], sh['move'])}): {how}")
+                     f"{MOVE_WORDS.get(sh['move'], sh['move'])}"
+                     + ("" if ai and not sh.get("real_footage") else f", {_support(sh)}") + f"): {how}")
     types = [sh["shot_type"] for sh in shots]
     needs = []
     for sh in shots:
@@ -1561,8 +1565,9 @@ def shoot_plan_md(script, shots, A):
     L.append("")
     L.append("Props checklist:")
     props = []
-    messy = any(t in types for t in ("stress-test-action", "pour-dispense-cu", "product-operating-cu",
-                                     "slowmo-hero-moment"))
+    liquid = any(t in types for t in ("pour-dispense-cu", "slowmo-hero-moment")) or (
+        "product-operating-cu" in types and bool(_FIT_RE["pour-dispense-cu"].search(A.get("fit_text") or "")))
+    messy = liquid or "stress-test-action" in types
     if "product" in needs or "props" in needs:
         props.append(("the product: " if A["product"] else "the props: ") + A["product_desc"].rstrip(".")
                      + ("; a second unit for the messy shots" if messy and A["product"] else ""))
@@ -1573,7 +1578,7 @@ def shoot_plan_md(script, shots, A):
         props.append("a sealed box; film the pristine shots before opening anything")
     if any(t in types for t in ("comparison-side-by-side", "rejection-lineup")):
         props.append("the alternatives, brand marks taped over or turned away")
-    if messy:
+    if liquid:
         props.append("the consumable it works on and a wipe cloth")
     if any(t in BA_IDS or t == "timestamp-proof-insert" for t in types):
         props.append("a clock or date card, and tape to mark the phone spot on the floor or table")
