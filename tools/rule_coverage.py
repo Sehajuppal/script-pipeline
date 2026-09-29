@@ -24,11 +24,12 @@ tokens. Classes, first match wins:
             evals/*, tools/*)
   DOC-ONLY  no code hit
 
---check (D60) fails when a rule RULES.md §66 marks as enforced has no code
-hit, when a §66 rule said to be enforced in "gate 1"/"gate 2" (or listed
-under "Existing rules made gate-enforced") is not in the REGISTRY, or when a
-tracked id is defined twice. §66 entries marked "PENDING INTEGRATION" are
-reported, not failed (and flagged once they become code-traceable).
+--check (D60) fails when a rule RULES.md §66 or §68 (CHECKED_SECTIONS: the
+pipeline v2 and v2.1 entries) marks as enforced has no code hit, when such a
+rule said to be enforced in "gate 1"/"gate 2" (or listed under "Existing
+rules made gate-enforced") is not in the REGISTRY, or when a tracked id is
+defined twice. Entries marked "PENDING INTEGRATION" are reported, not
+failed (and flagged once they become code-traceable).
 """
 import argparse
 import json
@@ -90,11 +91,18 @@ def parse_rules(path):
     return defs, dups
 
 
-def section66(path):
-    """Parse RULES.md §66 -> {"entries": {id: enforced_text}, "gate_listed":
-    [ids under 'Existing rules made gate-enforced']}"""
-    text = open(path, encoding="utf-8").read()
-    m = re.search(r"^## §66\b.*?(?=^## (?!#)|\Z)", text, re.M | re.S)
+# RULES.md sections whose entries carry "Enforced in:" / "Verification:" and
+# are held to D60 by --check: §66 (pipeline v2) and §68 (v2.1 creative layer)
+CHECKED_SECTIONS = ("66", "68")
+
+
+def section66(path, num="66"):
+    """Parse RULES.md §66 (or §<num>) -> {"entries": {id: enforced_text},
+    "gate_listed": [ids under 'Existing rules made gate-enforced']}"""
+    with open(path, encoding="utf-8") as f:
+        text = f.read()
+    m = re.search(r"^## §%s\b.*?(?=^## (?!#)|\Z)" % re.escape(num), text,
+                  re.M | re.S)
     out = {"entries": {}, "gate_listed": [], "present": bool(m)}
     if not m:
         return out
@@ -189,40 +197,45 @@ def analyze(tree):
     counts = {c: sum(1 for r in rows if r["class"] == c) for c in CLASSES}
     base = [r for r in rows if re.fullmatch(r"D\d+", r["id"])]
     counts_d = {c: sum(1 for r in base if r["class"] == c) for c in CLASSES}
-    s66 = section66(rules_md)
+    sections = {num: section66(rules_md, num) for num in CHECKED_SECTIONS}
+    s66 = sections["66"]
     problems, pending, notices = [], [], []
     by_id = {r["id"]: r for r in rows}
-    for rid, enf in sorted(s66["entries"].items(), key=lambda kv: _sort_key(kv[0])):
-        r = by_id.get(rid)
-        if r is None:
-            problems.append(f"{rid}: listed in §66 but not parsed as a definition")
-            continue
-        is_pending = "PENDING INTEGRATION" in enf
-        head = enf.split("gated by")[0]
-        wants_gate = bool(re.search(r"\bgate [12]\b", head))
-        if is_pending:
-            (notices if r["files"] else pending).append(
-                f"{rid}: code-traceable now — drop 'PENDING INTEGRATION' "
-                f"from RULES.md §66" if r["files"] else
-                f"{rid}: pending integration — "
-                f"{head.replace('— PENDING INTEGRATION', '').strip(' .')[:70]}")
-            continue
-        if not r["files"]:
-            problems.append(f"{rid}: §66 says enforced ({head.strip()[:60]}) "
-                            f"but no code references it (D60)")
-        elif wants_gate and r["class"] != "GATE":
-            problems.append(f"{rid}: §66 says gate-enforced but no REGISTRY "
-                            f"rule covers it")
-    for rid in s66["gate_listed"]:
-        if by_id.get(rid, {}).get("class") != "GATE":
-            problems.append(f"{rid}: listed as made gate-enforced in §66 but "
-                            f"no REGISTRY rule covers it")
+    for num, sec in sections.items():
+        for rid, enf in sorted(sec["entries"].items(),
+                               key=lambda kv: _sort_key(kv[0])):
+            r = by_id.get(rid)
+            if r is None:
+                problems.append(f"{rid}: listed in §{num} but not parsed as a "
+                                f"definition")
+                continue
+            is_pending = "PENDING INTEGRATION" in enf
+            head = enf.split("gated by")[0]
+            wants_gate = bool(re.search(r"\bgate [12]\b", head))
+            if is_pending:
+                (notices if r["files"] else pending).append(
+                    f"{rid}: code-traceable now — drop 'PENDING INTEGRATION' "
+                    f"from RULES.md §{num}" if r["files"] else
+                    f"{rid}: pending integration — "
+                    f"{head.replace('— PENDING INTEGRATION', '').strip(' .')[:70]}")
+                continue
+            if not r["files"]:
+                problems.append(f"{rid}: §{num} says enforced ({head.strip()[:60]}) "
+                                f"but no code references it (D60)")
+            elif wants_gate and r["class"] != "GATE":
+                problems.append(f"{rid}: §{num} says gate-enforced but no "
+                                f"REGISTRY rule covers it")
+        for rid in sec["gate_listed"]:
+            if by_id.get(rid, {}).get("class") != "GATE":
+                problems.append(f"{rid}: listed as made gate-enforced in §{num} "
+                                f"but no REGISTRY rule covers it")
     for rid, n in dups:
         problems.append(f"{rid}: defined twice (RULES.md line {n})")
     return {"tree": os.path.abspath(tree), "rules_md": rules_md,
             "gate_source": cov_src, "total": len(rows), "counts": counts,
             "counts_d_numbers": counts_d, "d_numbers": len(base),
-            "rows": rows, "section66": s66, "problems": problems,
+            "rows": rows, "section66": s66, "section68": sections["68"],
+            "problems": problems,
             "pending": pending, "notices": notices,
             "aliases": [{"id": a, "file": f, "note": n} for a, f, n in ALIASES]}
 
