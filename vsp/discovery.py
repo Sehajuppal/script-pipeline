@@ -151,10 +151,35 @@ def has_lemmas(text, keyword):
     return bool(need) and all(n in have for n in need)
 
 
+_PP_CUT = frozenset("before after at for with without in on".split())
+
+
+def _head_index(toks):
+    """Index of the head noun: the last token that is not a search-intent
+    frame word (review/tips/challenge/detox/finds...), a number or a
+    function word, ignoring a trailing prepositional phrase ("no phone
+    before bed" -> phone)."""
+    end = len(toks)
+    for i, t in enumerate(toks):
+        if i > 0 and t in _PP_CUT:
+            end = i
+            break
+    frame = _set("frame_words")
+    for i in range(end - 1, -1, -1):
+        t = toks[i]
+        if t not in frame and t not in _FUNCTION and not t.isdigit() \
+                and t not in ("quit", "how"):
+            return i
+    return len(toks) - 1
+
+
 def head_noun(keyword):
-    """The keyword's last word (singular head noun, pair nouns plural)."""
+    """The keyword's head noun — "milk frother" -> frother, "no sugar
+    challenge" -> sugar, "instagram detox" -> instagram, "kitchen finds" ->
+    kitchen, "hook tips" -> hook, "5am morning routine" -> routine (singular;
+    pair nouns keep their plural)."""
     toks = tokens(keyword)
-    return toks[-1] if toks else ""
+    return toks[_head_index(toks)] if toks else ""
 
 
 def anchor(keyword):
@@ -164,9 +189,10 @@ def anchor(keyword):
     toks = tokens(keyword)
     if not toks:
         return ""
-    if toks[-1] in _set("weak_heads") and len(toks) >= 2:
-        return " ".join(toks[-2:])
-    return toks[-1]
+    i = _head_index(toks)
+    if toks[i] in _set("weak_heads") and i >= 1:
+        return " ".join(toks[i - 1:i + 1])
+    return toks[i]
 
 
 def anchor_in(text, keyword):
@@ -361,9 +387,10 @@ def comment_word_parts(keyword):
         w = re.sub(r"[^A-Za-z0-9]", "", t).upper()
         return w if re.match(r"^[A-Z][A-Z0-9]+$", w) else None
 
-    head = toks[-1]
+    i = _head_index(toks)
+    head = toks[i]
     if head in _set("comment_generic_heads"):
-        prev = toks[-2] if len(toks) >= 2 else None
+        prev = toks[i - 1] if i >= 1 else None
         ok = prev and not _adj_like(prev) and prev not in _set("drop_modifiers")
         return None, (word(prev) if ok else None)
     return word(head), None
@@ -1151,10 +1178,12 @@ def warnings(disc, script):
         n = len(rx.findall(text))
         if n > _eng()["d155"]["caption_primary_exact_max"]:
             out.append(f"DISC-05: {name}.{field} repeats {kw!r} {n}x (max 2)")
-    head = head_noun(kw).upper()
     cw = disc.get("comment_word")
-    if cw and head and cw != head and lemma(cw.lower()) != lemma(head.lower()):
-        out.append(f"comment word {cw} is not the keyword head noun {head}")
+    words = {lemma(t) for t in tokens(kw)}
+    fused = (compact_tag(anchor(kw)) or "#").lstrip("#")
+    if cw and kw and lemma(cw.lower()) not in words and cw.lower() != fused:
+        out.append(f"KEYWORD_RULES soft: comment word {cw} is not a keyword "
+                   f"word (head noun {head_noun(kw).upper()})")
     pl = disc.get("placement") or {}
     if pl.get("spoken_by_s") is None or pl["spoken_by_s"] > 3.0:
         out.append(f"D161: {kw!r} not spoken by 3.0 s")

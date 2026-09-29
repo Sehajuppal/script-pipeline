@@ -1055,6 +1055,30 @@
    "comment_word_overrides": {
     "power bank": "POWERBANK"
    },
+   "frame_words": [
+    "review",
+    "reviews",
+    "test",
+    "tips",
+    "tip",
+    "hacks",
+    "hack",
+    "mistakes",
+    "ideas",
+    "challenge",
+    "detox",
+    "finds",
+    "find",
+    "haul",
+    "guide",
+    "explained",
+    "day",
+    "days",
+    "before",
+    "after",
+    "worth",
+    "vs"
+   ],
    "min_words": 2,
    "max_words": 4,
    "advice_frame": [
