@@ -1879,6 +1879,9 @@ def build_beats(ctx, duration, rng, fmt, presenter="ai"):
     # D35 (judge loop, cycle 11): pick_hook gates the industry-secret hook
     # out of demo/review formats — it needs the format in ctx.
     ctx["fmt"] = fmt
+    # D137 (pipeline v2): pick_hook's AI curator voice reads the presenter
+    # from ctx (GEN-B hook engine) — set before the hook is drawn.
+    ctx["presenter"] = presenter
     # D40 (judge loop, cycle 12): the transformation payoff names the same
     # day-count the hook drew ("DAY 1 vs DAY N") — pre-draw once into ctx so
     # hook and payoff stay consistent; _render_hook_line reads it back.
