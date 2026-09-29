@@ -244,6 +244,26 @@ USE_TYPES = ("hook-hands-mid-action", "pov-hands-first-use", "over-shoulder-demo
 REACTION_TYPES = ("reaction-cutaway-3q", "face-reaction-product", "profile-look-cutaway")
 DEMO_ANGLES = ("pov-hands-first-use", "over-shoulder-demo", "overhead-hands-demo",
                "product-operating-cu")
+# shot types that only make sense for some products (matched on the prompt
+# and the product block): a trash can is never poured, a door lock has no
+# slow process to time-lapse
+_FIT = {
+    "pour-dispense-cu": r"serum|lotion|cream|oil|soap|shampoo|spray|mist|sauce|syrup|milk|coffee|espresso|"
+                        r"tea|juice|water|smoothie|bottle|dispens|pump|kettle|blender|frother|pitcher|jar",
+    "slowmo-hero-moment": r"serum|lotion|cream|oil|spray|mist|milk|coffee|espresso|tea|water|juice|"
+                          r"frother|blender|fabric|silk|pillow|towel|powder|sauce|hair|lash|pour|splash",
+    "timelapse-process": r"sunrise|lamp|light|charg|solar|grow|plant|garden|bird|cook|bake|fryer|dry|"
+                         r"clean|mop|robot|brew|coffee|routine|morning|sleep|days?\b|week",
+    "turn-in-hand-light": r".",
+}
+_FIT_RE = {k: re.compile(v, re.I) for k, v in _FIT.items()}
+
+
+def fits_product(tid, c):
+    rx = _FIT_RE.get(tid)
+    return True if rx is None else bool(rx.search(c.get("fit_text") or ""))
+
+
 _TEST_RE = re.compile(
     r"(?i)\btest(?:s|ed|ing)?\b|\bproof\b|\bresults?\b|before[- ]and[- ]after|\bbefore\b[^.]{0,40}\bafter\b|"
     r"\bheld\b|\blasted\b|\bstill works\b|\bafter \d+|\bday \d+|\b\d+(?:\.\d+)?\s?(?:days?|weeks?|months?|hours?|"
@@ -484,6 +504,7 @@ def build_ctx(script, shots=None, ctx=None):
     moves = ((direction or {}).get("camera") or {}).get("movement") if direction else None
     c["pref_moves"] = tuple(m for m in (moves or []) if isinstance(m, str))
     c["target"] = subshot_target(script)
+    c["fit_text"] = " ".join(x for x in (script.get("prompt") or "", c.get("product_short") or "") if x)
     cad = data()["SHOT_RULES"]["cadence"].get(vibe) or {}
     c["max_static_s"] = float(cad.get("max_static_s") or STATIC_MAX)
     return c
@@ -616,13 +637,26 @@ def _cine(scale, angle, move):
     return f"{s[:1].upper() + s[1:]}, {ANGLE_WORDS.get(angle, 'eye level')}, {MOVE_WORDS.get(move, 'static camera')}"
 
 
+_MOVE_WORDS_RE = re.compile(
+    r"(?i)\b(?:(?:very|subtle|slow|fast|micro)\s+)*(?:push[- ]in|pull[- ]out|dolly(?: out| in)?|whip pan|"
+    r"tracking(?: arc| shot)?|handheld|pan|tilt|orbit)\b(?:\s+(?:on|over|across|through|toward|into))?")
+
+
 def _frame0_desc(text):
+    """Frame 0's subject for the loop's framing: first sentence, no type
+    name, no overlay notes and no camera-move words (the loop's own move is
+    the dolly out — its line names only moves it really makes)."""
     t = re.sub(r"(?i)^frame[\s-]*0\b[^:]*:\s*", "", text or "")
     t = re.split(r"(?<=[.!?])\s+", t.strip())[0] if t.strip() else ""
+    t = re.sub(r"^[A-Za-z][\w /-]{2,40}:\s+", "", t)           # "Product doing its job: ..."
     t = re.sub(r"(?i),?\s*(?:on-screen|text overlay|day-counter on)[^,.;]*", "", t)
     t = re.sub(r"(?i)\bto camera\b", "toward the lens", t)
-    t = _tidy(t).rstrip(".")
-    return t[:110].rstrip(" ,;") or "the opening frame"
+    t = _MOVE_WORDS_RE.sub("", t)
+    t = _tidy(re.sub(r"\s+([,;])", r"\1", t)).strip(" ,;\u2014-").rstrip(".")
+    if len(t) > 110:
+        cut = t[:110]
+        t = cut[:cut.rfind(",")] if "," in cut[40:] else cut
+    return t.strip(" ,;\u2014-") or "the opening frame"
 
 
 def _safe_sentences(text):
@@ -643,7 +677,9 @@ def _frame0_candidates(vt, rec, c):
     for s in d["SHOT_LIBRARY"]:
         if vt in s["visual_types"] and s["id"] not in ids:
             ids.append(s["id"])
-    return [t for t in ids if t not in d["BANNED_F0"] and not is_talking_head(t)]
+    ids = [t for t in ids if t not in d["BANNED_F0"] and not is_talking_head(t)]
+    # a wide shot is the weakest phone opener: WS candidates go last
+    return [t for t in ids if lib(t)["scale"] != "WS"] + [t for t in ids if lib(t)["scale"] == "WS"]
 
 
 def _frame0_ok(tid, c):
@@ -675,10 +711,17 @@ def _pick_frame0(g, c):
         first = (rec.get("shots") or ["hook-hands-mid-action"])[0]
         vts = lib(first)["visual_types"] or ["product-in-action"]
         vt, src = vts[0], f"the {c['format'] or 'default'} recipe"
-    cands = [t for t in _frame0_candidates(vt, rec, c) if _frame0_ok(t, c)]
+    cands = [t for t in _frame0_candidates(vt, rec, c) if _frame0_ok(t, c) and fits_product(t, c)]
+    if g.get("explicit") and re.search(r"(?i)\bhands?\b", g.get("direction") or ""):
+        # the maker's frame 0 puts hands on the product: hands types first
+        cands = [t for t in cands if "hands" in lib(t)["needs"]] + \
+            [t for t in cands if "hands" not in lib(t)["needs"]]
     if not cands:
         cands = [t for t in list(rec.get("shots") or []) + list(rec.get("alt") or [])
                  + ["text-card-over-motion"] if _frame0_ok(t, c)]
+    if c["lane"] == "ai" and vt not in ("result-reveal", "before-after-split"):
+        # the AI lane opens on a renderable shot when the visual type allows it
+        cands = [t for t in cands if t not in PROOF_ALWAYS] + [t for t in cands if t in PROOF_ALWAYS]
     best = None
     for t in cands:
         pr = is_proof(t, "VISUAL TRIGGER", g, c, first=True)
@@ -887,13 +930,15 @@ def _choose(cands, st, ctx_slot, c):
         if eff == "matched-after" and not any(x in ("matched-before", "split-before-after")
                                               for x in st["types"]):
             hard += 1          # an AFTER needs its matched BEFORE (S-BA-MATCH)
+        if not fits_product(eff, c):
+            hard += 1
         if c["lane"] == "ai" and pr and "face" in L["needs"]:
             hard += 1          # a proof shot must be filmed: the AI persona cannot be
         soft = 6.0 * st["used"].get(eff, 0) + idx
         lo, hi = L["duration_s"]
         dur = ctx_slot["dur"]
-        if dur < lo - 0.3 or dur > hi + 0.3:
-            soft += 1.5
+        if (dur < lo - 0.3 or dur > hi + 0.3) and idx >= ctx_slot.get("n_base", 0):
+            soft += 1.5        # the recipe's own slot order wins over duration fit
         if c["lane"] == "ai" and L["ai_risk"] == "med" and st["risk"][-2:] == ["med", "med"]:
             soft += 1.0
         if move == "static" and dur > c["max_static_s"] + 1e-9:
@@ -1001,7 +1046,7 @@ def plan(script, shots, ctx=None):
                     explicit_text = txt
                 move = lib(eff)["move"]
                 if explicit_text is not None and eff == t:
-                    move = move_in_text(explicit_text) or move_in_text(g.get("camera") or "") or move
+                    move = move_in_text(explicit_text) or move
                 th = False
             elif loop_slot:
                 f0 = out[0]
@@ -1029,7 +1074,7 @@ def plan(script, shots, ctx=None):
                     why = "the maker's own staging, typed"
                 move = lib(eff)["move"]
                 if explicit_text is not None:
-                    move = move_in_text(explicit_text) or move_in_text(g.get("camera") or "") or move
+                    move = move_in_text(explicit_text) or move
                 th = _th_if(sh, eff, move, c, st["frame0_desc"], i, explicit_text, False)
             else:
                 shots_r = list(rec.get("shots") or [])
@@ -1046,6 +1091,7 @@ def plan(script, shots, ctx=None):
                              len(plans[-1]["wins"]) == 1 and i == k - 1)):
                     nxt_scale = out[0]["scale"]
                 slot = {"beat": g["beat"], "g": g, "sh": sh, "i": i, "dur": dur,
+                        "n_base": 1 if base_c else 0,
                         "unsplit_long": k == 1 and dur > STATIC_MAX, "next_scale": nxt_scale,
                         "next2_scale": nxt2, "prefer_face": prefer_face}
                 _, t, eff, pr, th = _choose(cands, st, slot, c)
@@ -1132,6 +1178,8 @@ def _retype(out, j, c, avoid_scale=None, need_face=False):
             continue
         if eff == "matched-after" and not any(x["shot_type"] in ("matched-before", "split-before-after")
                                               for x in out[:j]):
+            continue
+        if not fits_product(eff, c):
             continue
         if eff == sh["shot_type"] or (avoid_scale and L["scale"] == avoid_scale):
             continue
