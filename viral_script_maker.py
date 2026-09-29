@@ -1998,6 +1998,12 @@ ROUTINE_HOOK_PINNED = "Day {streak} of my {time} routine. Here's what changed."
 # D137 (GEN-B): the AI presenter's pin is demonstrative ("the" routine) —
 # same day-counter contract (D47/D35), no claim that the routine is its own.
 ROUTINE_HOOK_PINNED_AI = "Day {streak} of the {time} routine. Here's what changed."
+# R15/D47 (GEN-B): a routine label that is not a "<time> routine" ("grwm for a
+# first date", "morning reset") pinned "Day 14 of my morning routine." — a
+# hook that names neither the prompt's concept nor its words. The label pin
+# keeps the day-counter contract and names the concept: "Day 14: GRWM for a
+# first date." ({label_s}: the label, "my" -> "the" for the AI presenter).
+ROUTINE_HOOK_PINNED_LABEL = "Day {streak}: {label_s}."
 
 SHOWCASE_HOOKS = [
  "Things in my {domain} that just make sense.",
@@ -2376,9 +2382,16 @@ def pick_hook(ctx, rng):
     # emitting "I wake up at 5AM" while the payoff says "Day 14".
     if ctx.get("concept") == "routine":
         ctx["hook_source"] = "pinned"   # D145
-        pin = ROUTINE_HOOK_PINNED_AI if ai else ROUTINE_HOOK_PINNED
-        return "day-counter", _screen_pin(humanize_dialogue(
-            _render_hook_line(ctx, hrng, pin, auth)))
+        label = str(ctx.get("routine_label") or "")
+        if re.search(r"\broutine\b", label, re.I) or not label:
+            pin = ROUTINE_HOOK_PINNED_AI if ai else ROUTINE_HOOK_PINNED
+            line = _render_hook_line(ctx, hrng, pin, auth)
+        else:
+            lab = re.sub(r"\bmy\b", "the", label, flags=re.I) if ai else label
+            lab = re.sub(r"(?i)\bgrwm\b", "GRWM", lab)
+            line = ROUTINE_HOOK_PINNED_LABEL.format(
+                streak=ctx.get("streak", "14"), label_s=_cap1(lab.strip()))
+        return "day-counter", _screen_pin(humanize_dialogue(line))
     # D67 (judge loop, cycle 17): practice-challenge hooks are PINNED like
     # D52's routine pin — a drawn hook can name a different contract than
     # the payoff delivers ("I stopped X" grammar on a streak the presenter
