@@ -47,17 +47,35 @@ def why_popped(o, r):
     return safe_text("; ".join(bits), 300)
 
 
+def _n(count, noun):
+    return f"{count} {noun}{'' if count == 1 else 's'}"
+
+
 def _pct(x):
     return f"{int(round(x * 100))}%" if isinstance(x, (int, float)) else "n/a"
 
 
-def _trend_line(c):
+def _trend_line(c, labels=None):
     mx = c.get("median_outlier_x") or c.get("median_multiple")
+    rel = [labels.get(k, k) for k in c.get("related") or []] if labels is not None else []
     return (f"- `{c['key']}` ({c['label']}): **{c['stage']}**, {c['speed']}; "
             f"{c['creators_7d']} creators this week vs {c['creators_prev7d']} (x{c['growth']:g})"
             f"{f', median {mx:g}x' if mx else ''}, {_pct(c.get('small_medium_share'))} "
             f"small/medium; {', '.join(c['platforms'])}; niches "
-            f"{', '.join(c['niches']) or 'n/a'}. Advice: {c['jump_in']}.")
+            f"{', '.join(c['niches']) or 'n/a'}"
+            f"{'; same trend: ' + ', '.join(rel) if rel else ''}. Advice: {c['jump_in']}.")
+
+
+def _grouped(cards):
+    """Cards minus the ones already listed as a shown card's related keys."""
+    shown, seen = [], set()
+    for c in cards:
+        if c["key"] in seen:
+            continue
+        shown.append(c)
+        seen.add(c["key"])
+        seen.update(c.get("related") or [])
+    return shown
 
 
 def _recipe_line(r):
@@ -91,11 +109,11 @@ def render(observations, rows, doc, recipes, day, now):
     latest_day = max((r["date"] for r in recipes if not r.get("used")), default=None)
     batch = [r for r in recipes if not r.get("used") and r["date"] == latest_day]
     out = [f"# Trend digest: {day}", "",
-           f"_{len(observations)} posts from {len(creators)} named creators; "
-           f"{len(doc.get('trends') or [])} trend cards; {len(batch)} recipes in the latest "
-           f"batch{f' ({latest_day})' if latest_day else ''}. Small and medium creators "
-           f"come first: on Instagram a new post is first shown to a small audience, so a "
-           f"small account's outlier means the format won._", ""]
+           f"_{_n(len(observations), 'post')} from {_n(len(creators), 'named creator')}; "
+           f"{_n(len(doc.get('trends') or []), 'trend card')}; {_n(len(batch), 'recipe')} "
+           f"in the latest batch{f' ({latest_day})' if latest_day else ''}. Small and "
+           f"medium creators come first: on Instagram a new post is first shown to a small "
+           f"audience, so a small account's outlier means the format won._", ""]
     out += ["## Top outliers (small and medium creators first)", ""]
     scored = [r for r in rows if r["status"] == "scored" and r["band"] != "normal"]
     scored.sort(key=lambda r: (0 if r.get("small_medium") else 1, -r["inspiration_score"],
@@ -110,18 +128,26 @@ def render(observations, rows, doc, recipes, day, now):
                    f"{why_popped(o, r)}. {r['permalink']}")
     out += ["", "## Rising and emerging trends", ""]
     cards = doc.get("trends") or []
-    hot = [c for c in cards if c["stage"] in ("emerging", "rising")][:TOP_TRENDS]
-    out += [_trend_line(c) for c in hot] or ["- none this week"]
-    peak = [c for c in cards if c["stage"] == "peak"][:5]
+    labels = {c["key"]: c["label"] for c in cards}
+    prio = {"format": 0, "sound": 1, "topic": 2, "tag": 3}
+    ordered = sorted(cards, key=lambda c: (("emerging", "rising", "peak").index(c["stage"])
+                                           if c["stage"] in ("emerging", "rising", "peak")
+                                           else 3, prio.get(c["kind"], 4),
+                                           -c["evidence_score"], c["key"]))
+    groups = _grouped(ordered)
+    hot = [c for c in groups if c["stage"] in ("emerging", "rising")][:TOP_TRENDS]
+    out += [_trend_line(c, labels) for c in hot] or ["- none this week"]
+    peak = [c for c in groups if c["stage"] == "peak"][:5]
     if peak:
-        out += ["", "Peak (only with a twist):"] + [_trend_line(c) for c in peak]
+        out += ["", "Peak (only with a twist):"] + [_trend_line(c, labels) for c in peak]
     out += ["", "## Recipes of the day", ""]
     top = sorted(batch, key=lambda r: (-r["score"], r["recipe_id"]))[:TOP_RECIPES]
     out += [_recipe_line(r) for r in top] or ["- none: run `python3 -m vsp.trends synth`"]
     out += ["", "## Post this week", ""]
     picks = _picks(batch)
     for i, r in enumerate(picks, 1):
-        out.append(f"{i}. `{r['recipe_id']}` {r['title']} ({r['niche']}). Hooks: "
+        lane = "" if "ai" in (r.get("lanes") or []) else ", human presenter only"
+        out.append(f"{i}. `{r['recipe_id']}` {r['title']} ({r['niche']}{lane}). Hooks: "
                    f"{', '.join(r['hook_archetypes'])}; frame 0: "
                    f"{r.get('frame0_visual_type') or 'free'}; format: "
                    f"{r.get('format') or 'free'}. Run: `python3 pipeline.py \"<product>\" "

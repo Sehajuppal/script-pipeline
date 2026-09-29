@@ -8,16 +8,18 @@
 for_run picks the best unused recipe of the latest batch (<= 7 days old)
 for the prompt's niche (vsp.router.route classifies the prompt when niche
 or concept is None), ranked by score x concept fit x format fit, feasible
-for the presenter (presenter="ai" never gets a needs-real-person recipe).
+for the presenter (presenter="ai" never gets a needs-real-person recipe);
+recipes scoring below MIN_STEER_SCORE (0.05) are ignored in auto mode.
 recipe_id: None / "auto" = pick; "none" = no steering; an id = that recipe
 (None if unknown or infeasible for the presenter). Returns None when there
 is no dataset, no recipes, or nothing fits. It only reads files.
 
 Returned keys (all enums valid in vsp.creative_vocab / vsp.router):
   recipe_id, title, operator, trend_keys, stage, score,
-  hook_archetypes     ordered HOOK_ARCHETYPES ids; human_only ids dropped
-                      for presenter=ai, requires_proof always dropped,
-                      price-anchor only when the prompt has a price
+  hook_archetypes     ordered HOOK_ARCHETYPES ids (may be empty: no hook
+                      steering); human_only ids dropped for presenter=ai,
+                      requires_proof always dropped, price-anchor only when
+                      the prompt has a price
   frame0_visual_type  VISUAL_TYPES id | None
   vibe                VIBES id | None
   format              demo | talking-head | pov-vlog | transformation | review | None
@@ -40,6 +42,7 @@ from vsp.trends import store
 from vsp.trends.synth import FORMAT_ARCHETYPE, safe_text, tokens_of
 
 MAX_RECIPE_AGE_DAYS = 7
+MIN_STEER_SCORE = 0.05          # auto mode ignores near-zero-evidence recipes
 STEER_KEYS = ("recipe_id", "title", "operator", "trend_keys", "stage", "score",
               "hook_archetypes", "frame0_visual_type", "vibe", "format", "duration_s",
               "beats_note", "audio_note", "text_note", "participation_note",
@@ -116,8 +119,8 @@ def _archetypes(rec, presenter, price):
             continue
         if a not in out:
             out.append(a)
-    if not out:
-        out = [FORMAT_ARCHETYPE.get(rec.get("format"), "curiosity-gap")]
+    if not out and rec.get("hook_archetypes") and rec.get("format") in FORMAT_ARCHETYPE:
+        out = [FORMAT_ARCHETYPE[rec["format"]]]      # every evidence archetype was filtered
     return out
 
 
@@ -198,7 +201,7 @@ def for_run(prompt, presenter=None, fmt=None, niche=None, concept=None, dataset_
     niche = S.norm_niche(niche) or r_niche
     concept = concept or r_concept
     pool = [r for r in recipes if r.get("niche") == niche and not r.get("used") and
-            _lane_ok(r, presenter) and (r.get("score") or 0) > 0]
+            _lane_ok(r, presenter) and (r.get("score") or 0) >= MIN_STEER_SCORE]
     if not pool:
         return None
     latest = max(r["date"] for r in pool)

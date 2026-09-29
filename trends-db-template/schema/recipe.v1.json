@@ -136,6 +136,7 @@
   },
   "hook_archetypes": {
    "type": "array",
+   "description": "ordered; empty = no hook steering",
    "items": {
     "type": "string",
     "enum": [
@@ -160,8 +161,7 @@
      "showcase"
     ]
    },
-   "maxItems": 4,
-   "minItems": 1
+   "maxItems": 4
   },
   "frame0_visual_type": {
    "type": [

@@ -437,7 +437,7 @@ def _recipe_problems(r):
     from vsp.trends import schema as S
     body = dict(r, recipe_id=r.get("recipe_id") or "rcp-20260929-99")
     errs = list(S.validate(S.compact(body), S.RECIPE))
-    if not r["hook_archetypes"] or any(a not in CV.HOOK_ARCHETYPES for a in r["hook_archetypes"]):
+    if any(a not in CV.HOOK_ARCHETYPES for a in r["hook_archetypes"]):
         errs.append("hook_archetypes")
     for k, ok in (("frame0_visual_type", CV.VISUAL_TYPES), ("vibe", CV.VIBES),
                   ("format", FORMATS), ("duration_s", S.DURATIONS)):
@@ -588,6 +588,18 @@ def _steer_checks(C, ctx):
             sf and sf["evidence"] and sf["evidence"][0]["tier"] in S.SMALL_MEDIUM_TIERS and
             sf["evidence"][0]["permalink"] in steer.brief_md(sf))
     C.check("steer: brief_md('') for no steer", steer.brief_md(None) == "")
+    low = os.path.join(ctx.tmp, "low-score")
+    shutil.copytree(d, low)
+    from vsp.trends import store
+    recs = store.load_recipes(low)
+    for r in recs:
+        r["score"] = round(steer.MIN_STEER_SCORE / 2, 4)
+    store.save_recipes(low, recs)
+    C.check("steer: auto mode ignores recipes below MIN_STEER_SCORE; an explicit id still loads",
+            steer.for_run(prompt, presenter="ai", dataset_dir=low, today="2026-09-29") is None
+            and (steer.for_run(prompt, presenter="ai", dataset_dir=low,
+                               recipe_id=s1["recipe_id"]) or {}).get("recipe_id") ==
+            s1["recipe_id"])
 
 
 # ----------------------------------------------------------------- youtube

@@ -123,7 +123,7 @@ ARCHETYPE_FORMAT = {"transformation": "transformation", "comparison": "review",
                     "question": "talking-head", "showcase": "demo", "proof-first": "demo"}
 FORMAT_ARCHETYPE = {"transformation": "transformation", "pov-vlog": "pov",
                     "review": "comparison", "demo": "showcase",
-                    "talking-head": "curiosity-gap", None: "curiosity-gap"}
+                    "talking-head": "curiosity-gap"}
 DEFAULT_BEATS = {"demo": ("hook", "problem", "product in action", "result", "cta"),
                  "transformation": ("before", "process", "after reveal", "cta"),
                  "review": ("claim", "test", "verdict", "cta"),
@@ -227,12 +227,15 @@ def _uniq(seq):
 
 
 def archetypes_for(first, profile, fmt):
-    """Ordered, vocab-valid, never-empty hook archetype list."""
+    """Ordered, vocab-valid hook archetypes: the operator's, then the
+    evidence's (archetype, emotion). With no evidence the format's default
+    archetype is used; with no format either, the list stays empty (the
+    pipeline then keeps its own hook choice)."""
     cand = list(first or []) + [profile.get("archetype")] + list(profile.get("archetypes") or [])
     cand.append(EMOTION_ARCHETYPE.get(profile.get("emotion")))
     out = [a for a in _uniq(cand) if a in CV.HOOK_ARCHETYPES]
-    if not out:
-        out = [FORMAT_ARCHETYPE.get(fmt, "curiosity-gap")]
+    if not out and fmt in FORMAT_ARCHETYPE:
+        out = [FORMAT_ARCHETYPE[fmt]]
     return out[:4]
 
 

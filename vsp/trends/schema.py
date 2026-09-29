@@ -266,7 +266,7 @@ RECIPE = {
         k: F("number", True, minimum=0, maximum=1)
         for k in ("evidence", "velocity", "novelty", "feasibility")}),
     "hook_archetypes": F("list", True, items=F("str", enum=HOOK_ARCHETYPE_IDS),
-                         min_items=1, max_items=4),
+                         max_items=4, desc="ordered; empty = no hook steering"),
     "frame0_visual_type": F("str", enum=VISUAL_TYPE_IDS),
     "vibe": F("str", enum=VIBE_IDS), "format": F("str", enum=FORMATS),
     "duration_s": F("int", enum=DURATIONS),
