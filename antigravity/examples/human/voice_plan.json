@@ -1,0 +1,376 @@
+{
+ "schema_version": 1,
+ "run": "led-sunrise-alarm-lamp",
+ "slug": "led-sunrise-alarm-lamp",
+ "prompt": "LED sunrise alarm lamp",
+ "duration_s": 30,
+ "presenter": "human",
+ "lane": "real_voice",
+ "read_guide": true,
+ "engine": null,
+ "voice": {
+  "id": null,
+  "source": "creator",
+  "emotive": false,
+  "gender": "masculine",
+  "age": "late 20s",
+  "style": "the creator's own voice, recorded on the day; no TTS, no voice changer",
+  "consent_ref": null,
+  "calibration_wpm": null,
+  "speed_basis": null
+ },
+ "disclosure": {
+  "tiktok_is_aigc": "set_by_visuals",
+  "instagram_ai_label": "set_by_visuals",
+  "youtube_ai_use": "set_by_visuals",
+  "caption_line_required": false,
+  "tiktok_shop": true
+ },
+ "mix": {
+  "integrated_lufs": -14,
+  "true_peak_dbtp": -1,
+  "music_duck_db": -8,
+  "music_in_master": false,
+  "room_tone": "calm",
+  "clip_gain_db": "+1 to +2 on the payoff, 0 elsewhere",
+  "sample_rate": 48000,
+  "channels": 1
+ },
+ "timing": {
+  "anchor_offset_s": 0.1,
+  "min_gap_s": 0.3,
+  "gap_before_payoff_s": 0.5,
+  "gap_after_payoff_s": 0.4,
+  "trim_head_ms": 40,
+  "trim_tail_ms": 80,
+  "breaks_at_seams": false
+ },
+ "qa": {
+  "wpm_fail_above": 200,
+  "wpm_warn_above": 190,
+  "wpm_warn_below_floor_by": 10,
+  "speed_house": [
+   0.9,
+   1.15
+  ],
+  "volume_house": [
+   0.9,
+   1.2
+  ]
+ },
+ "lines": [
+  {
+   "id": "L1",
+   "beat": "VERBAL HOOK + LOCK",
+   "role": "dialogue",
+   "window": [
+    0.5,
+    3.0
+   ],
+   "anchor": "start",
+   "place_s": [
+    0.6,
+    3.27
+   ],
+   "display": "Tired of sunrise alarm lamps that fail fast?",
+   "transcript": "Tired of sunrise alarm lamps that fail fast?",
+   "tone": "confident",
+   "energy": 4,
+   "wpm": {
+    "floor": 180,
+    "target": 180,
+    "max": 190
+   },
+   "speech_s_est": 2.67,
+   "delivery": "Brisk, confident.",
+   "shots": [
+    "2"
+   ],
+   "fits": false,
+   "flags": [
+    "about 0.27 s past its window at 180 wpm (estimate): place it by words.json and let it spill into the next lead-in only if that line has slack; else trim words, never time-stretch"
+   ],
+   "gap_before_s": 0.0,
+   "gap_after_s": 0.3,
+   "first_person_claim": false
+  },
+  {
+   "id": "L2",
+   "beat": "IMPERFECTION BEAT",
+   "role": "dialogue",
+   "window": [
+    3.0,
+    8.0
+   ],
+   "anchor": "start",
+   "place_s": [
+    3.1,
+    5.1
+   ],
+   "display": "Confession: I fumbled the first try.",
+   "transcript": "Confession: I fumbled the first try.",
+   "tone": "excited",
+   "energy": 3,
+   "wpm": {
+    "floor": 180,
+    "target": 180,
+    "max": 190
+   },
+   "speech_s_est": 2.0,
+   "delivery": "Candid, unpolished — the flaw first. No cover-up, no polished read.",
+   "shots": [
+    "3a",
+    "3b"
+   ],
+   "fits": true,
+   "gap_before_s": 0.3,
+   "gap_after_s": 0.3,
+   "first_person_claim": true
+  },
+  {
+   "id": "L3",
+   "beat": "IMPERFECTION BEAT",
+   "role": "rehook",
+   "window": [
+    3.0,
+    8.0
+   ],
+   "anchor": "end",
+   "place_s": [
+    5.57,
+    7.9
+   ],
+   "display": "So: the lamp doing its real job.",
+   "transcript": "So: the lamp doing its real job.",
+   "tone": "curious",
+   "energy": 3,
+   "wpm": {
+    "floor": 180,
+    "target": 180,
+    "max": 190
+   },
+   "speech_s_est": 2.33,
+   "delivery": "Candid, unpolished — the flaw first. No cover-up, no polished read.",
+   "shots": [
+    "3a",
+    "3b"
+   ],
+   "fits": true,
+   "gap_before_s": 0.3,
+   "gap_after_s": 0.3,
+   "first_person_claim": false
+  },
+  {
+   "id": "L4",
+   "beat": "EDUCATION BEAT",
+   "role": "dialogue",
+   "window": [
+    8.0,
+    14.9
+   ],
+   "anchor": "start",
+   "place_s": [
+    8.1,
+    13.7
+   ],
+   "display": "Here's what LED sunrise alarm lamp actually fixes: the thing every lamp gets wrong.",
+   "transcript": "Here's what LED sunrise alarm lamp actually fixes: the thing every lamp gets wrong.",
+   "tone": "excited",
+   "energy": 3,
+   "wpm": {
+    "floor": 150,
+    "target": 150,
+    "max": 190
+   },
+   "speech_s_est": 5.6,
+   "delivery": "Unhurried, warm — trust-building register.",
+   "shots": [
+    "4a",
+    "4b",
+    "4c",
+    "4d"
+   ],
+   "fits": true,
+   "gap_before_s": 0.3,
+   "gap_after_s": 0.3,
+   "first_person_claim": false
+  },
+  {
+   "id": "L5",
+   "beat": "DEMO BEAT",
+   "role": "dialogue",
+   "window": [
+    14.9,
+    21.9
+   ],
+   "anchor": "start",
+   "place_s": [
+    15.0,
+    18.67
+   ],
+   "display": "The lamp doing its real job. Visible before-and-after proof.",
+   "transcript": "The lamp doing its real job. Visible before-and-after proof.",
+   "tone": "excited",
+   "energy": 4,
+   "wpm": {
+    "floor": 180,
+    "target": 180,
+    "max": 190
+   },
+   "speech_s_est": 3.67,
+   "delivery": "Energetic, pitch-varied. Mid-action framing.",
+   "shots": [
+    "5a",
+    "5b",
+    "5c",
+    "5d"
+   ],
+   "fits": false,
+   "flags": [
+    "leaves only 0.13 s before L6 at the target wpm (want a 0.3 s gap): the measured take decides; trim words if they still collide"
+   ],
+   "gap_before_s": 0.3,
+   "gap_after_s": 0.3,
+   "first_person_claim": false
+  },
+  {
+   "id": "L6",
+   "beat": "DEMO BEAT",
+   "role": "rehook",
+   "window": [
+    14.9,
+    21.9
+   ],
+   "anchor": "end",
+   "place_s": [
+    18.8,
+    21.8
+   ],
+   "display": "Here's where it gets interesting: the week-one result.",
+   "transcript": "Here's where it gets interesting: the week-one result.",
+   "tone": "curious",
+   "energy": 4,
+   "wpm": {
+    "floor": 180,
+    "target": 180,
+    "max": 190
+   },
+   "speech_s_est": 3.0,
+   "delivery": "Energetic, pitch-varied. Mid-action framing.",
+   "shots": [
+    "5a",
+    "5b",
+    "5c",
+    "5d"
+   ],
+   "fits": true,
+   "gap_before_s": 0.3,
+   "gap_after_s": 0.3,
+   "first_person_claim": false
+  },
+  {
+   "id": "L7",
+   "beat": "PAYOFF",
+   "role": "dialogue",
+   "window": [
+    21.9,
+    25.4
+   ],
+   "anchor": "start",
+   "place_s": [
+    22.0,
+    25.2
+   ],
+   "display": "Test result: I woke up before the alarm.",
+   "transcript": "Test result: I woke up before the alarm.",
+   "tone": "excited",
+   "energy": 5,
+   "wpm": {
+    "floor": 150,
+    "target": 150,
+    "max": 190
+   },
+   "speech_s_est": 3.2,
+   "delivery": "Slow down. Let the result land. No scripted laugh.",
+   "shots": [
+    "6a",
+    "6b"
+   ],
+   "fits": true,
+   "gap_before_s": 0.5,
+   "gap_after_s": 0.4,
+   "first_person_claim": true
+  },
+  {
+   "id": "L8",
+   "beat": "COMMENT BAIT",
+   "role": "dialogue",
+   "window": [
+    25.4,
+    28.0
+   ],
+   "anchor": "start",
+   "place_s": [
+    25.5,
+    27.83
+   ],
+   "display": "Follow, comment LAMP for the link list.",
+   "transcript": "Follow, comment lamp for the link list.",
+   "tone": "excited",
+   "energy": 4,
+   "wpm": {
+    "floor": 180,
+    "target": 180,
+    "max": 190
+   },
+   "speech_s_est": 2.33,
+   "delivery": null,
+   "shots": [
+    "7a",
+    "7b"
+   ],
+   "fits": true,
+   "gap_before_s": 0.3,
+   "gap_after_s": 0.3,
+   "first_person_claim": false
+  },
+  {
+   "id": "L9",
+   "beat": "CTA",
+   "role": "dialogue",
+   "window": [
+    28.0,
+    30.0
+   ],
+   "anchor": "start",
+   "place_s": [
+    28.1,
+    29.77
+   ],
+   "display": "Part 2: the torture test.",
+   "transcript": "Part 2: the torture test.",
+   "tone": "excited",
+   "energy": 4,
+   "wpm": {
+    "floor": 180,
+    "target": 180,
+    "max": 190
+   },
+   "speech_s_est": 1.67,
+   "delivery": "Brisk 160–180 wpm.",
+   "shots": [
+    "8"
+   ],
+   "fits": true,
+   "gap_before_s": 0.3,
+   "gap_after_s": 0.0,
+   "first_person_claim": false
+  }
+ ],
+ "outputs": {
+  "audio": "led-sunrise-alarm-lamp-vo.wav",
+  "words": null,
+  "line_dir": "vo/"
+ },
+ "cost": null
+}

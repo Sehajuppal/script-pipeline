@@ -1,0 +1,310 @@
+{
+ "pack": "2026-09-29-evolve-01",
+ "path": "/projects/wt/improve/learned/hook_packs/2026-09-29-01.json",
+ "verdict": "ACCEPT",
+ "decision": {
+  "verdict": "ACCEPT",
+  "checks": [
+   {
+    "id": "golden:R1-e2e",
+    "ok": true,
+    "detail": "e2e flips 0 up / 0 down, McNemar p=1"
+   },
+   {
+    "id": "golden:R2-shippable",
+    "ok": true,
+    "detail": "shippable flips 0 up / 0 down, McNemar p=1"
+   },
+   {
+    "id": "golden:R3-rubric-ci",
+    "ok": true,
+    "detail": "rubric Δ +0.00 [95% CI +0.00, +0.00] (floor -0.5)"
+   },
+   {
+    "id": "golden:R4-audit",
+    "ok": true,
+    "detail": "audit-only mean 100.0 → 100.0 (max drop 0.5)"
+   },
+   {
+    "id": "golden:R6-compliance",
+    "ok": true,
+    "detail": "candidate compliance flags: 0"
+   },
+   {
+    "id": "golden:R8-coverage",
+    "ok": true,
+    "detail": "330 paired runs, 0 base cases missing in cand"
+   },
+   {
+    "id": "holdout:R1-e2e",
+    "ok": true,
+    "detail": "e2e flips 0 up / 0 down, McNemar p=1"
+   },
+   {
+    "id": "holdout:R2-shippable",
+    "ok": true,
+    "detail": "shippable flips 0 up / 0 down, McNemar p=1"
+   },
+   {
+    "id": "holdout:R3-rubric-ci",
+    "ok": true,
+    "detail": "rubric Δ +0.00 [95% CI +0.00, +0.00] (floor -0.5)"
+   },
+   {
+    "id": "holdout:R4-audit",
+    "ok": true,
+    "detail": "audit-only mean 100.0 → 100.0 (max drop 0.5)"
+   },
+   {
+    "id": "holdout:R6-compliance",
+    "ok": true,
+    "detail": "candidate compliance flags: 0"
+   },
+   {
+    "id": "holdout:R8-coverage",
+    "ok": true,
+    "detail": "350 paired runs, 0 base cases missing in cand"
+   },
+   {
+    "id": "holdout:R5-not-lower",
+    "ok": true,
+    "detail": "holdout e2e 1.0 → 1.0, shippable 1.0 → 1.0, rubric 99.9 → 99.9"
+   },
+   {
+    "id": "R7-selftest",
+    "ok": true,
+    "detail": "self-test green"
+   },
+   {
+    "id": "R10-non-vacuous",
+    "ok": true,
+    "detail": "178 paired run(s) rendered a different hook"
+   },
+   {
+    "id": "golden:R11-diversity",
+    "ok": true,
+    "detail": "hook distinct ratio 0.4455 → 0.4758, distinct-2 0.1648 → 0.1641"
+   },
+   {
+    "id": "holdout:R11-diversity",
+    "ok": true,
+    "detail": "hook distinct ratio 0.4857 → 0.5086, distinct-2 0.1583 → 0.1667"
+   }
+  ],
+  "reasons": []
+ },
+ "templates": [
+  [
+   "bold-claim",
+   "Day {ndays} with the {category}. Zero failures."
+  ],
+  [
+   "bold-claim",
+   "Most {category_pl} fail. Not this one."
+  ],
+  [
+   "curiosity-gap",
+   "The {category}. Worth it?"
+  ],
+  [
+   "curiosity-gap",
+   "I lived with the {category} for {ndays} days."
+  ],
+  [
+   "curiosity-gap",
+   "{product}: the honest verdict."
+  ],
+  [
+   "transformation",
+   "{product}. Here's the after."
+  ],
+  [
+   "transformation",
+   "{product} after {ndays} days. Worth it?"
+  ],
+  [
+   "transformation",
+   "This is the after with {product}."
+  ]
+ ],
+ "started": "2026-09-29T05:41:06+00:00",
+ "finished": "2026-09-29T05:41:47+00:00",
+ "budget": "small",
+ "seeds": "1",
+ "loader": "emulate",
+ "git_sha": "b867500",
+ "stats": {
+  "golden": {
+   "n_base": 330,
+   "n_cand": 330,
+   "n_paired": 330,
+   "missing_in_cand": 0,
+   "e2e": {
+    "base": 1.0,
+    "cand": 1.0,
+    "down": 0,
+    "up": 0,
+    "p": 1.0
+   },
+   "shippable": {
+    "base": 1.0,
+    "cand": 1.0,
+    "down": 0,
+    "up": 0,
+    "p": 1.0
+   },
+   "rubric": {
+    "base": 99.9,
+    "cand": 99.9,
+    "delta": 0.0,
+    "ci95": [
+     0.0,
+     0.0
+    ]
+   },
+   "audit": {
+    "base": 100.0,
+    "cand": 100.0
+   },
+   "selection": {
+    "base": 99.9,
+    "cand": 99.9
+   },
+   "compliance_flags": {
+    "base": 0,
+    "cand": 0
+   },
+   "hooks": {
+    "changed_runs": 95,
+    "distinct_base": 0.4455,
+    "distinct_cand": 0.4758,
+    "distinct2_base": 0.1648,
+    "distinct2_cand": 0.1641
+   },
+   "runtime_s": {
+    "base": 0.173,
+    "cand": 0.175
+   }
+  },
+  "holdout": {
+   "n_base": 350,
+   "n_cand": 350,
+   "n_paired": 350,
+   "missing_in_cand": 0,
+   "e2e": {
+    "base": 1.0,
+    "cand": 1.0,
+    "down": 0,
+    "up": 0,
+    "p": 1.0
+   },
+   "shippable": {
+    "base": 1.0,
+    "cand": 1.0,
+    "down": 0,
+    "up": 0,
+    "p": 1.0
+   },
+   "rubric": {
+    "base": 99.9,
+    "cand": 99.9,
+    "delta": 0.0,
+    "ci95": [
+     0.0,
+     0.0
+    ]
+   },
+   "audit": {
+    "base": 100.0,
+    "cand": 100.0
+   },
+   "selection": {
+    "base": 99.8,
+    "cand": 99.8
+   },
+   "compliance_flags": {
+    "base": 0,
+    "cand": 0
+   },
+   "hooks": {
+    "changed_runs": 83,
+    "distinct_base": 0.4857,
+    "distinct_cand": 0.5086,
+    "distinct2_base": 0.1583,
+    "distinct2_cand": 0.1667
+   },
+   "runtime_s": {
+    "base": 0.173,
+    "cand": 0.171
+   }
+  }
+ },
+ "selftest": {
+  "ok": true,
+  "runs": [
+   {
+    "python": "/usr/bin/python3.9",
+    "version": "3.9.25",
+    "rc": 0,
+    "secs": 3.35,
+    "tail": "self-test: all 38 gate cases + 9 unit checks + no-clobber behave correctly (hermetic: repo outputs/ untouched)"
+   },
+   {
+    "python": "/root/.pyenv/shims/python3.12",
+    "version": "3.12.14",
+    "rc": 0,
+    "secs": 3.69,
+    "tail": "self-test: all 38 gate cases + 9 unit checks + no-clobber behave correctly (hermetic: repo outputs/ untouched)"
+   }
+  ]
+ },
+ "diversity": {
+  "golden": {
+   "distinct_ratio": [
+    0.4455,
+    0.4758
+   ],
+   "distinct2": [
+    0.1648,
+    0.1641
+   ],
+   "per_cell_seed_diversity": [
+    null,
+    null
+   ],
+   "fallback_rate": [
+    0.0,
+    0.0
+   ]
+  },
+  "holdout": {
+   "distinct_ratio": [
+    0.4857,
+    0.5086
+   ],
+   "distinct2": [
+    0.1583,
+    0.1667
+   ],
+   "per_cell_seed_diversity": [
+    null,
+    null
+   ],
+   "fallback_rate": [
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "raw": {
+  "base-golden": "learned/promote/results/promote-2026-09-29-evolve-01-base-golden.json",
+  "cand-golden": "learned/promote/results/promote-2026-09-29-evolve-01-cand-golden.json",
+  "base-holdout": "learned/promote/results/promote-2026-09-29-evolve-01-base-holdout.json",
+  "cand-holdout": "learned/promote/results/promote-2026-09-29-evolve-01-cand-holdout.json"
+ },
+ "compare": {
+  "golden": "learned/promote/2026-09-29-evolve-01/golden-compare.md",
+  "holdout": "learned/promote/2026-09-29-evolve-01/holdout-compare.md"
+ },
+ "status": "approved"
+}

@@ -1,0 +1,466 @@
+{
+ "schema_version": 1,
+ "run": "led-sunrise-alarm-lamp",
+ "slug": "led-sunrise-alarm-lamp",
+ "prompt": "LED sunrise alarm lamp",
+ "duration_s": 30,
+ "presenter": "ai",
+ "lane": "ai_persona",
+ "read_guide": false,
+ "engine": {
+  "provider": "cartesia",
+  "base_url": "https://api.cartesia.ai",
+  "api_version": "2026-08-14",
+  "endpoint": "/tts/sse",
+  "mode": "line",
+  "model_id": "sonic-3.6-2026-08-27",
+  "locale": "en-US",
+  "normalization": "auto",
+  "pronunciation_dict_id": null,
+  "add_timestamps": true,
+  "output_format": {
+   "container": "raw",
+   "encoding": "pcm_s16le",
+   "sample_rate": 48000
+  }
+ },
+ "voice": {
+  "id": null,
+  "source": "library",
+  "emotive": true,
+  "gender": "feminine",
+  "age": "late 20s",
+  "style": "conversational, like telling a friend; never an announcer or ad read",
+  "consent_ref": null,
+  "calibration_wpm": {
+   "0.9": null,
+   "1.0": null,
+   "1.1": null,
+   "1.2": null
+  },
+  "speed_basis": "uncalibrated: assumes 175 wpm at speed 1.0 until cartesia_vo.py --calibrate measures the voice",
+  "selection": {
+   "query": "GET https://api.cartesia.ai/voices?language=en&gender=feminine&q=conversational&expand[]=preview_file_url",
+   "then": [
+    "q=casual",
+    "q=friendly",
+    "q=natural"
+   ],
+   "reject_if_description_has": [
+    "narrator",
+    "announcer",
+    "trailer",
+    "commercial",
+    "radio"
+   ],
+   "match": "the presenter's apparent age and gender (identity lock) and a US accent (locale en-US)",
+   "emotive_shortlist": {
+    "Leo": "0834f3df-e650-4766-a20c-5a93a43aa6e3",
+    "Jace": "6776173b-fd72-460d-89b3-d85812ee518d",
+    "Kyle": "c961b81c-a935-4c17-bfb3-ba2239de8c2f",
+    "Gavin": "f4a3a8e4-694c-4c45-9ca0-27caf97901b5",
+    "Maya": "cbaf8084-f009-4838-a096-07ee2e6612b1",
+    "Tessa": "6ccbfb76-1fc6-48f7-b71d-91ac6298247b",
+    "Dana": "cc00e582-ed66-4004-8336-0175b85c85f6",
+    "Marian": "26403c37-80c1-4a1a-8692-540551ca2ae5"
+   },
+   "emotive_note": "the voices Cartesia lists as most emotive; confirm gender and age on GET /voices/{id} before auditioning",
+   "audition_lines": [
+    "L1",
+    "L6",
+    "L8"
+   ],
+   "accept_wpm_at_1_0": [
+    165,
+    185
+   ],
+   "takes_per_line": 3,
+   "lock": "one voice per persona for life; set CARTESIA_VOICE_ID or --voice-id"
+  }
+ },
+ "disclosure": {
+  "tiktok_is_aigc": true,
+  "instagram_ai_label": true,
+  "youtube_ai_use": true,
+  "caption_line_required": true,
+  "frame0_label": "AI persona",
+  "ny_synthetic_performer": true,
+  "tiktok_shop": false
+ },
+ "mix": {
+  "integrated_lufs": -14,
+  "true_peak_dbtp": -1,
+  "music_duck_db": -8,
+  "music_in_master": false,
+  "room_tone": "calm",
+  "clip_gain_db": "+1 to +2 on the payoff, 0 elsewhere",
+  "sample_rate": 48000,
+  "channels": 1
+ },
+ "timing": {
+  "anchor_offset_s": 0.1,
+  "min_gap_s": 0.3,
+  "gap_before_payoff_s": 0.5,
+  "gap_after_payoff_s": 0.4,
+  "trim_head_ms": 40,
+  "trim_tail_ms": 80,
+  "breaks_at_seams": false
+ },
+ "qa": {
+  "wpm_fail_above": 200,
+  "wpm_warn_above": 190,
+  "wpm_warn_below_floor_by": 10,
+  "speed_house": [
+   0.9,
+   1.15
+  ],
+  "volume_house": [
+   0.9,
+   1.2
+  ]
+ },
+ "lines": [
+  {
+   "id": "L1",
+   "beat": "VERBAL HOOK + LOCK",
+   "role": "dialogue",
+   "window": [
+    0.5,
+    3.0
+   ],
+   "anchor": "start",
+   "place_s": [
+    0.6,
+    3.27
+   ],
+   "display": "Tired of sunrise alarm lamps that fail fast?",
+   "transcript": "Tired of sunrise alarm lamps that fail fast?",
+   "tone": "confident",
+   "energy": 4,
+   "wpm": {
+    "floor": 180,
+    "target": 180,
+    "max": 190
+   },
+   "speech_s_est": 2.67,
+   "delivery": "Brisk, confident.",
+   "shots": [
+    "2"
+   ],
+   "fits": false,
+   "flags": [
+    "about 0.27 s past its window at 180 wpm (estimate): place it by words.json and let it spill into the next lead-in only if that line has slack; else trim words, never time-stretch"
+   ],
+   "emotion_fallback": "neutral",
+   "generation_config": {
+    "speed": 1.0,
+    "volume": 1.05,
+    "emotion": "confident"
+   },
+   "gap_before_s": 0.0,
+   "gap_after_s": 0.3,
+   "first_person_claim": false
+  },
+  {
+   "id": "L2",
+   "beat": "EDUCATION BEAT",
+   "role": "dialogue",
+   "window": [
+    3.0,
+    13.6
+   ],
+   "anchor": "start",
+   "place_s": [
+    3.1,
+    7.1
+   ],
+   "display": "MKBHD said it best — design the environment, not the willpower.",
+   "transcript": "MKBHD said it best — design the environment, not the willpower.",
+   "tone": "confident",
+   "energy": 3,
+   "wpm": {
+    "floor": 150,
+    "target": 150,
+    "max": 190
+   },
+   "speech_s_est": 4.0,
+   "delivery": "Unhurried, warm — trust-building register.",
+   "shots": [
+    "3a",
+    "3b",
+    "3c",
+    "3d",
+    "3e",
+    "3f",
+    "3g"
+   ],
+   "fits": true,
+   "emotion_fallback": "neutral",
+   "generation_config": {
+    "speed": 0.9,
+    "volume": 1.0,
+    "emotion": "confident"
+   },
+   "gap_before_s": 0.3,
+   "gap_after_s": 0.3,
+   "first_person_claim": false
+  },
+  {
+   "id": "L3",
+   "beat": "EDUCATION BEAT",
+   "role": "rehook",
+   "window": [
+    3.0,
+    13.6
+   ],
+   "anchor": "end",
+   "place_s": [
+    8.3,
+    13.5
+   ],
+   "display": "That's not even the best part: the lamp, edge to edge, no cuts.",
+   "transcript": "That's not even the best part: the lamp, edge to edge, no cuts.",
+   "tone": "curious",
+   "energy": 3,
+   "wpm": {
+    "floor": 150,
+    "target": 150,
+    "max": 190
+   },
+   "speech_s_est": 5.2,
+   "delivery": "Unhurried, warm — trust-building register.",
+   "shots": [
+    "3a",
+    "3b",
+    "3c",
+    "3d",
+    "3e",
+    "3f",
+    "3g"
+   ],
+   "fits": true,
+   "emotion_fallback": "anticipation",
+   "generation_config": {
+    "speed": 0.9,
+    "volume": 1.0,
+    "emotion": "curious"
+   },
+   "gap_before_s": 0.3,
+   "gap_after_s": 0.3,
+   "first_person_claim": false
+  },
+  {
+   "id": "L4",
+   "beat": "DEMO BEAT",
+   "role": "dialogue",
+   "window": [
+    13.6,
+    21.9
+   ],
+   "anchor": "start",
+   "place_s": [
+    13.7,
+    18.37
+   ],
+   "display": "Watch: the lamp doing its real job. See that? Visible before-and-after proof.",
+   "transcript": "Watch: the lamp doing its real job. See that? Visible before-and-after proof.",
+   "tone": "confident",
+   "energy": 4,
+   "wpm": {
+    "floor": 180,
+    "target": 180,
+    "max": 190
+   },
+   "speech_s_est": 4.67,
+   "delivery": "Energetic, pitch-varied. Mid-action framing.",
+   "shots": [
+    "4a",
+    "4b",
+    "4c",
+    "4d",
+    "4e"
+   ],
+   "fits": false,
+   "flags": [
+    "leaves only 0.10 s before L5 at the target wpm (want a 0.3 s gap): the measured take decides; trim words if they still collide"
+   ],
+   "emotion_fallback": "neutral",
+   "generation_config": {
+    "speed": 1.0,
+    "volume": 1.05,
+    "emotion": "confident"
+   },
+   "gap_before_s": 0.3,
+   "gap_after_s": 0.3,
+   "first_person_claim": false
+  },
+  {
+   "id": "L5",
+   "beat": "DEMO BEAT",
+   "role": "rehook",
+   "window": [
+    13.6,
+    21.9
+   ],
+   "anchor": "end",
+   "place_s": [
+    18.47,
+    21.8
+   ],
+   "display": "One more thing before you decide — the week-one result.",
+   "transcript": "One more thing before you decide — the week-one result.",
+   "tone": "curious",
+   "energy": 4,
+   "wpm": {
+    "floor": 180,
+    "target": 180,
+    "max": 190
+   },
+   "speech_s_est": 3.33,
+   "delivery": "Energetic, pitch-varied. Mid-action framing.",
+   "shots": [
+    "4a",
+    "4b",
+    "4c",
+    "4d",
+    "4e"
+   ],
+   "fits": true,
+   "emotion_fallback": "anticipation",
+   "generation_config": {
+    "speed": 1.0,
+    "volume": 1.05,
+    "emotion": "curious"
+   },
+   "gap_before_s": 0.3,
+   "gap_after_s": 0.3,
+   "first_person_claim": false
+  },
+  {
+   "id": "L6",
+   "beat": "PAYOFF",
+   "role": "dialogue",
+   "window": [
+    21.9,
+    25.4
+   ],
+   "anchor": "start",
+   "place_s": [
+    22.0,
+    25.2
+   ],
+   "display": "Result: the room is bright before the alarm.",
+   "transcript": "Result: the room is bright before the alarm.",
+   "tone": "excited",
+   "energy": 5,
+   "wpm": {
+    "floor": 150,
+    "target": 150,
+    "max": 190
+   },
+   "speech_s_est": 3.2,
+   "delivery": "Slow down. Let the result land. No scripted laugh.",
+   "shots": [
+    "5a",
+    "5b"
+   ],
+   "fits": true,
+   "emotion_fallback": "happy",
+   "generation_config": {
+    "speed": 0.9,
+    "volume": 1.15,
+    "emotion": "excited"
+   },
+   "gap_before_s": 0.5,
+   "gap_after_s": 0.4,
+   "first_person_claim": false
+  },
+  {
+   "id": "L7",
+   "beat": "COMMENT BAIT",
+   "role": "dialogue",
+   "window": [
+    25.4,
+    28.0
+   ],
+   "anchor": "start",
+   "place_s": [
+    25.5,
+    27.83
+   ],
+   "display": "Follow, comment LAMP for the link list.",
+   "transcript": "Follow, comment lamp for the link list.",
+   "tone": "confident",
+   "energy": 4,
+   "wpm": {
+    "floor": 180,
+    "target": 180,
+    "max": 190
+   },
+   "speech_s_est": 2.33,
+   "delivery": null,
+   "shots": [
+    "6a",
+    "6b"
+   ],
+   "fits": true,
+   "emotion_fallback": "neutral",
+   "generation_config": {
+    "speed": 1.0,
+    "volume": 1.0,
+    "emotion": "confident"
+   },
+   "gap_before_s": 0.3,
+   "gap_after_s": 0.3,
+   "first_person_claim": false
+  },
+  {
+   "id": "L8",
+   "beat": "CTA",
+   "role": "dialogue",
+   "window": [
+    28.0,
+    30.0
+   ],
+   "anchor": "start",
+   "place_s": [
+    28.1,
+    29.77
+   ],
+   "display": "Part 2: the torture test.",
+   "transcript": "Part 2: the torture test.",
+   "tone": "confident",
+   "energy": 4,
+   "wpm": {
+    "floor": 180,
+    "target": 180,
+    "max": 190
+   },
+   "speech_s_est": 1.67,
+   "delivery": "Brisk 160–180 wpm.",
+   "shots": [
+    "7"
+   ],
+   "fits": true,
+   "emotion_fallback": "neutral",
+   "generation_config": {
+    "speed": 1.0,
+    "volume": 1.05,
+    "emotion": "confident"
+   },
+   "gap_before_s": 0.3,
+   "gap_after_s": 0.0,
+   "first_person_claim": false
+  }
+ ],
+ "outputs": {
+  "audio": "led-sunrise-alarm-lamp-vo.wav",
+  "words": "led-sunrise-alarm-lamp-words.json",
+  "line_dir": "vo/"
+ },
+ "cost": {
+  "credits_per_char": 1,
+  "chars": 410,
+  "credits_per_take": 410
+ }
+}

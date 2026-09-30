@@ -1,0 +1,135 @@
+{
+ "_comment": "GET /{media-id}/insights?metric=views,reach,likes,comments,saved,shares,reposts,total_interactions,ig_reels_avg_watch_time,ig_reels_video_view_total_time,reels_skip_rate — lifetime. 'full' has the response shape (values[] and total_value forms both occur); errors: an unsupported metric (retried without it) and a deleted media.",
+ "full": {
+  "data": [
+   {
+    "name": "views",
+    "period": "lifetime",
+    "values": [
+     {
+      "value": 5200
+     }
+    ],
+    "title": "Views",
+    "id": "17900000000001001/insights/views/lifetime"
+   },
+   {
+    "name": "reach",
+    "period": "lifetime",
+    "values": [
+     {
+      "value": 4100
+     }
+    ],
+    "title": "Accounts reached",
+    "id": "17900000000001001/insights/reach/lifetime"
+   },
+   {
+    "name": "likes",
+    "period": "lifetime",
+    "values": [
+     {
+      "value": 310
+     }
+    ],
+    "id": "17900000000001001/insights/likes/lifetime"
+   },
+   {
+    "name": "comments",
+    "period": "lifetime",
+    "values": [
+     {
+      "value": 12
+     }
+    ],
+    "id": "17900000000001001/insights/comments/lifetime"
+   },
+   {
+    "name": "saved",
+    "period": "lifetime",
+    "values": [
+     {
+      "value": 95
+     }
+    ],
+    "id": "17900000000001001/insights/saved/lifetime"
+   },
+   {
+    "name": "shares",
+    "period": "lifetime",
+    "values": [
+     {
+      "value": 60
+     }
+    ],
+    "id": "17900000000001001/insights/shares/lifetime"
+   },
+   {
+    "name": "reposts",
+    "period": "lifetime",
+    "total_value": {
+     "value": 3
+    },
+    "id": "17900000000001001/insights/reposts/lifetime"
+   },
+   {
+    "name": "total_interactions",
+    "period": "lifetime",
+    "values": [
+     {
+      "value": 480
+     }
+    ],
+    "id": "17900000000001001/insights/total_interactions/lifetime"
+   },
+   {
+    "name": "ig_reels_avg_watch_time",
+    "period": "lifetime",
+    "values": [
+     {
+      "value": 9100
+     }
+    ],
+    "id": "17900000000001001/insights/ig_reels_avg_watch_time/lifetime"
+   },
+   {
+    "name": "ig_reels_video_view_total_time",
+    "period": "lifetime",
+    "values": [
+     {
+      "value": 47320000
+     }
+    ],
+    "id": "17900000000001001/insights/ig_reels_video_view_total_time/lifetime"
+   },
+   {
+    "name": "reels_skip_rate",
+    "period": "lifetime",
+    "total_value": {
+     "value": 38.5
+    },
+    "id": "17900000000001001/insights/reels_skip_rate/lifetime"
+   }
+  ]
+ },
+ "unsupported_metric": {
+  "error": {
+   "message": "(#100) metric[6] must be one of the following values: views, reach, likes, comments, saved, shares, total_interactions, ig_reels_avg_watch_time, ig_reels_video_view_total_time, reels_skip_rate",
+   "type": "OAuthException",
+   "code": 100,
+   "fbtrace_id": "FIXTUREtrace"
+  }
+ },
+ "not_found": {
+  "error": {
+   "message": "Unsupported get request. Object with ID '17900000000001012' does not exist, cannot be loaded due to missing permissions, or does not support this operation.",
+   "type": "GraphMethodException",
+   "code": 100,
+   "fbtrace_id": "FIXTUREtrace",
+   "error_subcode": 33
+  }
+ },
+ "empty": {
+  "data": []
+ }
+}

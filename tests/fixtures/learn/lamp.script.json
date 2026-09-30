@@ -1,0 +1,53 @@
+{
+ "prompt": "sunset lamp",
+ "presenter": "human",
+ "format": "demo",
+ "duration_s": 25,
+ "niche": "home",
+ "fit": "good",
+ "hook_family": "bold-claim",
+ "hook_source": "template",
+ "hook_stack": [
+  {"t": "0.0-0.5s", "type": "VISUAL TRIGGER", "on_screen": "GOLDEN HOUR", "visual": "Frame 0: a dark bedroom flooding with orange light."},
+  {"t": "0.5-3.0s", "type": "VERBAL HOOK", "dialogue": "This sunset lamp turns any bedroom golden."}
+ ],
+ "beats": [
+  {"t": "3.0-25.0s", "type": "PAYOFF", "dialogue": "One switch, and the whole wall glows like 7 pm in July."}
+ ],
+ "caption": "This sunset lamp turns any bedroom into golden hour.\n\nWarm light, zero effort.\n\n#sunsetlamp #roomdecor",
+ "hook_variants": [
+  {"id": "A", "is_primary": true, "archetype": "bold-claim", "family": "bold-claim",
+   "verbal": "This sunset lamp turns any bedroom golden.", "overlay": "GOLDEN HOUR",
+   "visual_type": "result-reveal", "visual": "Frame 0: a dark bedroom flooding with orange light.",
+   "audio": "soft click", "caption_line": "This sunset lamp turns any bedroom into golden hour.",
+   "score": 0.72, "features": {}, "reasons": []},
+  {"id": "B", "is_primary": false, "archetype": "transformation", "family": "transformation",
+   "verbal": "Golden hour on demand, even at midnight.", "overlay": "MIDNIGHT SUNSET",
+   "visual_type": "before-after-split", "visual": "Frame 0: split screen, grey room left, glowing room right.",
+   "audio": "swell", "caption_line": "Golden hour on demand, even at midnight.",
+   "score": 0.7, "features": {}, "reasons": []},
+  {"id": "C", "is_primary": false, "archetype": "question", "family": "curiosity-gap",
+   "verbal": "Is a sunset lamp worth it?", "overlay": "WORTH IT?",
+   "visual_type": "text-first", "visual": "Frame 0: the question as a bold title over the unlit lamp.",
+   "audio": "none", "caption_line": "Is a sunset lamp worth it for a small room?",
+   "score": 0.61, "features": {}, "reasons": []}
+ ],
+ "direction": {
+  "schema_version": 1,
+  "vibe": "cozy-calm", "vibe_reason": "evening light, slow reveal", "secondary_vibe": "cinematic-premium",
+  "tone": {"voice": "warm", "allowed": ["warm", "calm"], "humor": "none", "notes": "unhurried"},
+  "energy": 2,
+  "pacing": {"target_wpm": [140, 160], "avg_shot_s": [2.2, 3.4], "cuts_per_10s": [2, 4], "max_static_s": 3.5, "pattern_interrupt_s": 4.5},
+  "music": {"moods": ["dreamy"], "bpm": [70, 90], "genres": ["ambient"], "vo_ducking_db": -12, "sfx": [], "in_master": false,
+            "search_queries": ["dreamy ambient", "warm evening", "soft piano"],
+            "licensing": {"instagram": {"library": "Meta Sound Collection", "note": "add at upload"}}},
+  "voice": {"presenter": "human", "spec": "soft, close-mic"}
+ },
+ "discovery": {
+  "schema_version": 1,
+  "primary_keyword": "sunset lamp", "secondary_keywords": ["room decor"],
+  "search_intents": ["is a sunset lamp worth it"],
+  "platforms": {"instagram": {"caption": "This sunset lamp turns any bedroom into golden hour.\n\n#sunsetlamp #roomdecor",
+                              "hashtags": ["#sunsetlamp", "#roomdecor"]}}
+ }
+}

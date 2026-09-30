@@ -1,0 +1,73 @@
+{
+ "_comment": "GET /{ig-user-id}/insights?metric=...&period=day&metric_type=total_value&since=&until= (follows_and_unfollows with breakdown=follow_type).",
+ "follows": {
+  "data": [
+   {
+    "name": "follows_and_unfollows",
+    "period": "day",
+    "title": "Follows and unfollows",
+    "total_value": {
+     "value": 37,
+     "breakdowns": [
+      {
+       "dimension_keys": [
+        "follow_type"
+       ],
+       "results": [
+        {
+         "dimension_values": [
+          "FOLLOWER"
+         ],
+         "value": 41
+        },
+        {
+         "dimension_values": [
+          "NON_FOLLOWER"
+         ],
+         "value": 4
+        }
+       ]
+      }
+     ]
+    },
+    "id": "17841400000000001/insights/follows_and_unfollows/day"
+   }
+  ]
+ },
+ "rest": {
+  "data": [
+   {
+    "name": "profile_links_taps",
+    "period": "day",
+    "total_value": {
+     "value": 12
+    },
+    "id": "17841400000000001/insights/profile_links_taps/day"
+   },
+   {
+    "name": "views",
+    "period": "day",
+    "total_value": {
+     "value": 18000
+    },
+    "id": "17841400000000001/insights/views/day"
+   },
+   {
+    "name": "reach",
+    "period": "day",
+    "total_value": {
+     "value": 9000
+    },
+    "id": "17841400000000001/insights/reach/day"
+   }
+  ]
+ },
+ "too_few_followers": {
+  "error": {
+   "message": "(#100) The follows_and_unfollows metric is only available for accounts with 100 or more followers",
+   "type": "OAuthException",
+   "code": 100,
+   "fbtrace_id": "FIXTUREtrace"
+  }
+ }
+}

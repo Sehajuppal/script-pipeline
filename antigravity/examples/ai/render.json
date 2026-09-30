@@ -1,0 +1,1854 @@
+{
+ "schema_version": 1,
+ "slug": "led-sunrise-alarm-lamp",
+ "sha8": "ffc27967",
+ "prompt": "LED sunrise alarm lamp",
+ "duration_s": 30,
+ "presenter_mode": "ai",
+ "voice_lane": "ai_persona",
+ "consent_ref": null,
+ "ai_broll": false,
+ "model": {
+  "id": "gemini-omni-1.1-flash",
+  "api": "gemini",
+  "endpoint": "https://generativelanguage.googleapis.com/v1beta/interactions",
+  "auth_header": "x-goog-api-key",
+  "fallback": "veo-3.1-fast-generate-preview"
+ },
+ "format": {
+  "aspect_ratio": "9:16",
+  "source_fps": 24,
+  "master": {
+   "width": 1080,
+   "height": 1920,
+   "fps": 30,
+   "conform": "duplicate frames 24→30; never optical-flow interpolation"
+  }
+ },
+ "passes": {
+  "draft": {
+   "resolution": "360p",
+   "max_attempts": 3,
+   "delivery": "inline",
+   "store": true
+  },
+  "final": {
+   "resolution": "1080p",
+   "max_attempts": 2,
+   "delivery": "uri",
+   "store": true
+  },
+  "edit_turns_max": 2
+ },
+ "budget_usd": {
+  "generated_s": 41,
+  "per_s": {
+   "draft": 0.034,
+   "final": 0.152
+  },
+  "draft": 1.39,
+  "final": 6.23,
+  "estimate": 7.62,
+  "cap": 16.63,
+  "lipsync_max": 0.74,
+  "note": "Omni output seconds; image inputs (1,120 tokens each) and Cartesia credits (about 1 per character) are extra"
+ },
+ "seed": 2143451496,
+ "identity": {
+  "presenter_text": "a photorealistic AI woman in her late 20s with dark hair tied back, natural look, wearing a plain gray crewneck",
+  "synthetic": true,
+  "hands_text": "the presenter's hands, the sleeve of the plain gray crewneck just in frame",
+  "product_text": "a compact dome-shaped sunrise lamp in matte white about 15 cm wide, glowing warm",
+  "setting": "a calm, tidy bedroom with a made bed",
+  "light": "a warm bedside lamp",
+  "voice": "in a confident, conversational female voice"
+ },
+ "refs": [
+  {
+   "id": "frame0",
+   "path": "refs/frame0.png",
+   "kind": "frame0",
+   "synthetic": false,
+   "source": "a real photo in the set (preferred) or an image model from product_front and set_plate",
+   "how": "The exact opening frame of shot 1 (close-up, slightly high angle, slow push-in), already mid-action, 9:16. Shot 1 animates it and the loop ends on it, so keep it sharp and well lit; never invent a logo, label or text.",
+   "prompt": "Photorealistic vertical 9:16 phone photo, close-up, slightly high angle: a compact dome-shaped sunrise lamp in matte white about 15 cm wide, glowing warm, its working end already doing its job in real use, hands out of frame, in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. The product exactly as in the product photos. No text, no logos.",
+   "required": true,
+   "used_by": [
+    "1",
+    "7"
+   ]
+  },
+  {
+   "id": "product_front",
+   "path": "refs/product_front.png",
+   "kind": "product",
+   "synthetic": false,
+   "source": "a real photo (never an AI-made product image: logos, labels and details get invented)",
+   "how": "Front view of the real product, sharp, even light, plain background, the whole product in frame, no hands, real packaging only.",
+   "required": true,
+   "used_by": [
+    "1",
+    "fallback:2",
+    "3a",
+    "3c",
+    "fallback:3c",
+    "fallback:3d",
+    "3f",
+    "3g",
+    "fallback:5b",
+    "6a",
+    "6b",
+    "7"
+   ]
+  },
+  {
+   "id": "product_hero",
+   "path": "refs/product_hero.png",
+   "kind": "product",
+   "synthetic": false,
+   "source": "a real photo (never an AI-made product image: logos, labels and details get invented)",
+   "how": "The real product in the set (a calm, tidy bedroom with a made bed) as a 9:16 three-quarter close-up on a clean surface, lit by a warm bedside lamp: the first frame of the image-to-video hero shots.",
+   "required": true,
+   "used_by": [
+    "fallback:1",
+    "fallback:3a",
+    "3b",
+    "fallback:3b",
+    "fallback:3e",
+    "fallback:3f",
+    "fallback:6a",
+    "fallback:7"
+   ]
+  },
+  {
+   "id": "presenter_sheet",
+   "path": "refs/presenter_sheet.png",
+   "kind": "presenter",
+   "synthetic": true,
+   "source": "image model, generated first",
+   "how": "Generate before any video call: a photorealistic reference sheet of the synthetic adult presenter (front and three-quarter head-and-shoulders views plus one full-length pose, neutral expression, plain light-grey background). A fictional adult only: never a real, recognisable or under-18 person and never a photo of a real person. Reuse the same sheet in every call.",
+   "prompt": "Photorealistic character reference sheet of a fictional adult: a photorealistic woman in her late 20s with dark hair tied back, natural look, wearing a plain gray crewneck. Front view and three-quarter view, head and shoulders, plus one full-length standing pose, neutral relaxed expression, plain light-grey background, soft even light, natural skin texture, no beauty filter. The person must not resemble any real or famous person. No text, no logos.",
+   "required": true,
+   "used_by": [
+    "2",
+    "fallback:2",
+    "3c",
+    "3d",
+    "5b",
+    "fallback:5b",
+    "6a"
+   ]
+  },
+  {
+   "id": "set_plate",
+   "path": "refs/set_plate.png",
+   "kind": "set",
+   "synthetic": true,
+   "source": "image model or a photo of the set",
+   "how": "An empty 9:16 plate of the set: a calm, tidy bedroom with a made bed, lit by a warm bedside lamp; lived-in, no people, no readable text or screens.",
+   "prompt": "Photorealistic vertical 9:16 phone photo of a calm, tidy bedroom with a made bed, lit by a warm bedside lamp, lived-in and tidy, no people, no readable text, no logos.",
+   "required": true,
+   "used_by": [
+    "2",
+    "3d",
+    "3g",
+    "5b",
+    "6a"
+   ]
+  },
+  {
+   "id": "product_side",
+   "path": "refs/product_side.png",
+   "kind": "product",
+   "synthetic": false,
+   "source": "a real photo (never an AI-made product image: logos, labels and details get invented)",
+   "how": "Three-quarter view of the real product, sharp, even light, plain background, the whole product in frame, no hands, real packaging only.",
+   "required": true,
+   "used_by": [
+    "3a",
+    "fallback:3c",
+    "fallback:3d",
+    "3f",
+    "3g",
+    "6b"
+   ]
+  },
+  {
+   "id": "flatlay_photo",
+   "path": "refs/flatlay_photo.png",
+   "kind": "product",
+   "synthetic": false,
+   "source": "a real photo (never an AI-made product image: logos, labels and details get invented)",
+   "how": "A real 9:16 top-down photo of the product and everything it comes with, laid out in a grid.",
+   "required": true,
+   "used_by": [
+    "3e"
+   ]
+  }
+ ],
+ "audio": {
+  "vo_source": "cartesia",
+  "vo_file": "led-sunrise-alarm-lamp-vo.wav",
+  "words_json": "led-sunrise-alarm-lamp-words.json",
+  "music": false,
+  "ambience": [
+   {
+    "n": "1",
+    "sound": "the product's real working sound, close-miked",
+    "native_audio": "keep_ambience"
+   },
+   {
+    "n": "2",
+    "sound": "quiet room tone",
+    "native_audio": "drop"
+   },
+   {
+    "n": "3a",
+    "sound": "close-miked texture sound",
+    "native_audio": "keep_ambience"
+   },
+   {
+    "n": "3b",
+    "sound": "live room sound",
+    "native_audio": "keep_ambience"
+   },
+   {
+    "n": "3c",
+    "sound": "live room sound",
+    "native_audio": "keep_ambience"
+   },
+   {
+    "n": "3d",
+    "sound": "quiet room tone",
+    "native_audio": "keep_ambience"
+   },
+   {
+    "n": "3e",
+    "sound": "live room sound",
+    "native_audio": "keep_ambience"
+   },
+   {
+    "n": "3f",
+    "sound": "close-miked texture sound",
+    "native_audio": "keep_ambience"
+   },
+   {
+    "n": "3g",
+    "sound": "real ambience of the room",
+    "native_audio": "keep_ambience"
+   },
+   {
+    "n": "4a",
+    "sound": "live room sound",
+    "native_audio": "keep_ambience"
+   },
+   {
+    "n": "4b",
+    "sound": "the real handling and working sound, close to the mic",
+    "native_audio": "keep_ambience"
+   },
+   {
+    "n": "4c",
+    "sound": "the real working sound of the task",
+    "native_audio": "keep_ambience"
+   },
+   {
+    "n": "4d",
+    "sound": "the real working sound of each step",
+    "native_audio": "keep_ambience"
+   },
+   {
+    "n": "4e",
+    "sound": "the product's real working sound, close-miked",
+    "native_audio": "keep_ambience"
+   },
+   {
+    "n": "5a",
+    "sound": "live room sound",
+    "native_audio": "keep_ambience"
+   },
+   {
+    "n": "5b",
+    "sound": "quiet room tone",
+    "native_audio": "drop"
+   },
+   {
+    "n": "6a",
+    "sound": "quiet room tone",
+    "native_audio": "drop"
+   },
+   {
+    "n": "6b",
+    "sound": "live room sound",
+    "native_audio": "keep_ambience"
+   },
+   {
+    "n": "7",
+    "sound": "quiet room tone",
+    "native_audio": "keep_ambience"
+   }
+  ],
+  "mix": {
+   "integrated_lufs": -14,
+   "true_peak_dbtp": -1,
+   "ambience_db": -12,
+   "music_duck_db": -8
+  },
+  "sync_tolerance_ms": {
+   "lead": 45,
+   "lag": 125
+  }
+ },
+ "counts": {
+  "ai": 12,
+  "real": 6,
+  "edit": 0,
+  "reuse": 1,
+  "shots": 19,
+  "generated": 13,
+  "generated_s": 41,
+  "lipsync": 3
+ },
+ "shots": [
+  {
+   "n": "1",
+   "window": [
+    0.0,
+    0.5
+   ],
+   "planned_s": 0.5,
+   "beat": "VISUAL TRIGGER",
+   "shot_type": "product-operating-cu",
+   "scale": "CU",
+   "angle": "high",
+   "move": "push-in",
+   "purpose": "hook",
+   "needs": [
+    "product",
+    "props"
+   ],
+   "real_footage": false,
+   "mode": "ai",
+   "task": "image_to_video",
+   "gen_duration_s": 3,
+   "window_in_s": 0.5,
+   "window_out_s": 1.0,
+   "prompt": "[# Sources <FIRST_FRAME>@Image1] [# References <IMAGE_REF_0>@Image2] Close-up, slightly high angle, slow push-in: the LED sunrise alarm lamp in the first frame, its working end already doing its job in real use, hands out of frame. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: the product's real working sound, close-miked. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the starting frame. Use Image2 as the product reference: the same shape, colour, size and finish, not a literal first frame.",
+   "inputs": [
+    {
+     "tag": "<FIRST_FRAME>",
+     "ref": "frame0"
+    },
+    {
+     "tag": "<IMAGE_REF_0>",
+     "ref": "product_front"
+    }
+   ],
+   "dialogue": null,
+   "lipsync": {
+    "required": false,
+    "line_id": null,
+    "audio_in_s": null,
+    "audio_out_s": null,
+    "method": null
+   },
+   "native_audio": "keep_ambience",
+   "overlay_text": "SUNRISE ALARM LAMPS",
+   "sfx": "the product's real working sound, close-miked",
+   "qa": [
+    "aspect",
+    "letterbox",
+    "duration",
+    "audio_stream",
+    "fps",
+    "scene_cuts",
+    "dup_frames",
+    "no_text",
+    "morphing",
+    "product",
+    "no_speech",
+    "no_music",
+    "safe_box"
+   ],
+   "ai_fallback": {
+    "shot_type": "hero-static-push-in",
+    "task": "image_to_video",
+    "gen_duration_s": 3,
+    "prompt": "[# Sources <FIRST_FRAME>@Image1] Close-up, three-quarter angle, slow push-in: the product in the first frame on a clean surface, the camera easing in, no other motion. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: the product's real working sound, close-miked. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the starting frame; keep the real product and label exactly as photographed.",
+    "inputs": [
+     {
+      "tag": "<FIRST_FRAME>",
+      "ref": "product_hero"
+     }
+    ]
+   },
+   "human_instructions": null,
+   "real_footage_why": null
+  },
+  {
+   "n": "2",
+   "window": [
+    0.5,
+    3.0
+   ],
+   "planned_s": 2.5,
+   "beat": "VERBAL HOOK + LOCK",
+   "shot_type": "talking-head-mcu",
+   "scale": "MCU",
+   "angle": "eye-level",
+   "move": "push-in",
+   "purpose": "hook",
+   "needs": [
+    "face"
+   ],
+   "real_footage": false,
+   "mode": "ai",
+   "task": "reference_to_video",
+   "gen_duration_s": 4,
+   "window_in_s": 0.5,
+   "window_out_s": 3.0,
+   "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2] Medium close-up, eye level, slow push-in: a photorealistic woman in her late 20s with dark hair tied back, natural look, wearing a plain gray crewneck <IMAGE_REF_0> speaks to the lens in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: quiet room tone. The presenter, in a confident, conversational female voice, says: Tired of sunrise alarm lamps that fail fast? Delivery: brisk, confident. No music. No on-screen text, captions, subtitles, logos or watermarks. One speaker only. No face morphing. No extra people in frame. Use Image1 as the presenter reference: the same face, hair and outfit, not a literal first frame. Use Image2 as the set reference for the room and its light, not a literal first frame.",
+   "inputs": [
+    {
+     "tag": "<IMAGE_REF_0>",
+     "ref": "presenter_sheet"
+    },
+    {
+     "tag": "<IMAGE_REF_1>",
+     "ref": "set_plate"
+    }
+   ],
+   "dialogue": "Tired of sunrise alarm lamps that fail fast?",
+   "lipsync": {
+    "required": true,
+    "line_id": "L1",
+    "audio_in_s": 0.6,
+    "audio_out_s": 3.0,
+    "method": "native-then-lipsync-pass",
+    "clip_in_s": 0.6,
+    "speech_s": 2.67,
+    "tone": "confident",
+    "delivery": "Brisk, confident."
+   },
+   "native_audio": "drop",
+   "overlay_text": null,
+   "sfx": "clean voice, quiet room tone",
+   "qa": [
+    "aspect",
+    "letterbox",
+    "duration",
+    "audio_stream",
+    "fps",
+    "scene_cuts",
+    "dup_frames",
+    "no_text",
+    "morphing",
+    "identity",
+    "lipsync_offset",
+    "no_music",
+    "safe_box"
+   ],
+   "ai_fallback": {
+    "shot_type": "vo-over-hands-broll",
+    "task": "reference_to_video",
+    "gen_duration_s": 4,
+    "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2] Close-up, slightly high angle, slow dolly: the presenter's hands, the sleeve of the plain gray crewneck just in frame, rest on and gently touch the LED sunrise alarm lamp, no speech, in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: quiet room tone. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. Five natural fingers on each hand, no fused fingers. No invented logo or label text. No face in frame. Use Image1 only as the reference for skin tone and the sleeve, keep the face out of frame, not a literal first frame. Use Image2 as the product reference: the same shape, colour, size and finish, not a literal first frame.",
+    "inputs": [
+     {
+      "tag": "<IMAGE_REF_0>",
+      "ref": "presenter_sheet"
+     },
+     {
+      "tag": "<IMAGE_REF_1>",
+      "ref": "product_front"
+     }
+    ]
+   },
+   "human_instructions": null,
+   "real_footage_why": null
+  },
+  {
+   "n": "3a",
+   "window": [
+    3.0,
+    4.5
+   ],
+   "planned_s": 1.5,
+   "beat": "EDUCATION BEAT",
+   "shot_type": "macro-texture-ecu",
+   "scale": "ECU",
+   "angle": "eye-level",
+   "move": "push-in",
+   "purpose": "b-roll",
+   "needs": [
+    "product"
+   ],
+   "real_footage": false,
+   "mode": "ai",
+   "task": "reference_to_video",
+   "gen_duration_s": 3,
+   "window_in_s": 0.5,
+   "window_out_s": 2.0,
+   "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2] Extreme close-up, eye level, slow push-in: a compact dome-shaped sunrise lamp in matte white about 15 cm wide, glowing warm <IMAGE_REF_0>, its surface texture filling the frame, shallow depth of field, macro lens, in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: close-miked texture sound. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the product reference: the same shape, colour, size and finish, not a literal first frame. Use Image2 as another product reference angle, not a literal first frame.",
+   "inputs": [
+    {
+     "tag": "<IMAGE_REF_0>",
+     "ref": "product_front"
+    },
+    {
+     "tag": "<IMAGE_REF_1>",
+     "ref": "product_side"
+    }
+   ],
+   "dialogue": null,
+   "lipsync": {
+    "required": false,
+    "line_id": null,
+    "audio_in_s": null,
+    "audio_out_s": null,
+    "method": null
+   },
+   "native_audio": "keep_ambience",
+   "overlay_text": null,
+   "sfx": "close-miked texture sound",
+   "qa": [
+    "aspect",
+    "letterbox",
+    "duration",
+    "audio_stream",
+    "fps",
+    "scene_cuts",
+    "dup_frames",
+    "no_text",
+    "morphing",
+    "product",
+    "no_speech",
+    "no_music",
+    "safe_box"
+   ],
+   "ai_fallback": {
+    "shot_type": "hero-static-push-in",
+    "task": "image_to_video",
+    "gen_duration_s": 3,
+    "prompt": "[# Sources <FIRST_FRAME>@Image1] Close-up, three-quarter angle, slow push-in: the product in the first frame on a clean surface, the camera easing in, no other motion. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: close-miked texture sound. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the starting frame; keep the real product and label exactly as photographed.",
+    "inputs": [
+     {
+      "tag": "<FIRST_FRAME>",
+      "ref": "product_hero"
+     }
+    ]
+   },
+   "human_instructions": null,
+   "real_footage_why": null
+  },
+  {
+   "n": "3b",
+   "window": [
+    4.5,
+    6.0
+   ],
+   "planned_s": 1.5,
+   "beat": "EDUCATION BEAT (cont.)",
+   "shot_type": "feature-callout-hero",
+   "scale": "CU",
+   "angle": "three-quarter",
+   "move": "push-in",
+   "purpose": "demo",
+   "needs": [
+    "product"
+   ],
+   "real_footage": false,
+   "mode": "ai",
+   "task": "image_to_video",
+   "gen_duration_s": 3,
+   "window_in_s": 0.5,
+   "window_out_s": 2.0,
+   "prompt": "[# Sources <FIRST_FRAME>@Image1] Close-up, three-quarter angle, slow push-in: the product in the first frame, the camera easing toward its key feature, no other motion. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: live room sound. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the starting frame; keep the real product and label exactly as photographed.",
+   "inputs": [
+    {
+     "tag": "<FIRST_FRAME>",
+     "ref": "product_hero"
+    }
+   ],
+   "dialogue": null,
+   "lipsync": {
+    "required": false,
+    "line_id": null,
+    "audio_in_s": null,
+    "audio_out_s": null,
+    "method": null
+   },
+   "native_audio": "keep_ambience",
+   "overlay_text": null,
+   "sfx": "live sound under the voice",
+   "qa": [
+    "aspect",
+    "letterbox",
+    "duration",
+    "audio_stream",
+    "fps",
+    "scene_cuts",
+    "dup_frames",
+    "no_text",
+    "morphing",
+    "product",
+    "no_speech",
+    "no_music",
+    "safe_box"
+   ],
+   "ai_fallback": {
+    "shot_type": "hero-static-push-in",
+    "task": "image_to_video",
+    "gen_duration_s": 3,
+    "prompt": "[# Sources <FIRST_FRAME>@Image1] Close-up, three-quarter angle, slow push-in: the product in the first frame on a clean surface, the camera easing in, no other motion. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: live room sound. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the starting frame; keep the real product and label exactly as photographed.",
+    "inputs": [
+     {
+      "tag": "<FIRST_FRAME>",
+      "ref": "product_hero"
+     }
+    ]
+   },
+   "human_instructions": null,
+   "real_footage_why": null
+  },
+  {
+   "n": "3c",
+   "window": [
+    6.0,
+    7.5
+   ],
+   "planned_s": 1.5,
+   "beat": "EDUCATION BEAT (cont.)",
+   "shot_type": "vo-over-hands-broll",
+   "scale": "CU",
+   "angle": "high",
+   "move": "handheld",
+   "purpose": "b-roll",
+   "needs": [
+    "hands",
+    "product"
+   ],
+   "real_footage": false,
+   "mode": "ai",
+   "task": "reference_to_video",
+   "gen_duration_s": 3,
+   "window_in_s": 0.5,
+   "window_out_s": 2.0,
+   "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2] Close-up, slightly high angle, slow dolly: the presenter's hands, the sleeve of the plain gray crewneck just in frame, rest on and gently touch the LED sunrise alarm lamp, no speech, in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: live room sound. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. Five natural fingers on each hand, no fused fingers. No invented logo or label text. No face in frame. Use Image1 only as the reference for skin tone and the sleeve, keep the face out of frame, not a literal first frame. Use Image2 as the product reference: the same shape, colour, size and finish, not a literal first frame.",
+   "inputs": [
+    {
+     "tag": "<IMAGE_REF_0>",
+     "ref": "presenter_sheet"
+    },
+    {
+     "tag": "<IMAGE_REF_1>",
+     "ref": "product_front"
+    }
+   ],
+   "dialogue": null,
+   "lipsync": {
+    "required": false,
+    "line_id": null,
+    "audio_in_s": null,
+    "audio_out_s": null,
+    "method": null
+   },
+   "native_audio": "keep_ambience",
+   "overlay_text": null,
+   "sfx": "live sound under the voice",
+   "qa": [
+    "aspect",
+    "letterbox",
+    "duration",
+    "audio_stream",
+    "fps",
+    "scene_cuts",
+    "dup_frames",
+    "no_text",
+    "morphing",
+    "hands",
+    "product",
+    "no_speech",
+    "no_music",
+    "safe_box"
+   ],
+   "ai_fallback": {
+    "shot_type": "product-operating-cu",
+    "task": "reference_to_video",
+    "gen_duration_s": 3,
+    "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2] Close-up, slightly high angle, slow push-in: a compact dome-shaped sunrise lamp in matte white about 15 cm wide, glowing warm <IMAGE_REF_0>, its working end already doing its job in real use, hands out of frame, in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: the product's real working sound, close-miked. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the product reference: the same shape, colour, size and finish, not a literal first frame. Use Image2 as another product reference angle, not a literal first frame.",
+    "inputs": [
+     {
+      "tag": "<IMAGE_REF_0>",
+      "ref": "product_front"
+     },
+     {
+      "tag": "<IMAGE_REF_1>",
+      "ref": "product_side"
+     }
+    ]
+   },
+   "human_instructions": null,
+   "real_footage_why": null
+  },
+  {
+   "n": "3d",
+   "window": [
+    7.5,
+    9.1
+   ],
+   "planned_s": 1.6,
+   "beat": "EDUCATION BEAT (cont.)",
+   "shot_type": "reaction-cutaway-3q",
+   "scale": "MCU",
+   "angle": "three-quarter",
+   "move": "static",
+   "purpose": "reaction",
+   "needs": [
+    "face"
+   ],
+   "real_footage": false,
+   "mode": "ai",
+   "task": "reference_to_video",
+   "gen_duration_s": 3,
+   "window_in_s": 0.5,
+   "window_out_s": 2.1,
+   "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2] Medium close-up, three-quarter angle, static camera: a photorealistic woman in her late 20s with dark hair tied back, natural look, wearing a plain gray crewneck <IMAGE_REF_0> looks down at the LED sunrise alarm lamp and nods slightly, eyes off-lens, no speech, in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: quiet room tone. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No face morphing. No extra people in frame. Use Image1 as the presenter reference: the same face, hair and outfit, not a literal first frame. Use Image2 as the set reference for the room and its light, not a literal first frame.",
+   "inputs": [
+    {
+     "tag": "<IMAGE_REF_0>",
+     "ref": "presenter_sheet"
+    },
+    {
+     "tag": "<IMAGE_REF_1>",
+     "ref": "set_plate"
+    }
+   ],
+   "dialogue": null,
+   "lipsync": {
+    "required": false,
+    "line_id": null,
+    "audio_in_s": null,
+    "audio_out_s": null,
+    "method": null
+   },
+   "native_audio": "keep_ambience",
+   "overlay_text": null,
+   "sfx": "clean voice, quiet room tone",
+   "qa": [
+    "aspect",
+    "letterbox",
+    "duration",
+    "audio_stream",
+    "fps",
+    "scene_cuts",
+    "dup_frames",
+    "no_text",
+    "morphing",
+    "identity",
+    "no_speech",
+    "no_music",
+    "safe_box"
+   ],
+   "ai_fallback": {
+    "shot_type": "insert-object-detail",
+    "task": "reference_to_video",
+    "gen_duration_s": 3,
+    "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2] Close-up, slightly high angle, slow push-in: the LED sunrise alarm lamp, in detail, the camera easing toward it, in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: quiet room tone. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the product reference: the same shape, colour, size and finish, not a literal first frame. Use Image2 as another product reference angle, not a literal first frame.",
+    "inputs": [
+     {
+      "tag": "<IMAGE_REF_0>",
+      "ref": "product_front"
+     },
+     {
+      "tag": "<IMAGE_REF_1>",
+      "ref": "product_side"
+     }
+    ]
+   },
+   "human_instructions": null,
+   "real_footage_why": null
+  },
+  {
+   "n": "3e",
+   "window": [
+    9.1,
+    10.6
+   ],
+   "planned_s": 1.5,
+   "beat": "EDUCATION BEAT (cont.)",
+   "shot_type": "flat-lay-reveal",
+   "scale": "MS",
+   "angle": "overhead",
+   "move": "push-in",
+   "purpose": "context",
+   "needs": [
+    "product",
+    "props"
+   ],
+   "real_footage": false,
+   "mode": "ai",
+   "task": "image_to_video",
+   "gen_duration_s": 3,
+   "window_in_s": 0.5,
+   "window_out_s": 2.0,
+   "prompt": "[# Sources <FIRST_FRAME>@Image1] Medium shot, overhead, slow push-in: the flat lay in the first frame, the camera easing in overhead, every object staying still. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: live room sound. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the starting frame; keep the real product and label exactly as photographed.",
+   "inputs": [
+    {
+     "tag": "<FIRST_FRAME>",
+     "ref": "flatlay_photo"
+    }
+   ],
+   "dialogue": null,
+   "lipsync": {
+    "required": false,
+    "line_id": null,
+    "audio_in_s": null,
+    "audio_out_s": null,
+    "method": null
+   },
+   "native_audio": "keep_ambience",
+   "overlay_text": null,
+   "sfx": "live sound under the voice",
+   "qa": [
+    "aspect",
+    "letterbox",
+    "duration",
+    "audio_stream",
+    "fps",
+    "scene_cuts",
+    "dup_frames",
+    "no_text",
+    "morphing",
+    "product",
+    "no_speech",
+    "no_music",
+    "safe_box"
+   ],
+   "ai_fallback": {
+    "shot_type": "hero-static-push-in",
+    "task": "image_to_video",
+    "gen_duration_s": 3,
+    "prompt": "[# Sources <FIRST_FRAME>@Image1] Close-up, three-quarter angle, slow push-in: the product in the first frame on a clean surface, the camera easing in, no other motion. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: live room sound. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the starting frame; keep the real product and label exactly as photographed.",
+    "inputs": [
+     {
+      "tag": "<FIRST_FRAME>",
+      "ref": "product_hero"
+     }
+    ]
+   },
+   "human_instructions": null,
+   "real_footage_why": null
+  },
+  {
+   "n": "3f",
+   "window": [
+    10.6,
+    12.1
+   ],
+   "planned_s": 1.5,
+   "beat": "EDUCATION BEAT (cont.)",
+   "shot_type": "macro-texture-ecu",
+   "scale": "ECU",
+   "angle": "eye-level",
+   "move": "push-in",
+   "purpose": "b-roll",
+   "needs": [
+    "product"
+   ],
+   "real_footage": false,
+   "mode": "ai",
+   "task": "reference_to_video",
+   "gen_duration_s": 3,
+   "window_in_s": 0.5,
+   "window_out_s": 2.0,
+   "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2] Extreme close-up, eye level, slow push-in: a compact dome-shaped sunrise lamp in matte white about 15 cm wide, glowing warm <IMAGE_REF_0>, its surface texture filling the frame, shallow depth of field, macro lens, in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: close-miked texture sound. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the product reference: the same shape, colour, size and finish, not a literal first frame. Use Image2 as another product reference angle, not a literal first frame.",
+   "inputs": [
+    {
+     "tag": "<IMAGE_REF_0>",
+     "ref": "product_front"
+    },
+    {
+     "tag": "<IMAGE_REF_1>",
+     "ref": "product_side"
+    }
+   ],
+   "dialogue": null,
+   "lipsync": {
+    "required": false,
+    "line_id": null,
+    "audio_in_s": null,
+    "audio_out_s": null,
+    "method": null
+   },
+   "native_audio": "keep_ambience",
+   "overlay_text": null,
+   "sfx": "close-miked texture sound",
+   "qa": [
+    "aspect",
+    "letterbox",
+    "duration",
+    "audio_stream",
+    "fps",
+    "scene_cuts",
+    "dup_frames",
+    "no_text",
+    "morphing",
+    "product",
+    "no_speech",
+    "no_music",
+    "safe_box"
+   ],
+   "ai_fallback": {
+    "shot_type": "hero-static-push-in",
+    "task": "image_to_video",
+    "gen_duration_s": 3,
+    "prompt": "[# Sources <FIRST_FRAME>@Image1] Close-up, three-quarter angle, slow push-in: the product in the first frame on a clean surface, the camera easing in, no other motion. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: close-miked texture sound. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the starting frame; keep the real product and label exactly as photographed.",
+    "inputs": [
+     {
+      "tag": "<FIRST_FRAME>",
+      "ref": "product_hero"
+     }
+    ]
+   },
+   "human_instructions": null,
+   "real_footage_why": null
+  },
+  {
+   "n": "3g",
+   "window": [
+    12.1,
+    13.6
+   ],
+   "planned_s": 1.5,
+   "beat": "EDUCATION BEAT (cont.)",
+   "shot_type": "lifestyle-context-ws",
+   "scale": "MWS",
+   "angle": "eye-level",
+   "move": "dolly",
+   "purpose": "context",
+   "needs": [
+    "location",
+    "product"
+   ],
+   "real_footage": false,
+   "mode": "ai",
+   "task": "reference_to_video",
+   "gen_duration_s": 3,
+   "window_in_s": 0.5,
+   "window_out_s": 2.0,
+   "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2 <IMAGE_REF_2>@Image3] Medium-wide shot, eye level, slow dolly: a compact dome-shaped sunrise lamp in matte white about 15 cm wide, glowing warm <IMAGE_REF_0>, in place where it really lives, the camera sliding slowly past, in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: real ambience of the room. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the product reference: the same shape, colour, size and finish, not a literal first frame. Use Image2 as another product reference angle, not a literal first frame. Use Image3 as the set reference for the room and its light, not a literal first frame.",
+   "inputs": [
+    {
+     "tag": "<IMAGE_REF_0>",
+     "ref": "product_front"
+    },
+    {
+     "tag": "<IMAGE_REF_1>",
+     "ref": "product_side"
+    },
+    {
+     "tag": "<IMAGE_REF_2>",
+     "ref": "set_plate"
+    }
+   ],
+   "dialogue": null,
+   "lipsync": {
+    "required": false,
+    "line_id": null,
+    "audio_in_s": null,
+    "audio_out_s": null,
+    "method": null
+   },
+   "native_audio": "keep_ambience",
+   "overlay_text": null,
+   "sfx": "real ambience of the room",
+   "qa": [
+    "aspect",
+    "letterbox",
+    "duration",
+    "audio_stream",
+    "fps",
+    "scene_cuts",
+    "dup_frames",
+    "no_text",
+    "morphing",
+    "product",
+    "no_speech",
+    "no_music",
+    "safe_box"
+   ],
+   "ai_fallback": {
+    "shot_type": "establishing-ws",
+    "task": "text_to_video",
+    "gen_duration_s": 3,
+    "prompt": "Wide shot, eye level, slow pan: a calm, tidy bedroom with a made bed, in the morning, the camera panning slowly across the room, lit by a warm bedside lamp. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: real ambience of the place. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No people in frame. No readable signs or labels.",
+    "inputs": []
+   },
+   "human_instructions": null,
+   "real_footage_why": null
+  },
+  {
+   "n": "4a",
+   "window": [
+    13.6,
+    15.3
+   ],
+   "planned_s": 1.7,
+   "beat": "DEMO BEAT",
+   "shot_type": "matched-before",
+   "scale": "MS",
+   "angle": "eye-level",
+   "move": "static",
+   "purpose": "proof",
+   "needs": [
+    "location",
+    "props"
+   ],
+   "real_footage": true,
+   "mode": "real",
+   "task": null,
+   "gen_duration_s": null,
+   "window_in_s": null,
+   "window_out_s": null,
+   "prompt": null,
+   "inputs": [],
+   "dialogue": null,
+   "lipsync": {
+    "required": false,
+    "line_id": null,
+    "audio_in_s": null,
+    "audio_out_s": null,
+    "method": null
+   },
+   "native_audio": "keep_ambience",
+   "overlay_text": "TEST",
+   "sfx": "live sound under the voice",
+   "qa": [
+    "aspect",
+    "letterbox",
+    "duration",
+    "audio_stream",
+    "no_text",
+    "safe_box"
+   ],
+   "ai_fallback": null,
+   "human_instructions": "Tape the phone's spot, note the lens and time of day, turn off filters and beauty mode, and record the BEFORE with a clock or date in frame.",
+   "real_footage_why": "before/after is evidence; film both states from one taped phone spot"
+  },
+  {
+   "n": "4b",
+   "window": [
+    15.3,
+    16.9
+   ],
+   "planned_s": 1.6,
+   "beat": "DEMO BEAT (cont.)",
+   "shot_type": "pov-hands-first-use",
+   "scale": "CU",
+   "angle": "pov",
+   "move": "handheld",
+   "purpose": "proof",
+   "needs": [
+    "hands",
+    "product"
+   ],
+   "real_footage": true,
+   "mode": "real",
+   "task": null,
+   "gen_duration_s": null,
+   "window_in_s": null,
+   "window_out_s": null,
+   "prompt": null,
+   "inputs": [],
+   "dialogue": null,
+   "lipsync": {
+    "required": false,
+    "line_id": null,
+    "audio_in_s": null,
+    "audio_out_s": null,
+    "method": null
+   },
+   "native_audio": "keep_ambience",
+   "overlay_text": null,
+   "sfx": "the real handling and working sound, close to the mic",
+   "qa": [
+    "aspect",
+    "letterbox",
+    "duration",
+    "audio_stream",
+    "no_text",
+    "safe_box"
+   ],
+   "ai_fallback": null,
+   "human_instructions": "Hold the phone at your eye line pointing down at your hands and use the product as a first-timer would, both hands in frame. Wear the plain gray crewneck so the sleeves match the presenter.",
+   "real_footage_why": "this is the test itself; film the real product doing it"
+  },
+  {
+   "n": "4c",
+   "window": [
+    16.9,
+    18.6
+   ],
+   "planned_s": 1.7,
+   "beat": "DEMO BEAT (cont.)",
+   "shot_type": "over-shoulder-demo",
+   "scale": "MS",
+   "angle": "over-shoulder",
+   "move": "handheld",
+   "purpose": "proof",
+   "needs": [
+    "hands",
+    "product",
+    "location"
+   ],
+   "real_footage": true,
+   "mode": "real",
+   "task": null,
+   "gen_duration_s": null,
+   "window_in_s": null,
+   "window_out_s": null,
+   "prompt": null,
+   "inputs": [],
+   "dialogue": null,
+   "lipsync": {
+    "required": false,
+    "line_id": null,
+    "audio_in_s": null,
+    "audio_out_s": null,
+    "method": null
+   },
+   "native_audio": "keep_ambience",
+   "overlay_text": null,
+   "sfx": "the real working sound of the task",
+   "qa": [
+    "aspect",
+    "letterbox",
+    "duration",
+    "audio_stream",
+    "no_text",
+    "safe_box"
+   ],
+   "ai_fallback": null,
+   "human_instructions": "Have a helper, or a tall stand behind you, film over your shoulder while you do the real task start to finish. Wear the plain gray crewneck so the sleeves match the presenter.",
+   "real_footage_why": "this is the test itself; film the real product doing it"
+  },
+  {
+   "n": "4d",
+   "window": [
+    18.6,
+    20.2
+   ],
+   "planned_s": 1.6,
+   "beat": "DEMO BEAT (cont.)",
+   "shot_type": "overhead-hands-demo",
+   "scale": "MS",
+   "angle": "overhead",
+   "move": "static",
+   "purpose": "proof",
+   "needs": [
+    "hands",
+    "product",
+    "props"
+   ],
+   "real_footage": true,
+   "mode": "real",
+   "task": null,
+   "gen_duration_s": null,
+   "window_in_s": null,
+   "window_out_s": null,
+   "prompt": null,
+   "inputs": [],
+   "dialogue": null,
+   "lipsync": {
+    "required": false,
+    "line_id": null,
+    "audio_in_s": null,
+    "audio_out_s": null,
+    "method": null
+   },
+   "native_audio": "keep_ambience",
+   "overlay_text": null,
+   "sfx": "the real working sound of each step",
+   "qa": [
+    "aspect",
+    "letterbox",
+    "duration",
+    "audio_stream",
+    "no_text",
+    "safe_box"
+   ],
+   "ai_fallback": null,
+   "human_instructions": "Mount the phone flat above the table, have your hands enter from the bottom of frame, and film one step per clip. Wear the plain gray crewneck so the sleeves match the presenter.",
+   "real_footage_why": "this is the test itself; film the real product doing it"
+  },
+  {
+   "n": "4e",
+   "window": [
+    20.2,
+    21.9
+   ],
+   "planned_s": 1.7,
+   "beat": "DEMO BEAT (cont.)",
+   "shot_type": "product-operating-cu",
+   "scale": "CU",
+   "angle": "high",
+   "move": "push-in",
+   "purpose": "proof",
+   "needs": [
+    "product",
+    "props"
+   ],
+   "real_footage": true,
+   "mode": "real",
+   "task": null,
+   "gen_duration_s": null,
+   "window_in_s": null,
+   "window_out_s": null,
+   "prompt": null,
+   "inputs": [],
+   "dialogue": null,
+   "lipsync": {
+    "required": false,
+    "line_id": null,
+    "audio_in_s": null,
+    "audio_out_s": null,
+    "method": null
+   },
+   "native_audio": "keep_ambience",
+   "overlay_text": null,
+   "sfx": "the product's real working sound, close-miked",
+   "qa": [
+    "aspect",
+    "letterbox",
+    "duration",
+    "audio_stream",
+    "no_text",
+    "safe_box"
+   ],
+   "ai_fallback": null,
+   "human_instructions": "Frame only the working end with hands cropped out and push in slowly as the effect builds.",
+   "real_footage_why": "this is the test itself; film the real product doing it"
+  },
+  {
+   "n": "5a",
+   "window": [
+    21.9,
+    23.6
+   ],
+   "planned_s": 1.7,
+   "beat": "PAYOFF",
+   "shot_type": "matched-after",
+   "scale": "MS",
+   "angle": "eye-level",
+   "move": "static",
+   "purpose": "proof",
+   "needs": [
+    "location",
+    "props"
+   ],
+   "real_footage": true,
+   "mode": "real",
+   "task": null,
+   "gen_duration_s": null,
+   "window_in_s": null,
+   "window_out_s": null,
+   "prompt": null,
+   "inputs": [],
+   "dialogue": null,
+   "lipsync": {
+    "required": false,
+    "line_id": null,
+    "audio_in_s": null,
+    "audio_out_s": null,
+    "method": null
+   },
+   "native_audio": "keep_ambience",
+   "overlay_text": "TEST: alarm lamp · expected a nightlight → fills the room",
+   "sfx": "live sound under the voice",
+   "qa": [
+    "aspect",
+    "letterbox",
+    "duration",
+    "audio_stream",
+    "no_text",
+    "safe_box"
+   ],
+   "ai_fallback": null,
+   "human_instructions": "Return the phone to the taped spot with the same lens, light and time of day and record the AFTER with the date visible.",
+   "real_footage_why": "before/after is evidence; film both states from one taped phone spot"
+  },
+  {
+   "n": "5b",
+   "window": [
+    23.6,
+    25.4
+   ],
+   "planned_s": 1.8,
+   "beat": "PAYOFF (cont.)",
+   "shot_type": "talking-head-mcu",
+   "scale": "MCU",
+   "angle": "eye-level",
+   "move": "static",
+   "purpose": "emotion",
+   "needs": [
+    "face"
+   ],
+   "real_footage": false,
+   "mode": "ai",
+   "task": "reference_to_video",
+   "gen_duration_s": 3,
+   "window_in_s": 0.5,
+   "window_out_s": 2.3,
+   "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2] Medium close-up, eye level, static camera: a photorealistic woman in her late 20s with dark hair tied back, natural look, wearing a plain gray crewneck <IMAGE_REF_0> speaks to the lens in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: quiet room tone. The presenter, in an excited, conversational female voice, says: bright before the alarm. Delivery: slow down. Let the result land. No scripted laugh. No music. No on-screen text, captions, subtitles, logos or watermarks. One speaker only. No face morphing. No extra people in frame. Use Image1 as the presenter reference: the same face, hair and outfit, not a literal first frame. Use Image2 as the set reference for the room and its light, not a literal first frame.",
+   "inputs": [
+    {
+     "tag": "<IMAGE_REF_0>",
+     "ref": "presenter_sheet"
+    },
+    {
+     "tag": "<IMAGE_REF_1>",
+     "ref": "set_plate"
+    }
+   ],
+   "dialogue": "bright before the alarm.",
+   "lipsync": {
+    "required": true,
+    "line_id": "L6",
+    "audio_in_s": 23.6,
+    "audio_out_s": 25.2,
+    "method": "native-then-lipsync-pass",
+    "clip_in_s": 0.5,
+    "speech_s": 1.6,
+    "tone": "excited",
+    "delivery": "Slow down. Let the result land. No scripted laugh."
+   },
+   "native_audio": "drop",
+   "overlay_text": null,
+   "sfx": "clean voice, quiet room tone",
+   "qa": [
+    "aspect",
+    "letterbox",
+    "duration",
+    "audio_stream",
+    "fps",
+    "scene_cuts",
+    "dup_frames",
+    "no_text",
+    "morphing",
+    "identity",
+    "lipsync_offset",
+    "no_music",
+    "safe_box"
+   ],
+   "ai_fallback": {
+    "shot_type": "vo-over-hands-broll",
+    "task": "reference_to_video",
+    "gen_duration_s": 3,
+    "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2] Close-up, slightly high angle, slow dolly: the presenter's hands, the sleeve of the plain gray crewneck just in frame, rest on and gently touch the LED sunrise alarm lamp, no speech, in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: quiet room tone. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. Five natural fingers on each hand, no fused fingers. No invented logo or label text. No face in frame. Use Image1 only as the reference for skin tone and the sleeve, keep the face out of frame, not a literal first frame. Use Image2 as the product reference: the same shape, colour, size and finish, not a literal first frame.",
+    "inputs": [
+     {
+      "tag": "<IMAGE_REF_0>",
+      "ref": "presenter_sheet"
+     },
+     {
+      "tag": "<IMAGE_REF_1>",
+      "ref": "product_front"
+     }
+    ]
+   },
+   "human_instructions": null,
+   "real_footage_why": null
+  },
+  {
+   "n": "6a",
+   "window": [
+    25.4,
+    26.7
+   ],
+   "planned_s": 1.3,
+   "beat": "COMMENT BAIT",
+   "shot_type": "mws-cta-to-camera",
+   "scale": "MWS",
+   "angle": "eye-level",
+   "move": "push-in",
+   "purpose": "cta",
+   "needs": [
+    "face",
+    "product",
+    "location"
+   ],
+   "real_footage": false,
+   "mode": "ai",
+   "task": "reference_to_video",
+   "gen_duration_s": 4,
+   "window_in_s": 0.5,
+   "window_out_s": 1.8,
+   "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2 <IMAGE_REF_2>@Image3] Medium-wide shot, eye level, slow push-in: a photorealistic woman in her late 20s with dark hair tied back, natural look, wearing a plain gray crewneck <IMAGE_REF_0> stands beside the LED sunrise alarm lamp and speaks to camera in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: quiet room tone. The presenter, in a confident, conversational female voice, says: Follow, comment lamp for the link list. Delivery: natural and conversational. No music. No on-screen text, captions, subtitles, logos or watermarks. One speaker only. No face morphing. No invented logo or label text. No extra people in frame. Use Image1 as the presenter reference: the same face, hair and outfit, not a literal first frame. Use Image2 as the product reference: the same shape, colour, size and finish, not a literal first frame. Use Image3 as the set reference for the room and its light, not a literal first frame.",
+   "inputs": [
+    {
+     "tag": "<IMAGE_REF_0>",
+     "ref": "presenter_sheet"
+    },
+    {
+     "tag": "<IMAGE_REF_1>",
+     "ref": "product_front"
+    },
+    {
+     "tag": "<IMAGE_REF_2>",
+     "ref": "set_plate"
+    }
+   ],
+   "dialogue": "Follow, comment lamp for the link list.",
+   "lipsync": {
+    "required": true,
+    "line_id": "L7",
+    "audio_in_s": 25.5,
+    "audio_out_s": 26.7,
+    "method": "native-then-lipsync-pass",
+    "clip_in_s": 0.6,
+    "speech_s": 2.33,
+    "tone": "confident",
+    "delivery": null
+   },
+   "native_audio": "drop",
+   "overlay_text": null,
+   "sfx": "clean voice, quiet room tone",
+   "qa": [
+    "aspect",
+    "letterbox",
+    "duration",
+    "audio_stream",
+    "fps",
+    "scene_cuts",
+    "dup_frames",
+    "no_text",
+    "morphing",
+    "identity",
+    "product",
+    "lipsync_offset",
+    "no_music",
+    "safe_box"
+   ],
+   "ai_fallback": {
+    "shot_type": "end-card-hero",
+    "task": "image_to_video",
+    "gen_duration_s": 3,
+    "prompt": "[# Sources <FIRST_FRAME>@Image1] Close-up, eye level, slow push-in: the product in the first frame with clear empty space above it, the camera easing in, no other motion. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: quiet room tone. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the starting frame; keep the real product and label exactly as photographed.",
+    "inputs": [
+     {
+      "tag": "<FIRST_FRAME>",
+      "ref": "product_hero"
+     }
+    ]
+   },
+   "human_instructions": null,
+   "real_footage_why": null
+  },
+  {
+   "n": "6b",
+   "window": [
+    26.7,
+    28.0
+   ],
+   "planned_s": 1.3,
+   "beat": "COMMENT BAIT (cont.)",
+   "shot_type": "insert-object-detail",
+   "scale": "CU",
+   "angle": "high",
+   "move": "push-in",
+   "purpose": "cta",
+   "needs": [
+    "props"
+   ],
+   "real_footage": false,
+   "mode": "ai",
+   "task": "reference_to_video",
+   "gen_duration_s": 3,
+   "window_in_s": 0.5,
+   "window_out_s": 1.8,
+   "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2] Close-up, slightly high angle, slow push-in: the LED sunrise alarm lamp, in detail, the camera easing toward it, in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: live room sound. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the product reference: the same shape, colour, size and finish, not a literal first frame. Use Image2 as another product reference angle, not a literal first frame.",
+   "inputs": [
+    {
+     "tag": "<IMAGE_REF_0>",
+     "ref": "product_front"
+    },
+    {
+     "tag": "<IMAGE_REF_1>",
+     "ref": "product_side"
+    }
+   ],
+   "dialogue": null,
+   "lipsync": {
+    "required": false,
+    "line_id": null,
+    "audio_in_s": null,
+    "audio_out_s": null,
+    "method": null
+   },
+   "native_audio": "keep_ambience",
+   "overlay_text": null,
+   "sfx": "live sound under the voice",
+   "qa": [
+    "aspect",
+    "letterbox",
+    "duration",
+    "audio_stream",
+    "fps",
+    "scene_cuts",
+    "dup_frames",
+    "no_text",
+    "morphing",
+    "product",
+    "no_speech",
+    "no_music",
+    "safe_box"
+   ],
+   "ai_fallback": {
+    "shot_type": "establishing-ws",
+    "task": "text_to_video",
+    "gen_duration_s": 3,
+    "prompt": "Wide shot, eye level, slow pan: a calm, tidy bedroom with a made bed, in the morning, the camera panning slowly across the room, lit by a warm bedside lamp. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: real ambience of the place. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No people in frame. No readable signs or labels.",
+    "inputs": []
+   },
+   "human_instructions": null,
+   "real_footage_why": null
+  },
+  {
+   "n": "7",
+   "window": [
+    28.0,
+    30.0
+   ],
+   "planned_s": 2.0,
+   "beat": "CTA",
+   "shot_type": "loop-return-frame",
+   "scale": "CU",
+   "angle": "high",
+   "move": "pull-out",
+   "purpose": "cta",
+   "needs": [
+    "product"
+   ],
+   "real_footage": false,
+   "mode": "reuse",
+   "reuse_of": "1",
+   "task": "image_to_video",
+   "gen_duration_s": 3,
+   "window_in_s": 0.5,
+   "window_out_s": 2.5,
+   "prompt": "[# Sources <FIRST_FRAME>@Image1 <LAST_FRAME>@Image1] [# References <IMAGE_REF_0>@Image2] Close-up, slightly high angle, slow dolly out: the opening composition in the first frame, the camera easing back and settling on it. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: quiet room tone. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the first frame and the last frame. Use Image2 as the product reference: the same shape, colour, size and finish, not a literal first frame.",
+   "inputs": [
+    {
+     "tag": "<FIRST_FRAME>",
+     "ref": "frame0"
+    },
+    {
+     "tag": "<LAST_FRAME>",
+     "ref": "frame0"
+    },
+    {
+     "tag": "<IMAGE_REF_0>",
+     "ref": "product_front"
+    }
+   ],
+   "dialogue": null,
+   "lipsync": {
+    "required": false,
+    "line_id": null,
+    "audio_in_s": null,
+    "audio_out_s": null,
+    "method": null
+   },
+   "native_audio": "keep_ambience",
+   "overlay_text": null,
+   "sfx": "a soft click on the cut back to frame 0",
+   "qa": [
+    "aspect",
+    "letterbox",
+    "duration",
+    "audio_stream",
+    "fps",
+    "scene_cuts",
+    "dup_frames",
+    "no_text",
+    "morphing",
+    "product",
+    "no_speech",
+    "no_music",
+    "safe_box"
+   ],
+   "ai_fallback": {
+    "shot_type": "hero-static-push-in",
+    "task": "image_to_video",
+    "gen_duration_s": 3,
+    "prompt": "[# Sources <FIRST_FRAME>@Image1] Close-up, three-quarter angle, slow push-in: the product in the first frame on a clean surface, the camera easing in, no other motion. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: quiet room tone. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the starting frame; keep the real product and label exactly as photographed.",
+    "inputs": [
+     {
+      "tag": "<FIRST_FRAME>",
+      "ref": "product_hero"
+     }
+    ]
+   },
+   "human_instructions": null,
+   "real_footage_why": null
+  }
+ ],
+ "disclosure": {
+  "ai_generated": true,
+  "synthid": true,
+  "c2pa_check": true,
+  "platform_toggles": {
+   "tiktok": {
+    "is_aigc": true
+   },
+   "instagram": {
+    "is_ai_generated": true
+   },
+   "youtube_shorts": {
+    "containsSyntheticMedia": true
+   }
+  },
+  "caption_line": "made with an AI persona",
+  "frame0_label": "AI persona",
+  "tiktok_shop": false,
+  "notes": [
+   "SynthID is embedded in every Omni clip: never try to remove it",
+   "check the master with a C2PA reader; re-encoding usually drops the manifest, so the platform toggles are the label of record",
+   "paid ads reaching New York need the conspicuous synthetic-performer disclosure; the AI persona is never shown as a real person",
+   "never claim or imply that the footage or the voice is human-made"
+  ]
+ },
+ "deliverables": {
+  "master": "led-sunrise-alarm-lamp-master.mp4",
+  "words": "led-sunrise-alarm-lamp-words.json",
+  "vo": "led-sunrise-alarm-lamp-vo.wav",
+  "clips_dir": "clips/",
+  "report": "render_report.json"
+ },
+ "qa_gate": [
+  {
+   "id": "aspect",
+   "stage": "probe",
+   "check": "display aspect 9:16 within 1% (0.5625)",
+   "threshold": {
+    "ratio": 0.5625,
+    "tolerance": 0.01
+   },
+   "on_fail": "regenerate"
+  },
+  {
+   "id": "fps",
+   "stage": "probe",
+   "check": "Omni clips 24 fps; the master 30 fps",
+   "threshold": {
+    "clip_fps": 24,
+    "master_fps": 30,
+    "tolerance": 0.5
+   },
+   "on_fail": "regenerate"
+  },
+  {
+   "id": "duration",
+   "stage": "probe",
+   "check": "clip duration >= window_out_s",
+   "threshold": {
+    "min_s": "window_out_s"
+   },
+   "on_fail": "regenerate"
+  },
+  {
+   "id": "audio_stream",
+   "stage": "probe",
+   "check": "an audio stream is present",
+   "threshold": {
+    "streams": 1
+   },
+   "on_fail": "regenerate"
+  },
+  {
+   "id": "letterbox",
+   "stage": "probe",
+   "check": "no letterbox or pillarbox bars (ffmpeg cropdetect)",
+   "threshold": {
+    "max_bar_px": 8
+   },
+   "on_fail": "regenerate"
+  },
+  {
+   "id": "scene_cuts",
+   "stage": "probe",
+   "check": "zero scene cuts inside a single-shot clip",
+   "threshold": {
+    "scene_score": 0.4,
+    "max_cuts": 0
+   },
+   "on_fail": "regenerate"
+  },
+  {
+   "id": "dup_frames",
+   "stage": "probe",
+   "check": "duplicate-frame ratio (the 8-12 fps wobble)",
+   "threshold": {
+    "max_ratio": 0.2
+   },
+   "on_fail": "regenerate"
+  },
+  {
+   "id": "no_text",
+   "stage": "judge",
+   "check": "no legible text, captions, logos or watermarks (real-label shots excepted)",
+   "threshold": {
+    "text_regions": 0
+   },
+   "on_fail": "edit turn, then regenerate"
+  },
+  {
+   "id": "identity",
+   "stage": "judge",
+   "check": "the same presenter as the reference sheet: face, hair, glasses, outfit",
+   "threshold": {
+    "judge_score_min": 4
+   },
+   "on_fail": "regenerate"
+  },
+  {
+   "id": "product",
+   "stage": "judge",
+   "check": "the product matches its photos: shape, colour, size; no invented logo or label text",
+   "threshold": {
+    "judge_score_min": 4
+   },
+   "on_fail": "edit turn, then regenerate"
+  },
+  {
+   "id": "hands",
+   "stage": "judge",
+   "check": "five fingers per hand, no fusion, plausible contact (checked at final resolution)",
+   "threshold": {
+    "judge_score_min": 4
+   },
+   "on_fail": "fallback"
+  },
+  {
+   "id": "morphing",
+   "stage": "judge",
+   "check": "no morphing, melting or detaching parts; objects stay the same object",
+   "threshold": {
+    "judge_score_min": 4
+   },
+   "on_fail": "regenerate"
+  },
+  {
+   "id": "no_speech",
+   "stage": "audio",
+   "check": "B-roll: no speech (voice-activity detection) and no music",
+   "threshold": {
+    "speech_s_max": 0.3
+   },
+   "on_fail": "drop native audio or regenerate"
+  },
+  {
+   "id": "no_music",
+   "stage": "audio",
+   "check": "no music in the clip or the master",
+   "threshold": {
+    "music": false
+   },
+   "on_fail": "drop native audio"
+  },
+  {
+   "id": "lipsync_offset",
+   "stage": "audio",
+   "check": "lip-sync offset inside the ITU window after the lip-sync pass",
+   "threshold": {
+    "lead_ms_max": 45,
+    "lag_ms_max": 125
+   },
+   "on_fail": "re-run the lip-sync pass"
+  },
+  {
+   "id": "safe_box",
+   "stage": "judge",
+   "check": "key action inside x120-888, y288-1248 of 1080x1920",
+   "threshold": {
+    "x": [
+     120,
+     888
+    ],
+    "y": [
+     288,
+     1248
+    ]
+   },
+   "on_fail": "regenerate"
+  },
+  {
+   "id": "log",
+   "stage": "log",
+   "check": "model id, seed, interaction id, cost and verdict logged per attempt",
+   "threshold": {
+    "file": "render_log.jsonl"
+   },
+   "on_fail": "fix the log"
+  }
+ ],
+ "workflow": [
+  {
+   "step": 1,
+   "id": "validate",
+   "do": "python3 .agents/skills/omni-render/scripts/omni_render.py --job jobs/led-sunrise-alarm-lamp --validate"
+  },
+  {
+   "step": 2,
+   "id": "references",
+   "do": "build refs/ from render.json refs[]: presenter sheet first (AI lane, synthetic adult), real product photos, set plate, frame-0 still"
+  },
+  {
+   "step": 3,
+   "id": "voice",
+   "do": "python3 .agents/skills/cartesia-voice/scripts/cartesia_vo.py --job jobs/led-sunrise-alarm-lamp -> vo/led-sunrise-alarm-lamp-vo.wav + led-sunrise-alarm-lamp-words.json"
+  },
+  {
+   "step": 4,
+   "id": "draft",
+   "do": "python3 .agents/skills/omni-render/scripts/omni_render.py --job jobs/led-sunrise-alarm-lamp --pass draft; then a contact sheet + 360p draft cut as an artifact for human review"
+  },
+  {
+   "step": 5,
+   "id": "fix",
+   "do": "per failing shot: <= 3 draft attempts; --edit for local fixes (<= 2 turns), else re-render, then --use-fallback; never drop a beat"
+  },
+  {
+   "step": 6,
+   "id": "final",
+   "do": "python3 .agents/skills/omni-render/scripts/omni_render.py --job jobs/led-sunrise-alarm-lamp --pass final (1080p, same inputs and seed)"
+  },
+  {
+   "step": 7,
+   "id": "lipsync",
+   "do": "lipsync-pass skill on every lipsync.required shot (Cartesia segment by words.json, +45/-125 ms)"
+  },
+  {
+   "step": 8,
+   "id": "assemble",
+   "do": "python3 .agents/skills/assemble-master/scripts/assemble.py --job jobs/led-sunrise-alarm-lamp -> led-sunrise-alarm-lamp-master.mp4 (24->30 by frame duplication, -14 LUFS / -1 dBTP, no music)"
+  },
+  {
+   "step": 9,
+   "id": "qa",
+   "do": "python3 .agents/skills/qa-judge/scripts/qa_probe.py --job jobs/led-sunrise-alarm-lamp --pass final + the Gemini judge on stills"
+  },
+  {
+   "step": 10,
+   "id": "report",
+   "do": "write render_report.json (per shot: attempts, verdicts, cost, files)"
+  },
+  {
+   "step": 11,
+   "id": "deliver",
+   "do": "led-sunrise-alarm-lamp-master.mp4 + led-sunrise-alarm-lamp-words.json + clips/ + render_report.json; list the 6 shot(s) to film"
+  }
+ ],
+ "trend": null
+}

@@ -1,0 +1,49 @@
+{
+ "prompt": "silk pillowcase",
+ "presenter": "human",
+ "format": "before-after",
+ "duration_s": 25,
+ "niche": "beauty",
+ "fit": "good",
+ "hook_family": "transformation",
+ "hook_source": "template",
+ "hook_stack": [
+  {"t": "0.0-0.5s", "type": "VISUAL TRIGGER", "on_screen": "FRIZZ CAUSE", "visual": "Frame 0: frizzy hair on a cotton pillow at sunrise."},
+  {"t": "0.5-3.0s", "type": "VERBAL HOOK", "dialogue": "Your pillowcase is why your hair frizzes."}
+ ],
+ "beats": [
+  {"t": "3.0-25.0s", "type": "PAYOFF", "dialogue": "Seven nights on silk: same hair, far less frizz."}
+ ],
+ "caption": "Your pillowcase is why your hair frizzes overnight.\n\nSeven nights on silk.\n\n#silkpillowcase #hairtok",
+ "hook_variants": [
+  {"id": "A", "is_primary": true, "archetype": "problem-agitate", "family": "curiosity-gap",
+   "verbal": "Your pillowcase is why your hair frizzes.", "overlay": "FRIZZ CAUSE",
+   "visual_type": "problem-state", "visual": "Frame 0: frizzy hair on a cotton pillow at sunrise.",
+   "audio": "alarm buzz", "caption_line": "Your pillowcase is why your hair frizzes overnight.",
+   "score": 0.76, "features": {}, "reasons": []},
+  {"id": "B", "is_primary": false, "archetype": "transformation", "family": "transformation",
+   "verbal": "Same hair, one week on silk.", "overlay": "7 NIGHTS",
+   "visual_type": "before-after-split", "visual": "Frame 0: split screen, day 1 frizz left, day 7 smooth right.",
+   "audio": "swoosh", "caption_line": "Same hair, one week on silk.",
+   "score": 0.73, "features": {}, "reasons": []},
+  {"id": "C", "is_primary": false, "archetype": "pov", "family": "identity-reveal",
+   "verbal": "POV: you wake up without bedhead.", "overlay": "NO BEDHEAD",
+   "visual_type": "pov-hands", "visual": "Frame 0: hands smoothing a silk pillowcase, first-person view.",
+   "audio": "fabric rustle", "caption_line": "POV: you finally wake up without bedhead.",
+   "score": 0.66, "features": {}, "reasons": []}
+ ],
+ "direction": {
+  "schema_version": 1,
+  "vibe": "clean-aesthetic", "vibe_reason": "soft morning light, tidy bedroom", "secondary_vibe": null,
+  "tone": {"voice": "calm", "allowed": ["calm", "empathetic"], "humor": "none", "notes": "gentle"},
+  "energy": 2,
+  "voice": {"presenter": "human", "spec": "gentle, close-mic"}
+ },
+ "discovery": {
+  "schema_version": 1,
+  "primary_keyword": "silk pillowcase", "secondary_keywords": ["frizzy hair"],
+  "search_intents": ["does a silk pillowcase help frizz"],
+  "platforms": {"instagram": {"caption": "Silk pillowcase week: your pillowcase is why your hair frizzes.\n\n#silkpillowcase",
+                              "hashtags": ["#silkpillowcase"]}}
+ }
+}

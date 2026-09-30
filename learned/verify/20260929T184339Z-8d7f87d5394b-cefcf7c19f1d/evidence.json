@@ -1,0 +1,410 @@
+{
+ "base": {
+  "kind": "worktree",
+  "ref": "8d7f87d",
+  "sha": "8d7f87d5394b"
+ },
+ "cand": {
+  "kind": "worktree",
+  "ref": "HEAD",
+  "sha": "cefcf7c19f1d"
+ },
+ "verdict": "ACCEPT",
+ "decision": {
+  "verdict": "ACCEPT",
+  "checks": [
+   {
+    "id": "golden:R1-e2e",
+    "ok": true,
+    "detail": "e2e flips 0 up / 0 down, McNemar p=1"
+   },
+   {
+    "id": "golden:R2-shippable",
+    "ok": true,
+    "detail": "shippable flips 0 up / 0 down, McNemar p=1"
+   },
+   {
+    "id": "golden:R3-rubric-ci",
+    "ok": true,
+    "detail": "rubric Δ +5.71 [95% CI +4.82, +6.60] (floor -0.5)"
+   },
+   {
+    "id": "golden:R4-audit",
+    "ok": true,
+    "detail": "audit-only mean 95.1 → 95.8 (max drop 0.5)"
+   },
+   {
+    "id": "golden:R6-compliance",
+    "ok": true,
+    "detail": "candidate compliance flags: 0"
+   },
+   {
+    "id": "golden:R8-coverage",
+    "ok": true,
+    "detail": "330 paired runs, 0 base cases missing in cand"
+   },
+   {
+    "id": "holdout:R1-e2e",
+    "ok": true,
+    "detail": "e2e flips 0 up / 0 down, McNemar p=1"
+   },
+   {
+    "id": "holdout:R2-shippable",
+    "ok": true,
+    "detail": "shippable flips 0 up / 0 down, McNemar p=1"
+   },
+   {
+    "id": "holdout:R3-rubric-ci",
+    "ok": true,
+    "detail": "rubric Δ +5.15 [95% CI +4.40, +5.92] (floor -0.5)"
+   },
+   {
+    "id": "holdout:R4-audit",
+    "ok": true,
+    "detail": "audit-only mean 93.3 → 94.1 (max drop 0.5)"
+   },
+   {
+    "id": "holdout:R6-compliance",
+    "ok": true,
+    "detail": "candidate compliance flags: 0"
+   },
+   {
+    "id": "holdout:R8-coverage",
+    "ok": true,
+    "detail": "350 paired runs, 0 base cases missing in cand"
+   },
+   {
+    "id": "holdout:R5-not-lower",
+    "ok": true,
+    "detail": "holdout e2e 1.0 → 1.0, shippable 1.0 → 1.0, rubric 92.8 → 97.9"
+   },
+   {
+    "id": "R7-selftest",
+    "ok": true,
+    "detail": "self-test green"
+   },
+   {
+    "id": "R9-guard",
+    "ok": true,
+    "detail": "no gate/rule/lexicon weakening"
+   }
+  ],
+  "reasons": []
+ },
+ "budget": "small",
+ "seeds": "1",
+ "started": "2026-09-29T18:43:39+00:00",
+ "finished": "2026-09-29T18:51:16+00:00",
+ "engine_sha": "cefcf7c",
+ "guard": {
+  "guarded_changed": [],
+  "yardstick_changed": [],
+  "snapshot_errors": {
+   "base": {},
+   "cand": {}
+  },
+  "registry": {
+   "base": 46,
+   "cand": 46
+  },
+  "selftest_cases": {
+   "base": 112,
+   "cand": 112,
+   "legacy_base": 17,
+   "legacy_cand": 17
+  },
+  "lexicon_names": {
+   "base": 42,
+   "cand": 42
+  },
+  "findings": []
+ },
+ "stats": {
+  "golden": {
+   "n_base": 330,
+   "n_cand": 330,
+   "n_paired": 330,
+   "missing_in_cand": 0,
+   "e2e": {
+    "base": 1.0,
+    "cand": 1.0,
+    "down": 0,
+    "up": 0,
+    "p": 1.0
+   },
+   "shippable": {
+    "base": 1.0,
+    "cand": 1.0,
+    "down": 0,
+    "up": 0,
+    "p": 1.0
+   },
+   "rubric": {
+    "base": 93.2,
+    "cand": 98.9,
+    "delta": 5.705,
+    "ci95": [
+     4.823,
+     6.596
+    ]
+   },
+   "audit": {
+    "base": 95.1,
+    "cand": 95.8
+   },
+   "selection": {
+    "base": 92.7,
+    "cand": 99.6
+   },
+   "compliance_flags": {
+    "base": 0,
+    "cand": 0
+   },
+   "hooks": {
+    "changed_runs": 168,
+    "distinct_base": 0.5909,
+    "distinct_cand": 0.6333,
+    "distinct2_base": 0.1941,
+    "distinct2_cand": 0.2102
+   },
+   "runtime_s": {
+    "base": 0.999,
+    "cand": 1.032
+   }
+  },
+  "holdout": {
+   "n_base": 350,
+   "n_cand": 350,
+   "n_paired": 350,
+   "missing_in_cand": 0,
+   "e2e": {
+    "base": 1.0,
+    "cand": 1.0,
+    "down": 0,
+    "up": 0,
+    "p": 1.0
+   },
+   "shippable": {
+    "base": 1.0,
+    "cand": 1.0,
+    "down": 0,
+    "up": 0,
+    "p": 1.0
+   },
+   "rubric": {
+    "base": 92.8,
+    "cand": 97.9,
+    "delta": 5.153,
+    "ci95": [
+     4.399,
+     5.916
+    ]
+   },
+   "audit": {
+    "base": 93.3,
+    "cand": 94.1
+   },
+   "selection": {
+    "base": 92.6,
+    "cand": 98.8
+   },
+   "compliance_flags": {
+    "base": 0,
+    "cand": 0
+   },
+   "hooks": {
+    "changed_runs": 187,
+    "distinct_base": 0.5543,
+    "distinct_cand": 0.58,
+    "distinct2_base": 0.187,
+    "distinct2_cand": 0.1948
+   },
+   "runtime_s": {
+    "base": 0.978,
+    "cand": 1.027
+   }
+  }
+ },
+ "selftest": {
+  "ok": true,
+  "runs": [
+   {
+    "python": "/usr/bin/python3.9",
+    "version": "3.9.25",
+    "rc": 0,
+    "secs": 135.59,
+    "tail": "…hecks + 11 end-to-end checks + no-clobber behave correctly (hermetic: repo outputs/ and learned/ untouched); optional selfchecks: e2e-creative-keys: 25 scripts x ['vsp.direction', 'vsp.hooks', 'vsp.discovery'], vsp.ingest ok (80 lines), vsp.feedback ok (71 lines), vsp.improve ok (11 lines), vsp.direction ok (12 lines), vsp.hooks ok (29 lines), vsp.discovery ok (8 lines), vsp.shotplan ok (11 lines)"
+   },
+   {
+    "python": "/usr/bin/python3.12",
+    "version": "3.12.14",
+    "rc": 0,
+    "secs": 126.75,
+    "tail": "…hecks + 11 end-to-end checks + no-clobber behave correctly (hermetic: repo outputs/ and learned/ untouched); optional selfchecks: e2e-creative-keys: 25 scripts x ['vsp.direction', 'vsp.hooks', 'vsp.discovery'], vsp.ingest ok (80 lines), vsp.feedback ok (71 lines), vsp.improve ok (11 lines), vsp.direction ok (12 lines), vsp.hooks ok (29 lines), vsp.discovery ok (8 lines), vsp.shotplan ok (11 lines)"
+   }
+  ]
+ },
+ "diversity": {
+  "golden": {
+   "distinct_ratio": [
+    0.5909,
+    0.6333
+   ],
+   "distinct2": [
+    0.1941,
+    0.2102
+   ],
+   "per_cell_seed_diversity": [
+    null,
+    null
+   ],
+   "fallback_rate": [
+    0.0,
+    0.0
+   ]
+  },
+  "holdout": {
+   "distinct_ratio": [
+    0.5543,
+    0.58
+   ],
+   "distinct2": [
+    0.187,
+    0.1948
+   ],
+   "per_cell_seed_diversity": [
+    null,
+    null
+   ],
+   "fallback_rate": [
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "compare": {
+  "golden": "learned/verify/20260929T184339Z-8d7f87d5394b-cefcf7c19f1d/golden-compare.md",
+  "holdout": "learned/verify/20260929T184339Z-8d7f87d5394b-cefcf7c19f1d/holdout-compare.md"
+ },
+ "raw": {
+  "base-golden": "learned/verify/results/verify-8d7f87d-head-base-golden.json",
+  "cand-golden": "learned/verify/results/verify-8d7f87d-head-cand-golden.json",
+  "base-holdout": "learned/verify/results/verify-8d7f87d-head-base-holdout.json",
+  "cand-holdout": "learned/verify/results/verify-8d7f87d-head-cand-holdout.json"
+ },
+ "diff": {
+  "files": 22,
+  "rows": [
+   {
+    "file": ".agents/skills/vsp-feedback/SKILL.md",
+    "added": "17",
+    "removed": "9"
+   },
+   {
+    "file": ".agents/skills/vsp-produce/SKILL.md",
+    "added": "17",
+    "removed": "9"
+   },
+   {
+    "file": "AGENTS.md",
+    "added": "20",
+    "removed": "3"
+   },
+   {
+    "file": "README.md",
+    "added": "43",
+    "removed": "19"
+   },
+   {
+    "file": "RULES.md",
+    "added": "105",
+    "removed": "0"
+   },
+   {
+    "file": "agent/README.md",
+    "added": "6",
+    "removed": "3"
+   },
+   {
+    "file": "agent/hermes/scripts/vsp-variants.sh",
+    "added": "11",
+    "removed": "0"
+   },
+   {
+    "file": "docs/RULE-COVERAGE.md",
+    "added": "47",
+    "removed": "47"
+   },
+   {
+    "file": "docs/SCORECARD-v2.1.md",
+    "added": "78",
+    "removed": "0"
+   },
+   {
+    "file": "evals/results/baseline-v21.json",
+    "added": "104201",
+    "removed": "0"
+   },
+   {
+    "file": "evals/results/v2.0-holdout-v21.json",
+    "added": "106897",
+    "removed": "0"
+   },
+   {
+    "file": "evals/results/v2.0-v21.json",
+    "added": "100744",
+    "removed": "0"
+   },
+   {
+    "file": "evals/results/v2.1-holdout.json",
+    "added": "99594",
+    "removed": "0"
+   },
+   {
+    "file": "evals/results/v2.1.json",
+    "added": "93470",
+    "removed": "0"
+   },
+   {
+    "file": "pipeline.py",
+    "added": "73",
+    "removed": "7"
+   },
+   {
+    "file": "viral_script_maker.py",
+    "added": "99",
+    "removed": "6"
+   },
+   {
+    "file": "vsp/creative.py",
+    "added": "44",
+    "removed": "0"
+   },
+   {
+    "file": "vsp/direction.py",
+    "added": "35",
+    "removed": "2"
+   },
+   {
+    "file": "vsp/hooks.py",
+    "added": "281",
+    "removed": "21"
+   },
+   {
+    "file": "vsp/repair.py",
+    "added": "10",
+    "removed": "0"
+   },
+   {
+    "file": "vsp/selftest_cases.py",
+    "added": "56",
+    "removed": "2"
+   },
+   {
+    "file": "vsp/shotplan.py",
+    "added": "46",
+    "removed": "7"
+   }
+  ]
+ }
+}

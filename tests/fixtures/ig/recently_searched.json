@@ -1,0 +1,8 @@
+{
+ "_comment": "GET /{ig-user-id}/recently_searched_hashtags — one hashtag searched by another tool on this account (counts toward the 30).",
+ "data": [
+  {
+   "id": "17843000000009999"
+  }
+ ]
+}

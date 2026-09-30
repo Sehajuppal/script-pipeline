@@ -1,0 +1,34 @@
+{
+ "_comment": "POST https://api.meta.ai/v1/asr/transcribe?sessionId=... (multipart: request JSON + audio WAV), model muse-voice-transcribe-1.0, mode ENDPOINTING.",
+ "ok": {
+  "transcript": "I tested every viral lip oil so you don't have to. Here's the only one I rebought.",
+  "audioDurationMs": 3500,
+  "turns": [
+   {
+    "turnId": 0,
+    "startMs": 0,
+    "endMs": 2100,
+    "transcript": "I tested every viral lip oil so you don't have to.",
+    "speaker": "A"
+   },
+   {
+    "turnId": 1,
+    "startMs": 2300,
+    "endMs": 3500,
+    "transcript": "Here's the only one I rebought.",
+    "speaker": "A"
+   }
+  ]
+ },
+ "no_speech": {
+  "transcript": "",
+  "audioDurationMs": 3500,
+  "turns": []
+ },
+ "unauthorized": {
+  "error": {
+   "message": "Invalid API key",
+   "code": 401
+  }
+ }
+}

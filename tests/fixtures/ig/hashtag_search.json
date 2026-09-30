@@ -1,0 +1,27 @@
+{
+ "_comment": "GET /ig_hashtag_search?user_id=&q=<tag> — static global ids (cached forever).",
+ "skincareroutine": {
+  "data": [
+   {
+    "id": "17843000000000101"
+   }
+  ]
+ },
+ "makeuphacks": {
+  "data": [
+   {
+    "id": "17843000000000102"
+   }
+  ]
+ },
+ "homeworkout": {
+  "data": [
+   {
+    "id": "17843000000000103"
+   }
+  ]
+ },
+ "unknown": {
+  "data": []
+ }
+}

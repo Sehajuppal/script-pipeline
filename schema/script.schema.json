@@ -1,0 +1,941 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:vsp:schema:script:1",
+  "title": "viral_script_maker script",
+  "description": "Output of viral_script_maker.generate() — the script.json every pipeline run ships (D152). Additional properties are allowed.",
+  "type": "object",
+  "required": [
+    "prompt",
+    "presenter",
+    "format",
+    "duration_s",
+    "niche",
+    "hook_stack",
+    "beats",
+    "caption"
+  ],
+  "properties": {
+    "prompt": {
+      "type": "string",
+      "minLength": 1
+    },
+    "presenter": {
+      "enum": [
+        "ai",
+        "human"
+      ]
+    },
+    "format": {
+      "enum": [
+        "demo",
+        "talking-head",
+        "pov-vlog",
+        "transformation",
+        "review"
+      ]
+    },
+    "duration_s": {
+      "type": "number",
+      "minimum": 5,
+      "maximum": 180
+    },
+    "niche": {
+      "type": "string",
+      "minLength": 1
+    },
+    "fit": {
+      "type": "string"
+    },
+    "hook_family": {
+      "type": "string"
+    },
+    "hook_source": {
+      "enum": [
+        "template",
+        "fallback",
+        "pinned"
+      ],
+      "description": "D145: what actually rendered"
+    },
+    "fit_warning": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "persona": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "identity": {
+          "type": "string"
+        },
+        "voice": {
+          "type": "string"
+        },
+        "styling_rule": {
+          "type": "string"
+        }
+      }
+    },
+    "hook_stack": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/hook_item"
+      }
+    },
+    "beats": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "$ref": "#/$defs/beat"
+      }
+    },
+    "caption": {
+      "type": "string",
+      "minLength": 1
+    },
+    "research_notes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "disclosure": {
+      "type": "string"
+    },
+    "delivery_note": {
+      "type": "string"
+    },
+    "series_plan": {
+      "type": "object",
+      "description": "D146: backs a part-2 CTA"
+    },
+    "seed": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "direction": {
+      "$ref": "#/$defs/direction"
+    },
+    "hook_variants": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 5,
+      "items": {
+        "$ref": "#/$defs/hook_variant"
+      },
+      "description": "§1.2 (gate D154)"
+    },
+    "discovery": {
+      "$ref": "#/$defs/discovery"
+    },
+    "creative_warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "vsp.creative.enrich module errors (a run must carry none)"
+    }
+  },
+  "$defs": {
+    "hook_item": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "t": {
+          "type": "string",
+          "pattern": "^\\d+(?:\\.\\d+)?\\s*[\\u2013-]\\s*\\d+(?:\\.\\d+)?\\s*s$",
+          "description": "time window 'S–Es' (en dash or hyphen), seconds"
+        },
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "description": "beat type, e.g. VISUAL TRIGGER, EDUCATION BEAT, PAYOFF"
+        },
+        "dialogue": {
+          "type": "string"
+        },
+        "rehook": {
+          "type": "string"
+        },
+        "on_screen": {
+          "type": "string"
+        },
+        "delivery": {
+          "type": "string"
+        },
+        "direction": {
+          "type": "string"
+        },
+        "shot_direction": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        },
+        "payoff_contract": {
+          "type": "string"
+        },
+        "match_cut": {
+          "type": "string"
+        }
+      }
+    },
+    "beat": {
+      "type": "object",
+      "required": [
+        "t",
+        "type"
+      ],
+      "properties": {
+        "t": {
+          "type": "string",
+          "pattern": "^\\d+(?:\\.\\d+)?\\s*[\\u2013-]\\s*\\d+(?:\\.\\d+)?\\s*s$",
+          "description": "time window 'S–Es' (en dash or hyphen), seconds"
+        },
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "description": "beat type, e.g. VISUAL TRIGGER, EDUCATION BEAT, PAYOFF"
+        },
+        "dialogue": {
+          "type": "string"
+        },
+        "rehook": {
+          "type": "string"
+        },
+        "on_screen": {
+          "type": "string"
+        },
+        "delivery": {
+          "type": "string"
+        },
+        "direction": {
+          "type": "string"
+        },
+        "shot_direction": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        },
+        "payoff_contract": {
+          "type": "string"
+        },
+        "match_cut": {
+          "type": "string"
+        }
+      }
+    },
+    "direction": {
+      "type": "object",
+      "required": [
+        "vibe"
+      ],
+      "description": "§1.1 vsp.direction.direct() — vibe, tone, pacing, music lane, look, camera, voice (gate D156)",
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "vibe": {
+          "enum": [
+            "raw-ugc",
+            "clean-aesthetic",
+            "hype-energy",
+            "cozy-calm",
+            "expert-trust",
+            "playful-comedic",
+            "cinematic-premium",
+            "asmr-satisfying",
+            "story-vlog",
+            "before-after-reveal"
+          ]
+        },
+        "vibe_reason": {
+          "type": "string"
+        },
+        "secondary_vibe": {
+          "enum": [
+            "raw-ugc",
+            "clean-aesthetic",
+            "hype-energy",
+            "cozy-calm",
+            "expert-trust",
+            "playful-comedic",
+            "cinematic-premium",
+            "asmr-satisfying",
+            "story-vlog",
+            "before-after-reveal",
+            null
+          ]
+        },
+        "tone": {
+          "type": "object",
+          "properties": {
+            "voice": {
+              "enum": [
+                "warm",
+                "confident",
+                "excited",
+                "calm",
+                "deadpan",
+                "expert",
+                "playful",
+                "empathetic"
+              ]
+            },
+            "allowed": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "warm",
+                  "confident",
+                  "excited",
+                  "calm",
+                  "deadpan",
+                  "expert",
+                  "playful",
+                  "empathetic"
+                ]
+              }
+            },
+            "humor": {
+              "enum": [
+                "none",
+                "light",
+                "high"
+              ]
+            },
+            "notes": {
+              "type": "string"
+            }
+          }
+        },
+        "energy": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "pacing": {
+          "type": "object",
+          "properties": {
+            "target_wpm": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": {
+                "type": "number",
+                "minimum": 140,
+                "maximum": 200
+              }
+            },
+            "avg_shot_s": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": {
+                "type": "number",
+                "minimum": 0
+              }
+            },
+            "cuts_per_10s": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": {
+                "type": "number",
+                "minimum": 0
+              }
+            },
+            "max_static_s": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 3.5
+            },
+            "pattern_interrupt_s": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "energy_curve": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "type",
+              "energy"
+            ],
+            "properties": {
+              "t": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "energy": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              }
+            }
+          }
+        },
+        "music": {
+          "type": "object",
+          "properties": {
+            "moods": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "bpm": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": {
+                "type": "number",
+                "minimum": 30,
+                "maximum": 250
+              }
+            },
+            "genres": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "vo_ducking_db": {
+              "type": "number",
+              "maximum": 0
+            },
+            "sfx": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "in_master": {
+              "const": false,
+              "description": "music is added at upload (D156)"
+            },
+            "search_queries": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "licensing": {
+              "type": "object",
+              "properties": {
+                "tiktok": {
+                  "type": "object",
+                  "properties": {
+                    "library": {
+                      "type": "string"
+                    },
+                    "note": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "instagram": {
+                  "type": "object",
+                  "properties": {
+                    "library": {
+                      "type": "string"
+                    },
+                    "note": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "youtube_shorts": {
+                  "type": "object",
+                  "properties": {
+                    "library": {
+                      "type": "string"
+                    },
+                    "note": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "look": {
+          "type": "object",
+          "properties": {
+            "lighting": {
+              "type": "string"
+            },
+            "palette_names": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "palette_hex": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^#[0-9A-Fa-f]{6}$"
+              }
+            },
+            "grade": {
+              "type": "string"
+            },
+            "set": {
+              "type": "string"
+            },
+            "wardrobe": {
+              "type": "string"
+            }
+          }
+        },
+        "camera": {
+          "type": "object",
+          "properties": {
+            "style": {
+              "type": "string"
+            },
+            "lens": {
+              "type": "string"
+            },
+            "movement": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "static",
+                  "push-in",
+                  "pull-out",
+                  "pan",
+                  "tilt",
+                  "handheld",
+                  "tracking",
+                  "orbit",
+                  "whip-pan",
+                  "dolly",
+                  "speed-ramp"
+                ]
+              }
+            }
+          }
+        },
+        "text_style": {
+          "type": "object",
+          "properties": {
+            "case": {
+              "type": "string"
+            },
+            "weight": {
+              "type": "string"
+            },
+            "max_words_per_card": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3
+            },
+            "placement": {
+              "type": "string"
+            }
+          }
+        },
+        "transitions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "showmanship": {
+          "type": "string"
+        },
+        "voice": {
+          "type": "object",
+          "properties": {
+            "presenter": {
+              "enum": [
+                "ai",
+                "human"
+              ]
+            },
+            "spec": {
+              "type": "string"
+            }
+          }
+        },
+        "do": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "dont": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "claim": {
+                "type": "string"
+              },
+              "grade": {
+                "enum": [
+                  "P",
+                  "S",
+                  "M",
+                  "A"
+                ]
+              },
+              "source": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "hook_variant": {
+      "type": "object",
+      "required": [
+        "id",
+        "archetype",
+        "verbal",
+        "visual_type"
+      ],
+      "description": "§1.2 one alternate opening; variant A = the script's hook",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-J]$"
+        },
+        "is_primary": {
+          "type": "boolean"
+        },
+        "archetype": {
+          "enum": [
+            "curiosity-gap",
+            "bold-claim",
+            "negative-command",
+            "proof-first",
+            "transformation",
+            "story-time",
+            "contrarian-reframe",
+            "identity-reveal",
+            "problem-agitate",
+            "question",
+            "comparison",
+            "pov",
+            "newness",
+            "confession",
+            "price-anchor",
+            "listicle",
+            "challenge",
+            "day-counter",
+            "showcase"
+          ]
+        },
+        "family": {
+          "type": "string"
+        },
+        "verbal": {
+          "type": "string",
+          "minLength": 1
+        },
+        "overlay": {
+          "type": "string"
+        },
+        "visual_type": {
+          "enum": [
+            "product-in-action",
+            "result-reveal",
+            "before-after-split",
+            "problem-state",
+            "pov-hands",
+            "face-reaction",
+            "text-first",
+            "unboxing",
+            "comparison",
+            "day-counter",
+            "satisfying-macro"
+          ]
+        },
+        "visual": {
+          "type": "string"
+        },
+        "audio": {
+          "type": "string"
+        },
+        "caption_line": {
+          "type": "string"
+        },
+        "score": {
+          "type": "number"
+        },
+        "features": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number"
+          }
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "discovery": {
+      "type": "object",
+      "required": [
+        "primary_keyword"
+      ],
+      "description": "§1.3 vsp.discovery.build() — keywords, placement, cover, per-platform packaging (gates D155, rubric D161)",
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "primary_keyword": {
+          "type": "string",
+          "minLength": 1
+        },
+        "secondary_keywords": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "search_intents": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "placement": {
+          "type": "object",
+          "properties": {
+            "spoken_by_s": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "on_screen_by_s": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "caption_first_60": {
+              "type": "boolean"
+            },
+            "hashtag": {
+              "type": "string",
+              "pattern": "^#\\w+$"
+            },
+            "cover_text": {
+              "type": "boolean"
+            }
+          }
+        },
+        "comment_word": {
+          "type": "string"
+        },
+        "cover": {
+          "type": "object",
+          "properties": {
+            "frame_s": {
+              "type": "number",
+              "minimum": 0
+            },
+            "text": {
+              "type": "string"
+            },
+            "safe_box": {
+              "type": "string"
+            },
+            "why": {
+              "type": "string"
+            }
+          }
+        },
+        "platforms": {
+          "type": "object",
+          "properties": {
+            "tiktok": {
+              "type": "object",
+              "properties": {
+                "caption": {
+                  "type": "string"
+                },
+                "hashtags": {
+                  "type": "array",
+                  "maxItems": 5,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^#\\w+$"
+                  }
+                },
+                "keywords_to_suggest": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "toggles": {
+                  "type": "object",
+                  "properties": {
+                    "is_aigc": {
+                      "type": "boolean"
+                    }
+                  }
+                },
+                "notes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "instagram": {
+              "type": "object",
+              "properties": {
+                "caption": {
+                  "type": "string"
+                },
+                "hashtags": {
+                  "type": "array",
+                  "maxItems": 5,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^#\\w+$"
+                  }
+                },
+                "description_line": {
+                  "type": "string"
+                },
+                "toggles": {
+                  "type": "object",
+                  "properties": {
+                    "is_ai_generated": {
+                      "type": "boolean"
+                    }
+                  }
+                },
+                "trial_reels": {
+                  "type": "object",
+                  "properties": {
+                    "recommended": {
+                      "type": "boolean"
+                    },
+                    "protocol": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "notes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "youtube_shorts": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": {
+                  "type": "string"
+                },
+                "hashtags": {
+                  "type": "array",
+                  "maxItems": 15,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^#\\w+$"
+                  }
+                },
+                "related_video": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "toggles": {
+                  "type": "object",
+                  "properties": {
+                    "containsSyntheticMedia": {
+                      "type": "boolean"
+                    }
+                  }
+                },
+                "notes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "posting": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "item": {
+                "type": "string"
+              },
+              "grade": {
+                "enum": [
+                  "P",
+                  "S",
+                  "M",
+                  "A",
+                  "myth"
+                ]
+              },
+              "source": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "checklist": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

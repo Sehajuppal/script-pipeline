@@ -1,0 +1,1473 @@
+{
+ "schema_version": 1,
+ "source": "docs/research/hooks-deep-dive.md (checked 2026-09-29): §1.4 ARCHETYPES, §2.5 pairings, §2.6 VISUAL_HOOKS, §3.6 VARIANT_POLICY, §4.1 HOOK_SCORE_FEATURES, §5 RISKY_PHRASES, §6 proposed rules. Blocks are verbatim; 'maker' is WS-HOOKS glue (our inference, grade A).",
+ "TEMPLATE_SLOT_BUDGET": {
+  "product": "milk frother",
+  "category": "milk frother",
+  "category_pl": "milk frothers",
+  "expensive": "espresso machine",
+  "common": "the microwave method",
+  "flaw": "weak foam",
+  "mistake": "frothing cold milk",
+  "moment": "morning rush",
+  "ndays": "7",
+  "timespan": "30 seconds",
+  "before": "flat milk",
+  "after": "silky foam",
+  "identity": "home barista",
+  "persona_note": "an AI persona",
+  "price": "$25",
+  "proof": "a 4.6 rating",
+  "situation": "making morning lattes",
+  "thing": "morning coffee"
+ },
+ "ARCHETYPES": {
+  "curiosity-gap": {
+   "definition": "Names a specific unknown about the product that the payoff reveals on screen.",
+   "mechanism": "Information-gap curiosity (Loewenstein 1994): a salient, closable gap motivates watching; forward reference speeds involuntary attention (ERP 2022).",
+   "evidence": "Motion Curiosity 11th of 25 by hit rate [M]; OpusClip Direct Address/Intrigue/Question 1,768 mean views vs 1,879 TikTok median [M]; forward-reference headlines no worse than plain ones (CME 2016) [M]; vague withholding demoted by Meta, unpaid promises removed by YouTube [P].",
+   "prior": 0.55,
+   "variance": "med",
+   "when": "demo, review, showcase: a concrete non-obvious detail is shown before 85% of runtime",
+   "avoid_when": "payoff cannot name the hidden thing (D35); secret/industry framing; gap refers to 'this/it' with no noun",
+   "risk": "medium: clickbait demotion if vague or unpaid",
+   "ai_safe": true,
+   "requires": [
+    "a concrete detail the payoff shows (D35)"
+   ],
+   "templates": [
+    "The {product} detail worth checking first.",
+    "Before you buy a {category}, check this.",
+    "One {product} detail decides the verdict.",
+    "What {ndays} days revealed about the {product}.",
+    "Watch the {product} at the {moment}.",
+    "Here's where {category_pl} hide the {flaw}."
+   ],
+   "human_only": []
+  },
+  "bold-claim": {
+   "definition": "A specific, checkable performance claim the video proves in one take.",
+   "mechanism": "Expectancy violation plus commitment: a falsifiable claim invites the viewer to verify it.",
+   "evidence": "Motion Bold Claim 14th, Shocking Statement 16th; interrupt cluster, higher variance [M]; FTC requires a reasonable basis for objective claims; TikTok bans exaggerated results and absolutes (Apr 2026) [P].",
+   "prior": 0.55,
+   "variance": "high",
+   "when": "demo formats with a measurable (time, count, before/after) captured on camera",
+   "avoid_when": "superlatives (best, #1, only); health or efficacy; 'obsolete'; comparisons not filmed (D141)",
+   "risk": "high: absolute or unsubstantiated claim class (D141)",
+   "ai_safe": true,
+   "requires": [
+    "on-screen measurement or one-take demo proving the claim (D5)"
+   ],
+   "templates": [
+    "This {product} gets {after} in seconds.",
+    "Under a minute: {before} to {after}.",
+    "{product}, day {ndays}: still no {flaw}.",
+    "{ndays} days, zero {flaw}: {product}.",
+    "The {product} fixes {before}. Watch.",
+    "{after} from a {category}, one take.",
+    "My {expensive} lost to a {product}."
+   ],
+   "human_only": [
+    "My {expensive} lost to a {product}."
+   ]
+  },
+  "negative-command": {
+   "definition": "Tells the viewer to stop one specific mistake; the payoff shows the fix.",
+   "mechanism": "Negativity bias and loss framing; the imperative interrupts passive scrolling.",
+   "evidence": "Each negative word +2.3% CTR (Robertson 2023); negative-emotion words beta 0.18 (Gligoric 2023) [S]; Motion Reverse Psychology 15th, Warning 18th [M]; OpusClip calls imperatives the most divisive pattern [A].",
+   "prior": 0.6,
+   "variance": "med",
+   "when": "advice, tools, kitchen, beauty: a real common mistake with a visible fix",
+   "avoid_when": "no concrete mistake; shaming; health scares; 'stop scrolling' attention bait",
+   "risk": "medium: sensational if the mistake is invented",
+   "ai_safe": true,
+   "requires": [
+    "a real {mistake} and its fix on screen"
+   ],
+   "templates": [
+    "Stop {mistake}.",
+    "Stop buying {category_pl} on looks alone.",
+    "Don't buy a {category} before checking this.",
+    "Skip this {category} mistake: {mistake}.",
+    "Quit {mistake}. Do this instead.",
+    "{product} owners: stop {mistake}."
+   ],
+   "human_only": []
+  },
+  "proof-first": {
+   "definition": "Opens on sourced evidence (rating, measurement, result card) before any claim.",
+   "mechanism": "Credibility heuristic: evidence first lowers skepticism for the rest of the video.",
+   "evidence": "Motion Testimonial format 6.5% winner rate, Statistic format listed [M]; OpusClip specific-number pattern [A]; FTC 16 CFR 465 and D136 ban unsourced ratings and counts [P].",
+   "prior": 0.65,
+   "variance": "med",
+   "when": "the prompt supplies proof with its source",
+   "avoid_when": "proof not in the prompt (D136); AI presenter framing proof as personal experience (D137)",
+   "risk": "high if unsourced: fabricated review signal",
+   "ai_safe": true,
+   "requires": [
+    "proof in the prompt, attributed (D136)"
+   ],
+   "templates": [
+    "Proof first: {proof}.",
+    "Start with the numbers: {proof}.",
+    "{proof}. Now watch the {product}.",
+    "{proof}. Here's what that means.",
+    "The {product} scorecard: {proof}.",
+    "Here's the receipt: {proof}."
+   ],
+   "human_only": []
+  },
+  "transformation": {
+   "definition": "Before and after of the same object, with the product as the cause.",
+   "mechanism": "Visual contrast and closure: the gap between the two states is the promise.",
+   "evidence": "Motion Before & After 6th of 25 formats [M]; OpusClip showcase class includes before/after (6,037) [M]; TikTok bans misleading before/after and unsupported transformation claims [P].",
+   "prior": 0.7,
+   "variance": "med",
+   "when": "honest matched-framing results on objects: cleaning, cooking, organizing, car care",
+   "avoid_when": "body, skin, weight or health results; staged timelines; AI-generated results",
+   "risk": "medium-high: misleading before/after is an ad-rejection class",
+   "ai_safe": true,
+   "requires": [
+    "real matched before/after footage",
+    "dates if multi-day"
+   ],
+   "templates": [
+    "{before} to {after}: the {product}.",
+    "Day 1 vs day {ndays}: {product}.",
+    "Same {thing}, {before} vs {after}.",
+    "This is the after. Here's the before.",
+    "The {product} after {ndays} days.",
+    "{after} in {timespan}. Here's the before."
+   ],
+   "human_only": []
+  },
+  "story-time": {
+   "definition": "Opens mid-story with the conflict already stated.",
+   "mechanism": "Narrative transportation: an unresolved conflict pulls toward the resolution.",
+   "evidence": "OpusClip: story-setup openers underperform [A/M]; Motion Storytelling only on the spend-use list [M]; first-person singular helps headlines (beta 0.24) [S].",
+   "prior": 0.35,
+   "variance": "high",
+   "when": "human presenter; vlog, challenge, routine; conflict in the first line",
+   "avoid_when": "AI presenter (D137); slow setup; the story is not true",
+   "risk": "low policy, high performance risk",
+   "ai_safe": false,
+   "requires": [
+    "presenter=human",
+    "a true lived experience"
+   ],
+   "templates": [
+    "So I almost returned the {product}.",
+    "Why I kept the {product}.",
+    "Day {ndays} and I almost quit.",
+    "So I'm {situation} when this happens.",
+    "I didn't expect the {product} to win.",
+    "Quick story about my {expensive}."
+   ],
+   "human_only": [
+    "*"
+   ]
+  },
+  "contrarian-reframe": {
+   "definition": "Rejects a common practice and promises a better one, shown on screen.",
+   "mechanism": "Schema violation: viewers stay to resolve the contradiction.",
+   "evidence": "Motion Contrarian 20th, Myth Busting on the spend list; interrupt cluster, high variance [M]; OpusClip lists the contrarian open and warns against crying wolf [A]; current templates fit D73 0/2.",
+   "prior": 0.5,
+   "variance": "high",
+   "when": "advice or education with a widespread practice and a demonstrable alternative",
+   "avoid_when": "strawman beliefs; health myths; value claims without a comparison",
+   "risk": "medium: misleading if the alternative is not shown",
+   "ai_safe": true,
+   "requires": [
+    "a real {common} practice",
+    "the alternative shown"
+   ],
+   "templates": [
+    "{common} is overrated. Here's why.",
+    "Unpopular opinion: skip {common}.",
+    "{common} causes the {flaw}.",
+    "Skip the {expensive}. Get {after} anyway.",
+    "The {category} advice worth ignoring.",
+    "{common}? Wrong fix. Try this."
+   ],
+   "human_only": []
+  },
+  "identity-reveal": {
+   "definition": "Leads with who is speaking: a real credential or role, or the AI disclosure itself.",
+   "mechanism": "Source credibility and in-group identity; disclosure pre-empts distrust.",
+   "evidence": "Motion Authority 25th, Founder 20th and Expert Explained 25th formats [M]; OpusClip expert-explainer is the most common storyline (2,626 clips) [M]; 'I' helps headlines (beta 0.24) [S]; FTC bans fake testimonialists (16 CFR 465.2) [P].",
+   "prior": 0.45,
+   "variance": "med",
+   "when": "human with a verified relevant identity; AI only as a disclosure-first opener",
+   "avoid_when": "unverifiable credentials; AI claiming a human identity (D137; Llama AUP)",
+   "risk": "high if the identity is fabricated",
+   "ai_safe": "partial",
+   "requires": [
+    "identity from the prompt (human) or {persona_note} (AI)"
+   ],
+   "templates": [
+    "Full disclosure: I'm {persona_note}.",
+    "AI host, real footage: the {product}.",
+    "AI host here. Real {product} test.",
+    "As a {identity}, I'd skip this.",
+    "{identity} here. Honest {product} verdict.",
+    "A {identity} tests the {product}."
+   ],
+   "human_only": [
+    "As a {identity}, I'd skip this.",
+    "{identity} here. Honest {product} verdict.",
+    "A {identity} tests the {product}."
+   ]
+  },
+  "problem-agitate": {
+   "definition": "Names the viewer's problem vividly before the product appears.",
+   "mechanism": "Problem salience plus negativity; self-relevance holds the viewer for the fix.",
+   "evidence": "Motion Problem Agitation format 15th [M]; negativity lifts CTR (Robertson; Gligoric) [S]; problem-to-solution is the standard explainer template (Jasper) [A].",
+   "prior": 0.6,
+   "variance": "med",
+   "when": "utilitarian products with a visible, common frustration",
+   "avoid_when": "medical conditions, body image, fear appeals; problem not shown",
+   "risk": "medium: sensational if exaggerated",
+   "ai_safe": true,
+   "requires": [
+    "the {flaw} visible in frame 0 (problem-state)"
+   ],
+   "templates": [
+    "{flaw} again? It's not your fault.",
+    "Tired of {flaw} every {moment}?",
+    "{flaw} ruins your {thing}. Here's why.",
+    "Why {category_pl} give you {flaw}.",
+    "{situation} and still getting {flaw}?",
+    "The {flaw} problem, fixed in {timespan}."
+   ],
+   "human_only": []
+  },
+  "question": {
+   "definition": "Asks the specific question a viewer would search; the payoff answers it explicitly.",
+   "mechanism": "Self-reference and search intent; an answerable question sets up an expected answer.",
+   "evidence": "Mixed [M]: self-referencing questions beat declaratives (Lai & Farbrot 2014); questions lowered CTR or attitudes (Kuiken 2017; CME 2016; Jung 2022); OpusClip question class below median; Motion If/Then 17th, Direct Address 23rd.",
+   "prior": 0.4,
+   "variance": "med",
+   "when": "'worth it', 'X vs Y', 'does it work' intents; verdict payoffs; keyword first (DISC-01)",
+   "avoid_when": "rhetorical or vague questions; questions answerable 'no' instantly; health questions",
+   "risk": "low",
+   "ai_safe": true,
+   "requires": [
+    "a payoff that answers the question in words and on screen"
+   ],
+   "templates": [
+    "Is the {product} actually worth it?",
+    "{product}: buy or skip?",
+    "Does the {product} fix {flaw}?",
+    "Why does your {thing} get {flaw}?",
+    "How long does {after} really take?",
+    "{product} or {expensive}: which wins?"
+   ],
+   "human_only": []
+  },
+  "comparison": {
+   "definition": "The product against its alternative on one filmed test.",
+   "mechanism": "Contrast supports the decision; the winner is the payoff.",
+   "evidence": "Motion Split Screen 8th, Us vs Them 9th formats; Contrast tactic 22nd [M]; TikTok allows comparative claims only with evidence [P].",
+   "prior": 0.65,
+   "variance": "med",
+   "when": "a pricier, DIY or older alternative exists and both can be filmed",
+   "avoid_when": "named competitor brands with claims; rigged setups",
+   "risk": "medium: comparative claim needs evidence",
+   "ai_safe": true,
+   "requires": [
+    "real footage of both on the same test"
+   ],
+   "templates": [
+    "{product} vs {expensive}: same {after}?",
+    "{common} vs the {product}.",
+    "Left: {before}. Right: {product}.",
+    "Same {thing}, two methods. One wins.",
+    "{expensive} or {product}? Side by side.",
+    "One {category} test, two results."
+   ],
+   "human_only": []
+  },
+  "pov": {
+   "definition": "Puts the viewer inside a concrete scenario with 'POV:'.",
+   "mechanism": "Self-projection and relatability: second person without asking a question.",
+   "evidence": "Motion POV format 18th, Relatability tactic 21st [M]; internal pack lists pov among top families [A]; RULES saturation note on repeated 'POV: your {domain}...' [A].",
+   "prior": 0.5,
+   "variance": "med",
+   "when": "routines, lifestyle, relatable moments; pairs with pov-hands",
+   "avoid_when": "POV as a bare label; the same POV frame across a series",
+   "risk": "low",
+   "ai_safe": true,
+   "requires": [
+    "the scenario is what the footage shows"
+   ],
+   "templates": [
+    "POV: your {thing} finally has {after}.",
+    "POV: it's {moment} and {flaw} again.",
+    "POV: you stopped {mistake}.",
+    "POV: you finally tried a {category}.",
+    "POV: {situation} with a {product}.",
+    "POV: your {expensive} just got replaced."
+   ],
+   "human_only": []
+  },
+  "newness": {
+   "definition": "Frames the product, version or use as new, or as a first look.",
+   "mechanism": "Novelty seeking: 'new' signals information the viewer lacks.",
+   "evidence": "Motion Newness 1st and New Product Announcement 8th by hit rate, inflated by the promo window [M].",
+   "prior": 0.65,
+   "variance": "low",
+   "when": "the prompt states a launch, new version or new use; otherwise only 'first look' templates",
+   "avoid_when": "product is not new; launch urgency that is not real",
+   "risk": "medium: false newness claim",
+   "ai_safe": true,
+   "requires": [
+    "a newness fact in the prompt for templates containing 'new'"
+   ],
+   "templates": [
+    "First look: the {product}.",
+    "First look at the {product} in action.",
+    "New {category} just dropped. First look.",
+    "The new {product} changes the {moment}.",
+    "New find: a {category} for {after}.",
+    "{product}, new version: what changed?"
+   ],
+   "human_only": []
+  },
+  "confession": {
+   "definition": "Admits a real mistake or bias before showing what changed.",
+   "mechanism": "Vulnerability and the pratfall effect: admitted fault raises credibility.",
+   "evidence": "Motion Confession 9th by hit rate and over-indexes on spend; interrupt cluster, high variance [M]; 'I' helps headlines (beta 0.24) [S].",
+   "prior": 0.6,
+   "variance": "high",
+   "when": "human presenter; beauty, wellness, lifestyle, money; confession tied to the payoff",
+   "avoid_when": "AI presenter (D137); invented confessions (FTC 465); health overshare",
+   "risk": "medium: fake testimony if invented",
+   "ai_safe": false,
+   "requires": [
+    "presenter=human",
+    "a true confession"
+   ],
+   "templates": [
+    "Confession: I was {mistake} for years.",
+    "I almost didn't post this {product} test.",
+    "Honestly? I misjudged the {product}.",
+    "I wasted money on {common}.",
+    "Embarrassing, but I was {mistake}.",
+    "I was wrong about the {product}."
+   ],
+   "human_only": [
+    "*"
+   ]
+  },
+  "price-anchor": {
+   "definition": "States the supplied price against a pricier alternative or an outcome.",
+   "mechanism": "Anchoring and value contrast.",
+   "evidence": "Motion Price Anchor 3rd by hit rate, 2nd by spend use [M]; FTC lists fake discounts as a dark pattern; TikTok bans inconsistent price details [P]; D37.",
+   "prior": 0.7,
+   "variance": "low",
+   "when": "the prompt gives a price; dupes and value reviews",
+   "avoid_when": "no price in the prompt (D37); was/now without a real prior price; 'cheapest'",
+   "risk": "high if the price is invented or the discount fake",
+   "ai_safe": true,
+   "requires": [
+    "price in the prompt (D37)"
+   ],
+   "templates": [
+    "{price} for {after}? Let's test it.",
+    "This {product} is {price}. Worth it?",
+    "{price} {product} vs the {expensive}.",
+    "At {price}: the {product} verdict.",
+    "What {price} gets you in a {category}.",
+    "{price} {product}, {expensive} results?"
+   ],
+   "human_only": []
+  },
+  "listicle": {
+   "definition": "Promises a counted set and delivers exactly that count.",
+   "mechanism": "Structure and progress: a count sets a closable expectation.",
+   "evidence": "Motion Listicle format 7th, Reasons Why on the spend list [M]; OpusClip specific-number pattern [A].",
+   "prior": 0.55,
+   "variance": "low",
+   "when": "advice, checks, roundups and showcases (D92)",
+   "avoid_when": "beats do not deliver the stated count; padding",
+   "risk": "low",
+   "ai_safe": true,
+   "requires": [
+    "beats deliver exactly the stated count",
+    "'tested' templates need that many real products"
+   ],
+   "templates": [
+    "3 {category} checks before you buy.",
+    "3 ways to get {after} faster.",
+    "3 {category} mistakes behind {flaw}.",
+    "{product}: 3 things the box skips.",
+    "3 {category_pl} tested, 1 kept.",
+    "2 {product} settings, 2 results."
+   ],
+   "human_only": []
+  },
+  "challenge": {
+   "definition": "A time-boxed personal test stated as the hook: streak, quit, only-X.",
+   "mechanism": "Stakes and completion curiosity: will it last?",
+   "evidence": "OpusClip Rare Event/Achievement 2,983 mean views, 2nd named class [M]; D52 pins challenge hooks to the day count; TikTok keeps extreme dieting and fitness out of the FYF [P].",
+   "prior": 0.55,
+   "variance": "med",
+   "when": "human creator; habits, food, fitness, digital detox; dated footage",
+   "avoid_when": "dangerous or extreme diet challenges; AI presenter doing the challenge",
+   "risk": "medium: FYF ineligibility or dangerous-acts policy",
+   "ai_safe": "partial",
+   "requires": [
+    "presenter=human, or a licensed creator log narrated in curator framing (D39)"
+   ],
+   "templates": [
+    "{ndays} days of {situation}. Day 1.",
+    "Day {ndays} of {situation}.",
+    "I tried {situation} for {ndays} days.",
+    "Can I last {ndays} days {situation}?",
+    "One creator, {ndays} days of {situation}.",
+    "{ndays} days, one rule: {situation}."
+   ],
+   "human_only": [
+    "{ndays} days of {situation}. Day 1.",
+    "Day {ndays} of {situation}.",
+    "I tried {situation} for {ndays} days.",
+    "Can I last {ndays} days {situation}?"
+   ]
+  },
+  "day-counter": {
+   "definition": "Opens on a day-N marker from an ongoing, dated log.",
+   "mechanism": "Progress cue plus accumulated proof: the number implies commitment.",
+   "evidence": "D52 pinned day-counter hooks [A]; OpusClip Rare Event/Achievement 2,983 [M]; specific numbers imply measurement [A].",
+   "prior": 0.55,
+   "variance": "med",
+   "when": "routines, challenges, long-term product tests with dated footage",
+   "avoid_when": "no real log; hook day differs from payoff day (D5 drift)",
+   "risk": "low-medium: D5 drift",
+   "ai_safe": "partial",
+   "requires": [
+    "a dated log; hook day equals payoff day (D52)"
+   ],
+   "templates": [
+    "Day 1 vs day {ndays}.",
+    "Day {ndays} of {ndays}: the verdict.",
+    "{product} log, day {ndays}.",
+    "Day {ndays}. The {flaw} is gone.",
+    "Day {ndays}: {situation}, still going.",
+    "Day {ndays} with the {product}."
+   ],
+   "human_only": [
+    "Day {ndays}: {situation}, still going.",
+    "Day {ndays} with the {product}."
+   ]
+  },
+  "showcase": {
+   "definition": "Shows the product working, or the finished outcome, before any explanation.",
+   "mechanism": "Immediate value preview: no setup stands between the viewer and the payoff image.",
+   "evidence": "OpusClip Product/Outcome Showcase top class, 6,037 mean views [M]; product on screen early +65% brand affinity (Creative Codes, SFV) [S]; Motion Demo 8.1%, Unboxing 9.8% [M]; TikTok Shop wants the hook about the product [P].",
+   "prior": 0.85,
+   "variance": "low",
+   "when": "any visually demonstrable product; roundups; room, car or desk showcases (D81)",
+   "avoid_when": "static product shots (TikTok Shop non-interactive cap); nothing moves in frame 0",
+   "risk": "low",
+   "ai_safe": true,
+   "requires": [
+    "real footage of the product working"
+   ],
+   "templates": [
+    "This is the {product} in action.",
+    "Watch the {product} make {after}.",
+    "{after}, made by a {product}.",
+    "The {product}, start to finish.",
+    "Here's the {product} doing its job.",
+    "{product} at the {moment}, no cuts."
+   ],
+   "human_only": []
+  }
+ },
+ "PAIRINGS": {
+  "showcase": [
+   "product-in-action",
+   "satisfying-macro",
+   "pov-hands"
+  ],
+  "transformation": [
+   "before-after-split",
+   "result-reveal",
+   "day-counter"
+  ],
+  "day-counter": [
+   "before-after-split",
+   "result-reveal",
+   "day-counter"
+  ],
+  "comparison": [
+   "comparison",
+   "text-first",
+   "unboxing"
+  ],
+  "price-anchor": [
+   "comparison",
+   "text-first",
+   "unboxing"
+  ],
+  "problem-agitate": [
+   "problem-state",
+   "product-in-action",
+   "text-first"
+  ],
+  "negative-command": [
+   "problem-state",
+   "product-in-action",
+   "text-first"
+  ],
+  "curiosity-gap": [
+   "satisfying-macro",
+   "result-reveal",
+   "product-in-action"
+  ],
+  "bold-claim": [
+   "satisfying-macro",
+   "result-reveal",
+   "product-in-action"
+  ],
+  "proof-first": [
+   "text-first",
+   "comparison"
+  ],
+  "question": [
+   "text-first",
+   "comparison"
+  ],
+  "listicle": [
+   "text-first",
+   "comparison"
+  ],
+  "contrarian-reframe": [
+   "text-first",
+   "comparison"
+  ],
+  "pov": [
+   "pov-hands",
+   "problem-state"
+  ],
+  "newness": [
+   "unboxing",
+   "product-in-action"
+  ],
+  "identity-reveal": [
+   "face-reaction",
+   "problem-state"
+  ],
+  "confession": [
+   "face-reaction",
+   "problem-state"
+  ],
+  "story-time": [
+   "face-reaction",
+   "problem-state"
+  ],
+  "challenge": [
+   "day-counter",
+   "problem-state"
+  ]
+ },
+ "VISUAL_HOOKS": {
+  "product-in-action": {
+   "evidence": "Motion Demo format 8.1% winner rate, 2nd [M]; OpusClip showcase class top at 6,037 mean views [M]; product on screen early +65% affinity, +25% recall (Creative Codes) [S]; TikTok Shop wants >=3 s dynamic footage and a product-led hook [P].",
+   "prior": 0.85,
+   "best_archetypes": [
+    "showcase",
+    "bold-claim",
+    "negative-command",
+    "curiosity-gap",
+    "newness"
+   ],
+   "needs": "the product mid-task with hands in frame and visible motion by 0.5 s; the real product sound",
+   "ai_render_risk": "medium: hand and finger artifacts, liquid physics, invented logos (D64 negative prompt)"
+  },
+  "result-reveal": {
+   "evidence": "OpusClip: leading with the outcome is the top pattern [M]; Motion Before & After 6th [M]; TikTok bans results that give a false impression [P].",
+   "prior": 0.8,
+   "best_archetypes": [
+    "showcase",
+    "transformation",
+    "bold-claim",
+    "proof-first"
+   ],
+   "needs": "a real captured result that the payoff re-shows in context",
+   "ai_render_risk": "high: a generated result is a fabricated claim; use real capture only"
+  },
+  "before-after-split": {
+   "evidence": "Motion Before & After 6th, Split Screen 8th [M]; TikTok ad policy restricts before/after without evidence; TikTok Shop bans unsupported transformations [P].",
+   "prior": 0.7,
+   "best_archetypes": [
+    "transformation",
+    "comparison",
+    "day-counter"
+   ],
+   "needs": "matched framing, light and angle; dated captures; label pair 'BEFORE | AFTER' (D144)",
+   "ai_render_risk": "high: never generate either side; composite real footage"
+  },
+  "problem-state": {
+   "evidence": "Motion Problem Agitation 15th [M]; negativity lifts clicks (Robertson 2023; Gligoric 2023) [S, text-to-visual inference].",
+   "prior": 0.6,
+   "best_archetypes": [
+    "problem-agitate",
+    "negative-command",
+    "question",
+    "pov",
+    "challenge"
+   ],
+   "needs": "the problem at its worst, honestly depicted; the product enters by about 3 s",
+   "ai_render_risk": "low-medium: staged mess reads fine; avoid depicting injury or health symptoms"
+  },
+  "pov-hands": {
+   "evidence": "Motion POV format 18th [M]; hands-on-product openers are practitioner consensus [A].",
+   "prior": 0.6,
+   "best_archetypes": [
+    "pov",
+    "showcase",
+    "listicle"
+   ],
+   "needs": "first-person angle, the viewer's hands using the product, motion by 0.5 s",
+   "ai_render_risk": "medium-high: hands are the most common generation artifact"
+  },
+  "face-reaction": {
+   "evidence": "Visible human +27% CTR (Meta, SFV) [S]; faces predict TikTok views better than text sentiment (163k videos, SFV section 7) [M]; Motion Testimonial 6.5% [M].",
+   "prior": 0.6,
+   "best_archetypes": [
+    "confession",
+    "story-time",
+    "identity-reveal",
+    "problem-agitate"
+   ],
+   "needs": "presenter face with the product or result in the same frame; human presenter for emotional reactions",
+   "ai_render_risk": "high: an AI face reacting to a result implies use (D137); keep AI expressions neutral and disclosed (D138)"
+  },
+  "text-first": {
+   "evidence": "Motion Headline format 4th [M]; TikTok search ads recommend a keyword text hook [P]; text stickers +11 points (Meta, SFV) [S]; brief key-phrase labels aid retention (Mayer & Johnson 2008) [S].",
+   "prior": 0.55,
+   "best_archetypes": [
+    "question",
+    "listicle",
+    "proof-first",
+    "contrarian-reframe",
+    "price-anchor",
+    "identity-reveal"
+   ],
+   "needs": "a <=3-word card over MOTION (never a static card, per TikTok Shop's non-interactive rule), keyword head noun included",
+   "ai_render_risk": "low: composite the text in post, never ask the model to draw it"
+  },
+  "unboxing": {
+   "evidence": "Motion Unboxing 9.8% winner rate, highest in its table, but only 2.1% of creatives [M].",
+   "prior": 0.75,
+   "best_archetypes": [
+    "newness",
+    "showcase",
+    "price-anchor"
+   ],
+   "needs": "a real package opened mid-action; packaging branding must be real, not invented (D37/D64)",
+   "ai_render_risk": "medium: garbled packaging text and invented brands"
+  },
+  "comparison": {
+   "evidence": "Motion Us vs Them 9th, Split Screen 8th, Contrast tactic 22nd [M]; TikTok allows comparative claims only with evidence [P].",
+   "prior": 0.65,
+   "best_archetypes": [
+    "comparison",
+    "price-anchor",
+    "contrarian-reframe",
+    "question"
+   ],
+   "needs": "both items filmed on the same test, same framing; no named-competitor claims",
+   "ai_render_risk": "medium: both sides must be real captures when the outcome is the claim"
+  },
+  "day-counter": {
+   "evidence": "D52 pinned day-counter hooks [A]; OpusClip Rare Event/Achievement class 2,983 [M].",
+   "prior": 0.5,
+   "best_archetypes": [
+    "day-counter",
+    "challenge",
+    "transformation"
+   ],
+   "needs": "a 'DAY N' label over real footage from that day; the hook's N equals the payoff's N",
+   "ai_render_risk": "low for the label; lived-experience risk if an AI presenter claims the streak (D137)"
+  },
+  "satisfying-macro": {
+   "evidence": "ASMR audio raised ad recall across 4 experiments (JAR 2022) [S]; TikTok Creative Codes recommend 'clean and satisfying' edits [M].",
+   "prior": 0.6,
+   "best_archetypes": [
+    "showcase",
+    "curiosity-gap",
+    "bold-claim"
+   ],
+   "needs": "an extreme close-up texture with the real product sound; little or no music",
+   "ai_render_risk": "medium: fluid and foam physics; the sound must be real or foley, not generated speech"
+  }
+ },
+ "VARIANT_POLICY": {
+  "count": {
+   "primary": 1,
+   "alternates_min": 3,
+   "alternates_max": 4,
+   "total_max": 5,
+   "source": "TikTok 3-5 creatives per ad group; Symphony 3 variants per run; Meta creative diversity rating"
+  },
+  "diversity": {
+   "unique_fields": [
+    "visual_type",
+    "archetype",
+    "first3_tokens",
+    "on_screen"
+   ],
+   "max_trigram_jaccard": 0.2,
+   "jaccard_excludes": "primary keyword tokens and stopwords",
+   "max_per_cluster": 2,
+   "clusters": {
+    "promotional": [
+     "price-anchor",
+     "newness"
+    ],
+    "interrupt": [
+     "negative-command",
+     "bold-claim",
+     "contrarian-reframe",
+     "confession"
+    ],
+    "evidence": [
+     "showcase",
+     "proof-first",
+     "transformation",
+     "comparison",
+     "day-counter"
+    ],
+    "inquiry": [
+     "question",
+     "curiosity-gap",
+     "problem-agitate",
+     "listicle"
+    ],
+    "persona": [
+     "pov",
+     "story-time",
+     "identity-reveal",
+     "challenge"
+    ]
+   },
+   "shared_across_variants": [
+    "payoff and payoff_contract (D35)",
+    "primary keyword spoken and on screen by 3.0 s (DISC-01/02)",
+    "disclosure (D138)",
+    "all beats from 3.0 s"
+   ],
+   "payoff_compat": {
+    "verdict": [
+     "question",
+     "curiosity-gap",
+     "comparison",
+     "price-anchor",
+     "showcase",
+     "proof-first",
+     "contrarian-reframe",
+     "identity-reveal",
+     "confession",
+     "story-time"
+    ],
+    "measurable-demo": [
+     "showcase",
+     "bold-claim",
+     "negative-command",
+     "problem-agitate",
+     "curiosity-gap",
+     "comparison",
+     "proof-first",
+     "pov",
+     "newness"
+    ],
+    "transformation": [
+     "transformation",
+     "day-counter",
+     "bold-claim",
+     "problem-agitate",
+     "showcase",
+     "pov"
+    ],
+    "list": [
+     "listicle",
+     "showcase",
+     "curiosity-gap",
+     "negative-command",
+     "newness"
+    ],
+    "streak": [
+     "challenge",
+     "day-counter",
+     "story-time",
+     "confession",
+     "question",
+     "transformation"
+    ]
+   },
+   "presenter_filter": "presenter=ai drops ai_safe=false archetypes and every human_only template (D137)"
+  },
+  "testing_protocol": {
+   "paid": "one ad per variant in one ad set/ad group, same budget, same audience, launched together; read daily, decide at day 3 or 7",
+   "instagram_trial_reels": "post all variants as MANUAL trials the same day within a 2 h window; looks at 24, 48, 72 h; graduate the winner, never repost a loser as-is",
+   "organic_other": "alternate the variants across comparable slots (same weekday and hour band); treat as directional only",
+   "looks": "pre-registered only; no decisions between looks",
+   "log": [
+    "variant_id",
+    "archetype",
+    "visual_type",
+    "hook_text",
+    "on_screen",
+    "platform",
+    "trial",
+    "posted_at",
+    "impressions_or_views",
+    "holds_3s"
+   ]
+  },
+  "metrics": {
+   "primary": {
+    "meta_paid": "3s video plays / impressions",
+    "tiktok_paid": "2-second video views / impressions (TikTok reports 2 s and 6 s views; exact metric names UNVERIFIED)",
+    "instagram": "1 - reels_skip_rate",
+    "youtube_shorts": "viewed vs swiped away (% viewed)",
+    "tiktok_organic": "retention at 3.0 s from the retention curve (manual)"
+   },
+   "guardrails": [
+    "average watch time",
+    "sends or shares per reach",
+    "completion rate"
+   ],
+   "guardrail_rule": "winner may not be worse than the primary by more than 10% relative on any guardrail"
+  },
+  "thresholds": {
+   "hook_rate_paid": {
+    "kill_below": {
+     "meta": 0.15
+    },
+    "median": {
+     "meta": 0.28,
+     "tiktok": 0.33,
+     "youtube": 0.22
+    },
+    "top_decile": {
+     "meta": 0.45,
+     "tiktok": 0.55,
+     "youtube": 0.38
+    },
+    "source": "SFV section 1 (Benly/Ryze via AdBeacon) [M]"
+   },
+   "instagram_skip_rate": {
+    "healthy_below": 0.35,
+    "failing_above": 0.5,
+    "grade": "A (trackers; no official benchmark)"
+   },
+   "shorts_viewed_pct": {
+    "reference_median": 0.506,
+    "grade": "A (one creator, 226 Shorts)"
+   }
+  },
+  "stats": {
+   "model": "Beta-Binomial per variant: holds ~ Binomial(n, p), p ~ Beta(a0 + holds, b0 + n - holds)",
+   "prior": "a0 = 20 * m, b0 = 20 * (1 - m), m = account's rolling median hold rate for the platform (fallback: platform median above)",
+   "decision": "pick variant v when P(v is best) >= 0.95 AND expected loss of choosing v <= 0.01, evaluated by 20,000 Monte Carlo draws",
+   "min_n_per_variant": 300,
+   "power_guide": {
+    "lift_5pp_at_30pct": 1000,
+    "lift_10pp_at_30pct": 260,
+    "note": "normal approximation, 80% power, one-sided 95%; derived here"
+   },
+   "futility": "at the last look, if no variant has P(best) >= 0.80, keep the primary and log 'no difference'",
+   "early_kill": "drop a variant at any look when P(p < kill threshold) >= 0.90",
+   "prior_update": "update archetype and visual priors only from paid tests or >= 2 replicated organic wins"
+  }
+ },
+ "HOOK_SCORE_FEATURES": [
+  {
+   "id": "length_band",
+   "description": "spoken hook length and time budget",
+   "weight": 0.06,
+   "direction": "+",
+   "detector": "n = len(lexicon.words(hook)); x = 1 if 4<=n<=8 and 0.3 + n/3.0 <= 3.0 else 0.6 if n == 3 else 0",
+   "evidence": "D73; Kim 2024 ~8 words per sentence [M]; SFV speech-rate rule [S]"
+  },
+  {
+   "id": "payload_first3",
+   "description": "product, category, flaw or a number within the first 3 words",
+   "weight": 0.09,
+   "direction": "+",
+   "detector": "first 3 norm tokens intersect tokens of ctx product/category/category_pl/flaw/after or match \\d; x = 1, words 4-5 -> 0.5, else 0",
+   "evidence": "Meta: under-25 view time < 2 s [M]; 0.25 s recall [M]; OpusClip lead-with-the-thing [M]"
+  },
+  {
+   "id": "keyword_early",
+   "description": "product or category spoken by 3.0 s (search and relevance)",
+   "weight": 0.07,
+   "direction": "+",
+   "detector": "DISC-01 check on the hook cue; x in {0,1}",
+   "evidence": "discovery-seo DISC-01 [P/M]; Creative Codes product early [S]"
+  },
+  {
+   "id": "concrete_specific",
+   "description": "a concrete noun from ctx slots and/or a number",
+   "weight": 0.07,
+   "direction": "+",
+   "detector": "x = 0.5 per signal (number regex \\b\\d+\\b|one..ten; any ctx noun phrase present), max 1",
+   "evidence": "Loewenstein 1994 closable gap [S]; OpusClip specific-number pattern [A]"
+  },
+  {
+   "id": "negativity",
+   "description": "one or two concrete negative words",
+   "weight": 0.05,
+   "direction": "+",
+   "detector": "count NEG = {stop, don't, skip, quit, mistake, wrong, weak, ruins, fail, flaw, tired, wasted, lost}; x = 1 for 1, 0.8 for 2, 0.4 for >=3, 0 for none",
+   "evidence": "Robertson 2023 +2.3% CTR per negative word [S]; Gligoric 2023 beta 0.18 [S]"
+  },
+  {
+   "id": "first_person_human",
+   "description": "'I/my/me' when presenter is human",
+   "weight": 0.02,
+   "direction": "+",
+   "detector": "x = 1 if presenter == 'human' and re '\\b(I|my|me)\\b'; 0 for ai (D137 gate handles misuse)",
+   "evidence": "Gligoric 2023 beta 0.24 for first-person singular [S]"
+  },
+  {
+   "id": "second_person_selfref",
+   "description": "'you/your' inside a question or callout",
+   "weight": 0.02,
+   "direction": "+",
+   "detector": "x = 1 if re '\\byou(r)?\\b' and (hook ends with '?' or starts with 'if you')",
+   "evidence": "Lai & Farbrot 2014 self-referencing questions [M]; 'you' alone n.s. (Gligoric) [S]"
+  },
+  {
+   "id": "question_form",
+   "description": "signed: specific answerable question vs rhetorical or vague",
+   "weight": 0.03,
+   "direction": "+/-",
+   "detector": "if '?' in hook: x = +1 when it contains keyword or number and not re 'have you ever|did you know|guess what'; else -1; no '?' -> 0",
+   "evidence": "CME 2016, Kuiken 2017, Jung 2022 negative; Lai & Farbrot 2014 positive [M]"
+  },
+  {
+   "id": "open_loop_paired",
+   "description": "signed: open loop whose promise the payoff pays",
+   "weight": 0.1,
+   "direction": "+/-",
+   "detector": "loop = '?' or re 'here's (why|what|the)|what changed|which wins|verdict|check this|before you'; x = +1 if loop and payoff_contract names the same measurable (D5/D35), -1 if loop and no match, 0.3 if no loop",
+   "evidence": "Loewenstein 1994 [S]; YouTube egregious-clickbait policy [P]; D35/D5"
+  },
+  {
+   "id": "novelty",
+   "description": "distance from recent hooks",
+   "weight": 0.08,
+   "direction": "+",
+   "detector": "x = 1 - max trigram Jaccard vs last 50 shipped hooks in niche (keyword tokens removed); x = 0 if first3 tokens equal any of last 10",
+   "evidence": "Meta same-opening = same ad [M]; Motion hook fatigue warning [M]; TikTok FYF unoriginal rule [P]; baseline distinct ratio 28%"
+  },
+  {
+   "id": "readability",
+   "description": "easy to hear once",
+   "weight": 0.02,
+   "direction": "+",
+   "detector": "x = 1 if mean syllables/word <= 1.6 excluding ctx product tokens, and no clause nesting (<= 1 comma)",
+   "evidence": "readability n.s. for headlines (Gligoric) [S]; BBC subtitle-rate research [S]: low weight"
+  },
+  {
+   "id": "overlay_alignment",
+   "description": "frame-0 overlay is a contiguous hook phrase or label carrying the keyword head noun",
+   "weight": 0.06,
+   "direction": "+",
+   "detector": "lexicon.overlay_is_clean(ov, hook); x = 1 if clean and contains keyword head noun, 0.8 label form, 0.6 clean without keyword, 0 otherwise",
+   "evidence": "Mayer & Johnson 2008 brief key phrases aid retention [S]; D144; DISC-02"
+  },
+  {
+   "id": "visual_type_strength",
+   "description": "frame-0 visual prior and fit to the archetype",
+   "weight": 0.08,
+   "direction": "+",
+   "detector": "x = VISUAL_HOOKS[vt].prior * (1 if archetype in VISUAL_HOOKS[vt].best_archetypes else 0.6)",
+   "evidence": "Motion 2026 formats [M]; OpusClip showcase [M]; Creative Codes [S]"
+  },
+  {
+   "id": "archetype_prior",
+   "description": "research prior for the archetype, zeroed if its requirements are unmet",
+   "weight": 0.06,
+   "direction": "+",
+   "detector": "x = ARCHETYPES[a].prior if requires satisfied and (presenter == 'human' or ai_safe != false) else 0",
+   "evidence": "Motion 2026 tactics [M]; OpusClip categories [M]; composite [A]"
+  },
+  {
+   "id": "we_pronoun",
+   "description": "'we/our/us' framing",
+   "weight": 0.02,
+   "direction": "-",
+   "detector": "x = 1 if re '\\b(we|our|us)\\b'",
+   "evidence": "Gligoric 2023 beta -0.15 [S]"
+  },
+  {
+   "id": "filler_greeting",
+   "description": "greeting or delay opener",
+   "weight": 0.05,
+   "direction": "-",
+   "detector": "x = 1 if re '^(hey|hi|hello|okay|ok|alright|welcome)\\b|^so,|in today.?s video|let me tell you|have you ever wondered'",
+   "evidence": "OpusClip underperformer list [A]; lexicon.SLOP"
+  },
+  {
+   "id": "vague_hype",
+   "description": "empty hype or positive superlatives",
+   "weight": 0.05,
+   "direction": "-",
+   "detector": "x = 1 if lexicon.SLOP or lexicon.VAGUE_HOOK or re '\\b(amazing|insane|crazy|unreal|mind-?blowing|obsessed|game.?changer|life.?changing)\\b'",
+   "evidence": "Robertson 2023: positive words lower CTR [S]; Meta sensational phrasing [P]"
+  },
+  {
+   "id": "clickbait_marker",
+   "description": "withholding or sensational clickbait phrasing",
+   "weight": 0.04,
+   "direction": "-",
+   "detector": "x = 1 on any RISKY_PHRASES entry with class 'clickbait'; also '!!' or an all-caps sentence of 4+ words",
+   "evidence": "Meta clickbait guidelines [P]; YouTube clickbait policy [P]; D35"
+  },
+  {
+   "id": "fake_urgency",
+   "description": "urgency or scarcity without a supplied offer and deadline",
+   "weight": 0.03,
+   "direction": "-",
+   "detector": "x = 1 on RISKY_PHRASES class 'urgency' when prompt has no offer/deadline (D158)",
+   "evidence": "FTC dark-pattern taxonomy [P]"
+  }
+ ],
+ "RISKY_PHRASES": [
+  {
+   "id": "CB-01",
+   "class": "clickbait",
+   "regex": "\\byou (won'?t|will never|wont) believe\\b|\\byou'?ll never guess\\b",
+   "why": "sensational withholding phrase named by Meta",
+   "source": "Meta clickbait-links guideline [P]",
+   "severity": "error",
+   "allow_if": null
+  },
+  {
+   "id": "CB-02",
+   "class": "clickbait",
+   "regex": "\\bwhat happen(s|ed) next\\b|\\bwait (for it|till|until)\\b|\\b(watch|stay) (till|until|to) the end\\b",
+   "why": "withholds the payoff to farm watch time",
+   "source": "Meta clickbait-links guideline [P]; D35",
+   "severity": "error",
+   "allow_if": null
+  },
+  {
+   "id": "CB-03",
+   "class": "clickbait",
+   "regex": "\\bsecret (to|behind)\\b|\\bthey don'?t want you to know\\b|\\bindustry (doesn'?t|does not) want\\b",
+   "why": "promises a secret demo/review payoffs cannot reveal",
+   "source": "D35; YouTube egregious-clickbait policy [P]",
+   "severity": "error",
+   "allow_if": "payoff names the secret"
+  },
+  {
+   "id": "CB-04",
+   "class": "clickbait",
+   "regex": "\\b(shocking|jaw[- ]dropping|mind[- ]?blowing|this will shock you)\\b",
+   "why": "sensationalism without information",
+   "source": "Meta clickbait-links guideline [P]",
+   "severity": "warn",
+   "allow_if": null
+  },
+  {
+   "id": "CB-05",
+   "class": "clickbait",
+   "regex": "\\b(nobody|no one) (is talking about|talks about|mentions|knows|tells you)\\b",
+   "why": "unverifiable claim about others; baseline fallback frame",
+   "source": "D144/R02 fallback history [A]",
+   "severity": "warn",
+   "allow_if": null
+  },
+  {
+   "id": "CB-06",
+   "class": "clickbait",
+   "regex": "!{2,}|\\?!|\\b[A-Z]{2,}(?:\\s+[A-Z]{2,}){3,}\\b",
+   "why": "excessive punctuation or an all-caps sentence (4+ words); case-sensitive",
+   "source": "Meta clickbait-links guideline [P]",
+   "severity": "warn",
+   "allow_if": null
+  },
+  {
+   "id": "CB-07",
+   "class": "clickbait",
+   "regex": "^\\s*stop scrolling\\b",
+   "why": "attention bait that promises nothing",
+   "source": "OpusClip imperative caveat [A]",
+   "severity": "warn",
+   "allow_if": null
+  },
+  {
+   "id": "EB-01",
+   "class": "engagement_bait",
+   "regex": "\\bcomment (yes|below if|if you)\\b|\\btype (yes|1|a)\\b|\\bvote (yes|below)\\b|\\bcomment \\d for\\b",
+   "why": "comment and vote baiting",
+   "source": "Meta engagement-bait guideline [P]; D139",
+   "severity": "error",
+   "allow_if": "keyword-to-DM CTA naming a payload (B4a)"
+  },
+  {
+   "id": "EB-02",
+   "class": "engagement_bait",
+   "regex": "\\b(share|send) (this|it) (with|to)\\b",
+   "why": "share baiting; sends must be earned",
+   "source": "Meta engagement-bait guideline [P]; D139",
+   "severity": "error",
+   "allow_if": null
+  },
+  {
+   "id": "EB-03",
+   "class": "engagement_bait",
+   "regex": "\\btag (a friend|someone|your \\w+)\\b",
+   "why": "tag baiting",
+   "source": "Meta engagement-bait guideline [P]; D139",
+   "severity": "error",
+   "allow_if": null
+  },
+  {
+   "id": "EB-04",
+   "class": "engagement_bait",
+   "regex": "\\b(like|react|heart) (this )?if\\b|\\bdouble[- ]tap\\b|\\bsmash (that|the) like\\b",
+   "why": "react baiting",
+   "source": "Meta engagement-bait guideline [P]; D139",
+   "severity": "error",
+   "allow_if": null
+  },
+  {
+   "id": "UR-01",
+   "class": "urgency",
+   "regex": "\\bhurry\\b|\\bact (fast|now)\\b|\\blast chance\\b|\\bbefore it'?s gone\\b|\\bends (tonight|today|soon|at midnight)\\b|\\btoday only\\b|\\blimited[- ]time\\b|\\bwhile (supplies|stocks?) last\\b|\\bdon'?t miss (out|this deal)\\b",
+   "why": "false limited-time pressure",
+   "source": "FTC dark patterns: false limited time, baseless countdown [P]",
+   "severity": "error",
+   "allow_if": "offer and deadline in prompt (D158)"
+  },
+  {
+   "id": "UR-02",
+   "class": "scarcity",
+   "regex": "\\bonly \\d+ left\\b|\\balmost (gone|sold out)\\b|\\bselling (out )?fast\\b|\\b(low|limited) stock\\b|\\bsold out\\b",
+   "why": "false low-stock message",
+   "source": "FTC dark patterns: false low stock [P]; D136",
+   "severity": "error",
+   "allow_if": "stock claim in prompt"
+  },
+  {
+   "id": "UR-03",
+   "class": "scarcity",
+   "regex": "\\b\\d+[kKmM]? (people|others|shoppers) (are )?(viewing|watching|looking|buying)\\b|\\b(everyone|everybody) is (buying|getting)\\b",
+   "why": "false high-demand or activity message",
+   "source": "FTC dark patterns: false high demand/activity [P]; D136",
+   "severity": "error",
+   "allow_if": "sourced figure in prompt"
+  },
+  {
+   "id": "UR-04",
+   "class": "urgency",
+   "regex": "\\b(was|regularly|reg\\.?) [$€£]?\\d[\\d.,]*\\b.{0,15}\\b(now|today) [$€£]?\\d|\\b\\d{1,2}% off\\b|\\bprice (goes|is going) up\\b|\\bwon'?t be this price\\b",
+   "why": "fake discount or price-rise pressure",
+   "source": "FTC dark patterns: false discount [P]; Meta deceptive pricing [P]; D37",
+   "severity": "error",
+   "allow_if": "offer in prompt"
+  },
+  {
+   "id": "AB-01",
+   "class": "absolute",
+   "regex": "\\bbest\\b(\\s+\\w+){0,2}\\s+(in the world|on the market|on (amazon|tiktok)|there is)\\b|\\bworld'?s (best|first|most)\\b|\\bmost popular\\b",
+   "why": "absolute terms about region, brand or time",
+   "source": "TikTok ad policy, misleading claims (Apr 2026) [P]; D141",
+   "severity": "error",
+   "allow_if": "same claim in prompt"
+  },
+  {
+   "id": "AB-02",
+   "class": "absolute",
+   "regex": "\\bobsolete\\b|\\bnothing (else )?compares\\b|\\bunbeatable\\b|\\bworks for everyone\\b|\\bnever fails\\b|\\b100 ?%\\b",
+   "why": "unsubstantiable superlative or universal claim",
+   "source": "TikTok ad policy [P]; FTC substantiation [P]; D141",
+   "severity": "error",
+   "allow_if": "same claim in prompt"
+  },
+  {
+   "id": "AB-03",
+   "class": "absolute",
+   "regex": "\\b(instant|overnight) results\\b|\\bright away\\b|\\bin (one|1) (day|night) flat\\b",
+   "why": "promised or exaggerated speed of effect",
+   "source": "TikTok ad policy ('Get slim legs right away' example) [P]",
+   "severity": "error",
+   "allow_if": "measured on camera (bold-claim with timer)"
+  },
+  {
+   "id": "AB-04",
+   "class": "absolute",
+   "regex": "\\b(cures?|heals?|clinically|doctor[- ]recommended|dermatologist[- ](approved|recommended)|fda[- ]approved)\\b|\\bmoney[- ]back\\b",
+   "why": "health or authority claims needing substantiation",
+   "source": "TikTok ad policy [P]; FTC health guidance [P]; D141",
+   "severity": "error",
+   "allow_if": "same claim in prompt"
+  },
+  {
+   "id": "UI-01",
+   "class": "fake_ui",
+   "regex": "\\bfake (notification|play button|close button|low battery|incoming call|dm)\\b|\\b(notification|play button) (overlay|mock-?up)\\b",
+   "why": "frame-0 visual that manipulates viewers into engaging",
+   "source": "TikTok ad policy, non-functioning interactive elements [P]",
+   "severity": "error",
+   "allow_if": null
+  }
+ ],
+ "PROPOSED_RULES": [
+  {
+   "id": "HOOK-01",
+   "stage": "gate2",
+   "severity": "warn->error",
+   "rule": "script carries 3-4 hook_variants besides the primary; every pair differs in visual_type, archetype, first 3 tokens and on_screen; trigram Jaccard <= 0.2 with keyword tokens removed; <= 2 openings per cluster",
+   "threshold": {
+    "alternates": [
+     3,
+     4
+    ],
+    "max_jaccard": 0.2,
+    "max_per_cluster": 2
+   },
+   "source": "Meta same-opening guidance [M]; TikTok 3-5 creatives [S]; VARIANT_POLICY"
+  },
+  {
+   "id": "HOOK-02",
+   "stage": "gate1",
+   "severity": "error",
+   "rule": "every opening's archetype is in VARIANT_POLICY.payoff_compat[payoff_type] and all openings share one payoff_contract",
+   "threshold": null,
+   "source": "D35/D5; YouTube egregious-clickbait policy [P]"
+  },
+  {
+   "id": "HOOK-03",
+   "stage": "gate1",
+   "severity": "error",
+   "rule": "presenter=ai: no opening uses an archetype with ai_safe=false or a human_only template; lexicon.AI_FIRST_PERSON clean",
+   "threshold": null,
+   "source": "D137; FTC 16 CFR 465.2 [P]; Llama AUP [P]"
+  },
+  {
+   "id": "HOOK-04",
+   "stage": "gate1",
+   "severity": "error",
+   "rule": "archetype requirements met: price-anchor needs a prompt price (D37), proof-first a prompt proof (D136), 'new' templates a newness fact, offer an offer and deadline (D158)",
+   "threshold": null,
+   "source": "D37; D136; FTC dark patterns [P]"
+  },
+  {
+   "id": "HOOK-05",
+   "stage": "gate1",
+   "severity": "error (warn for severity=warn entries)",
+   "rule": "no RISKY_PHRASES hit in any opening's dialogue, on_screen or frame-0 direction unless allow_if holds",
+   "threshold": {
+    "max_hits": 0
+   },
+   "source": "section 5"
+  },
+  {
+   "id": "HOOK-06",
+   "stage": "gate1",
+   "severity": "warn",
+   "rule": "payload (product/category/flaw/number) within the first 3 spoken words; first word starts <= 0.3 s; keyword spoken by 3.0 s (DISC-01)",
+   "threshold": {
+    "payload_by_word": 3,
+    "first_word_s": 0.3,
+    "keyword_by_s": 3.0
+   },
+   "source": "Meta view-time statement [M]; SFV rule 2; DISC-01"
+  },
+  {
+   "id": "HOOK-07",
+   "stage": "gate1",
+   "severity": "error",
+   "rule": "each opening's overlay passes overlay_is_clean, holds the keyword head noun or a label pair, and stays on screen from 0.0 s to the end of the spoken hook (>= 3.0 s)",
+   "threshold": {
+    "max_words": 3,
+    "min_display_s": 3.0
+   },
+   "source": "D144; D142; DISC-02; Mayer & Johnson 2008 [S]"
+  },
+  {
+   "id": "HOOK-08",
+   "stage": "rubric",
+   "severity": "soft",
+   "rule": "primary = argmax hook_score among openings passing gates; primary >= 60, each alternate >= 50; store score and top-3 feature contributions in script.json",
+   "threshold": {
+    "primary_min": 60,
+    "alternate_min": 50
+   },
+   "source": "section 4 (uncalibrated) [A]"
+  },
+  {
+   "id": "HOOK-09",
+   "stage": "scorecard",
+   "severity": "soft",
+   "rule": "per 30-seed cell and per run: fallback hooks 0%; hook distinct ratio >= 0.60; distinct-2 >= 0.20; no first-3-token repeat within the last 10 hooks of a niche",
+   "threshold": {
+    "fallback": 0.0,
+    "distinct_ratio": 0.6,
+    "distinct2": 0.2
+   },
+   "source": "baseline 28% / 0.078 (brief); Motion fatigue warning [M]"
+  },
+  {
+   "id": "HOOK-10",
+   "stage": "gate2",
+   "severity": "warn",
+   "rule": "the noun named in words 1-3 is visible in the frame-0 direction, and visual_type is in the archetype's best list or has prior >= 0.6",
+   "threshold": {
+    "min_visual_prior": 0.6
+   },
+   "source": "section 2.5; VISUAL_HOOKS"
+  }
+ ],
+ "maker": {
+  "note": "How vsp.hooks maps the research onto viral_script_maker: payoff type per (concept, format) — the payoff beat each branch of build_beats writes; 'fix' is the advice branch (FIRST 3 SECONDS: trigger, hook, contract), which VARIANT_POLICY does not cover (our inference, A). Visual and audio sentences paraphrase VISUAL_HOOKS.needs and §2.4; the voice enters on the maker's VERBAL HOOK cue (0.5 s).",
+  "payoff_by_concept": {
+   "product": {
+    "review": "verdict",
+    "transformation": "transformation",
+    "*": "measurable-demo"
+   },
+   "showcase": {
+    "review": "verdict",
+    "transformation": "transformation",
+    "*": "list"
+   },
+   "challenge": {
+    "*": "streak"
+   },
+   "routine": {
+    "*": "streak"
+   },
+   "advice": {
+    "*": "fix"
+   }
+  },
+  "payoff_compat_extra": {
+   "fix": [
+    "negative-command",
+    "curiosity-gap",
+    "question",
+    "problem-agitate",
+    "listicle"
+   ]
+  },
+  "concept_visual_types": {
+   "product": [
+    "product-in-action",
+    "satisfying-macro",
+    "result-reveal",
+    "before-after-split",
+    "problem-state",
+    "pov-hands",
+    "face-reaction",
+    "text-first",
+    "unboxing",
+    "comparison",
+    "day-counter"
+   ],
+   "showcase": [
+    "product-in-action",
+    "pov-hands",
+    "satisfying-macro",
+    "text-first",
+    "unboxing",
+    "result-reveal",
+    "face-reaction",
+    "before-after-split"
+   ],
+   "challenge": [
+    "day-counter",
+    "problem-state",
+    "text-first",
+    "before-after-split",
+    "face-reaction",
+    "result-reveal",
+    "pov-hands"
+   ],
+   "routine": [
+    "day-counter",
+    "text-first",
+    "face-reaction",
+    "pov-hands",
+    "result-reveal",
+    "before-after-split",
+    "problem-state"
+   ],
+   "advice": [
+    "text-first",
+    "face-reaction",
+    "problem-state",
+    "comparison",
+    "result-reveal",
+    "pov-hands"
+   ]
+  },
+  "ai_excluded_visual_types": [
+   "face-reaction"
+  ],
+  "ai_real_footage_visual_types": [
+   "result-reveal",
+   "before-after-split",
+   "comparison"
+  ],
+  "ai_visual_notes": {
+   "real_footage": " Real footage required: a generated result is not proof, so never render this frame.",
+   "render": " AI render: neutral hands, no invented logos."
+  },
+  "audio_cues": {
+   "product-in-action": "The product's own sound from frame 0; the voice comes in on the hook cue over it.",
+   "result-reveal": "One soft reveal hit at frame 0, then the voice on the hook cue; no music drop.",
+   "before-after-split": "A single swoosh on the split, then the voice on the hook cue.",
+   "problem-state": "The problem's own sound first, then the voice on the hook cue.",
+   "pov-hands": "Close-miked hands-on sound from frame 0; the voice on the hook cue.",
+   "face-reaction": "No music under the first line; the voice on the hook cue.",
+   "text-first": "The voice on the hook cue over a low music bed from the platform library.",
+   "unboxing": "Real packaging sound at frame 0, then the voice on the hook cue.",
+   "comparison": "Both sides' real sound on the same beat, then the voice on the hook cue over a low bed.",
+   "day-counter": "That day's ambient sound; the voice on the hook cue names the day.",
+   "satisfying-macro": "Real product sound only, little or no music; the voice on the hook cue."
+  },
+  "audio_product_cue": "The product's real sound is the hook: volume-up card at frame 0, the voice on the hook cue.",
+  "ai_voice_cue": " Disclosed synthetic voice, natural prosody.",
+  "visual_sentences": {
+   "product": {
+    "product-in-action": "Frame 0: {subject} mid-task, hands in frame, visible motion by 0.5 s, its real sound up.",
+    "result-reveal": "Frame 0: the finished result first, {subject} beside it, a real capture the payoff re-shows in context.",
+    "before-after-split": "Frame 0: split screen, before left and after right, matched framing and light, {subject} in both halves.",
+    "problem-state": "Frame 0: the problem at its worst, honestly shown, with {subject} entering the frame by 3 s.",
+    "pov-hands": "Frame 0: first-person angle, the viewer's hands already using {subject}, motion by 0.5 s.",
+    "face-reaction": "Frame 0: the presenter's face with {subject} in the same frame, the reaction already under way.",
+    "text-first": "Frame 0: a 3-word card over moving footage of {subject}; the card is added in the edit, never drawn in-frame.",
+    "unboxing": "Frame 0: the package already opening mid-action, {subject} half out; real packaging only, no invented branding.",
+    "comparison": "Frame 0: {subject} side by side with the usual alternative on the same test, same framing, no brand names.",
+    "day-counter": "Frame 0: a DAY {n} label over real footage from that day, {subject} in progress.",
+    "satisfying-macro": "Frame 0: extreme close-up of {subject} in motion (texture, surface, detail), its own sound up, little or no music."
+   },
+   "streak": {
+    "day-counter": "Frame 0: a DAY {n} label over real footage from that day, {subject} in progress.",
+    "problem-state": "Frame 0: the old habit at its worst, honestly shown ({habit}), before day 1.",
+    "text-first": "Frame 0: a 3-word card over moving footage of {subject}; the card is added in the edit, never drawn in-frame.",
+    "before-after-split": "Frame 0: split screen, day 1 left and day {n} right, same place, same framing and light.",
+    "face-reaction": "Frame 0: the creator's face on day {n}, the day counter in the same frame.",
+    "result-reveal": "Frame 0: the day-{n} result first (the log, {subject} finished), a real capture.",
+    "pov-hands": "Frame 0: first-person angle, hands mid-routine on day {n}, motion by 0.5 s."
+   },
+   "advice": {
+    "text-first": "Frame 0: a 3-word card over the creator mid-gesture on {subject}; the card is added in the edit, never drawn in-frame.",
+    "face-reaction": "Frame 0: the creator's face to camera mid-sentence on {subject}, no intro.",
+    "problem-state": "Frame 0: the failing example first ({subject} gone wrong), honestly shown.",
+    "comparison": "Frame 0: two examples side by side, the weak one and the fixed one ({subject}), same framing.",
+    "result-reveal": "Frame 0: the fixed example first ({subject} done right), a real capture.",
+    "pov-hands": "Frame 0: first-person angle, hands already working on {subject}, motion by 0.5 s."
+   }
+  }
+ }
+}

@@ -1,0 +1,83 @@
+{
+ "_comment": "Canned Graph API v26.0 identity responses (Facebook Login for Business). FIXTURE data.",
+ "me": {
+  "id": "10200000000000001",
+  "name": "Fixture Operator"
+ },
+ "me_username_error": {
+  "error": {
+   "message": "(#100) Tried accessing nonexisting field (username) on node type (User)",
+   "type": "OAuthException",
+   "code": 100,
+   "fbtrace_id": "FIXTUREtrace"
+  }
+ },
+ "permissions_ok": {
+  "data": [
+   {
+    "permission": "instagram_basic",
+    "status": "granted"
+   },
+   {
+    "permission": "instagram_manage_insights",
+    "status": "granted"
+   },
+   {
+    "permission": "pages_show_list",
+    "status": "granted"
+   },
+   {
+    "permission": "pages_read_engagement",
+    "status": "granted"
+   },
+   {
+    "permission": "public_profile",
+    "status": "granted"
+   }
+  ]
+ },
+ "permissions_missing": {
+  "data": [
+   {
+    "permission": "instagram_basic",
+    "status": "granted"
+   },
+   {
+    "permission": "instagram_manage_insights",
+    "status": "declined"
+   },
+   {
+    "permission": "pages_show_list",
+    "status": "granted"
+   },
+   {
+    "permission": "public_profile",
+    "status": "granted"
+   }
+  ]
+ },
+ "debug_token": {
+  "data": {
+   "app_id": "900000000000001",
+   "type": "USER",
+   "application": "FIXTURE app",
+   "is_valid": true,
+   "expires_at": 0,
+   "data_access_expires_at": 0,
+   "scopes": [
+    "instagram_basic",
+    "instagram_manage_insights",
+    "pages_show_list",
+    "pages_read_engagement"
+   ],
+   "user_id": "10200000000000001"
+  }
+ },
+ "ig_account": {
+  "id": "17841400000000001",
+  "username": "fixture_own_account",
+  "name": "Fixture Own Account",
+  "followers_count": 1520,
+  "media_count": 42
+ }
+}

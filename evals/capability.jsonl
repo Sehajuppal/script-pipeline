@@ -1,0 +1,23 @@
+// capability suite (hill-climbing): trending / unseen product prompts. Appended by `python3 -m vsp.improve golden-refresh`; never tuned on; golden.jsonl and holdout.jsonl are never edited by automation.
+{"id": "cap-spin-scrubber", "prompt": "a $29 electric spin scrubber", "concept": "product", "source": "seed", "note": "integer price; routes to the default niche", "added": "2026-09-29"}
+{"id": "cap-dog-collar", "prompt": "glow in the dark dog collar", "concept": "product", "source": "seed", "note": "hook noun trap: renders 'the glow'", "added": "2026-09-29"}
+{"id": "cap-sound-machine", "prompt": "baby sleep sound machine", "concept": "product", "source": "seed", "note": "wellness/audio grammar (D33)", "added": "2026-09-29"}
+{"id": "cap-blender", "prompt": "portable blender for smoothies", "concept": "product", "source": "seed", "note": "'for' tail stays out of the hook noun (D76)", "added": "2026-09-29"}
+{"id": "cap-eyebrow-stamp", "prompt": "eyebrow stamp kit", "concept": "product", "source": "seed", "note": "beauty product routed to default; kit tail", "added": "2026-09-29"}
+{"id": "cap-kids-watch", "prompt": "kids smartwatch with GPS", "concept": "product", "source": "seed", "note": "acronym in a 'with' tail", "added": "2026-09-29"}
+{"id": "cap-handheld-vac", "prompt": "a $49.99 cordless handheld vacuum", "concept": "product", "source": "seed", "note": "decimal price", "added": "2026-09-29"}
+{"id": "cap-keyboard", "prompt": "mechanical keyboard", "concept": "product", "source": "seed", "added": "2026-09-29"}
+{"id": "cap-heated-blanket", "prompt": "a 4.8-star heated blanket", "concept": "product", "source": "seed", "note": "prompt-supplied social proof: the D136 allow path", "added": "2026-09-29"}
+{"id": "cap-acne-patches", "prompt": "hydrocolloid acne patches", "concept": "product", "source": "seed", "note": "skincare claims class (D141) with a plural head", "added": "2026-09-29"}
+{"id": "cap-tumbler", "prompt": "insulated coffee tumbler", "concept": "product", "source": "seed", "added": "2026-09-29"}
+{"id": "cap-bike-holder", "prompt": "bike phone holder", "concept": "product", "source": "seed", "added": "2026-09-29"}
+{"id": "cap-foam-roller", "prompt": "vibrating foam roller", "concept": "product", "source": "seed", "note": "fitness product routed to default", "added": "2026-09-29"}
+{"id": "cap-jump-rope", "prompt": "jump rope with counter", "concept": "product", "source": "seed", "added": "2026-09-29"}
+{"id": "cap-baking-mat", "prompt": "silicone baking mat", "concept": "product", "source": "seed", "added": "2026-09-29"}
+{"id": "cap-gap-filler", "prompt": "car seat gap filler", "concept": "product", "source": "seed", "added": "2026-09-29"}
+{"id": "cap-shower-filter", "prompt": "shower head filter", "concept": "product", "source": "seed", "note": "hook noun trap: renders 'the head filter'", "added": "2026-09-29"}
+{"id": "cap-filter-straw", "prompt": "portable water filter straw", "concept": "product", "source": "seed", "note": "outdoors gear routed to default", "added": "2026-09-29"}
+{"id": "cap-litter-box", "prompt": "automatic cat litter box", "concept": "product", "source": "seed", "note": "weak head noun 'box'", "added": "2026-09-29"}
+{"id": "cap-gua-sha", "prompt": "gua sha stone", "concept": "product", "source": "seed", "note": "hook noun trap: renders 'the sha stone'", "added": "2026-09-29"}
+{"id": "cap-planner", "prompt": "a $35 budget planner notebook", "concept": "product", "source": "seed", "note": "finance niche product", "added": "2026-09-29"}
+{"id": "cap-ice-scraper", "prompt": "heated ice scraper for car", "concept": "product", "source": "seed", "added": "2026-09-29"}

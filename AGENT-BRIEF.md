@@ -1,5 +1,11 @@
 # AGENT BRIEF — for the other agent improving this repo
 
+> **Superseded by `AGENTS.md` (pipeline v2, 2026-09-29).** Kept for history.
+> Status of the open items below: §45 numbering fixed (§45b/§49b/§50b/§51b);
+> D103 vs D62/D83 resolved by D142 compressed payoff cards (≤12 tokens,
+> ≤20 cps); the input-side prompt→fit classifier is built (`vsp/router.py`,
+> D147); §65 remains pending loop verification.
+
 This is the **viral script pipeline**: a research-grounded generator that turns a
 product prompt into a shoot-ready viral short-form script plus a production
 bundle (script JSON + shot list + a render brief for a downstream video agent).
