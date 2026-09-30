@@ -127,7 +127,7 @@
    "synthetic": true,
    "source": "image model, generated first",
    "how": "Generate before any video call: a photorealistic reference sheet of the synthetic adult presenter (front and three-quarter head-and-shoulders views plus one full-length pose, neutral expression, plain light-grey background). A fictional adult only: never a real, recognisable or under-18 person and never a photo of a real person. Reuse the same sheet in every call.",
-   "prompt": "Photorealistic character reference sheet of a fictional adult: a photorealistic AI woman in her late 20s with dark hair tied back, natural look, wearing a plain gray crewneck. Front view and three-quarter view, head and shoulders, plus one full-length standing pose, neutral relaxed expression, plain light-grey background, soft even light, natural skin texture, no beauty filter. The person must not resemble any real or famous person. No text, no logos.",
+   "prompt": "Photorealistic character reference sheet of a fictional adult: a photorealistic woman in her late 20s with dark hair tied back, natural look, wearing a plain gray crewneck. Front view and three-quarter view, head and shoulders, plus one full-length standing pose, neutral relaxed expression, plain light-grey background, soft even light, natural skin texture, no beauty filter. The person must not resemble any real or famous person. No text, no logos.",
    "required": true,
    "used_by": [
     "2",
@@ -333,7 +333,7 @@
    "gen_duration_s": 3,
    "window_in_s": 0.5,
    "window_out_s": 1.0,
-   "prompt": "[# Sources <FIRST_FRAME>@Image1] [# References <IMAGE_REF_0>@Image2] Close-up, slightly high angle, slow push-in: the LED sunrise alarm lamp in the first frame, its working end already doing its job in real use, hands out of frame. Vertical 9:16 smartphone footage, handheld with natural micro-shake. Single continuous shot, no scene cuts. Sound: the product's real working sound, close-miked. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the starting frame. Use Image2 as the product reference: the same shape, colour, size and finish, not a literal first frame.",
+   "prompt": "[# Sources <FIRST_FRAME>@Image1] [# References <IMAGE_REF_0>@Image2] Close-up, slightly high angle, slow push-in: the LED sunrise alarm lamp in the first frame, its working end already doing its job in real use, hands out of frame. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: the product's real working sound, close-miked. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the starting frame. Use Image2 as the product reference: the same shape, colour, size and finish, not a literal first frame.",
    "inputs": [
     {
      "tag": "<FIRST_FRAME>",
@@ -374,7 +374,7 @@
     "shot_type": "hero-static-push-in",
     "task": "image_to_video",
     "gen_duration_s": 3,
-    "prompt": "[# Sources <FIRST_FRAME>@Image1] Close-up, three-quarter angle, slow push-in: the product in the first frame on a clean surface, the camera easing in, no other motion. Vertical 9:16 smartphone footage, handheld with natural micro-shake. Single continuous shot, no scene cuts. Sound: the product's real working sound, close-miked. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the starting frame; keep the real product and label exactly as photographed.",
+    "prompt": "[# Sources <FIRST_FRAME>@Image1] Close-up, three-quarter angle, slow push-in: the product in the first frame on a clean surface, the camera easing in, no other motion. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: the product's real working sound, close-miked. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the starting frame; keep the real product and label exactly as photographed.",
     "inputs": [
      {
       "tag": "<FIRST_FRAME>",
@@ -407,7 +407,7 @@
    "gen_duration_s": 4,
    "window_in_s": 0.5,
    "window_out_s": 3.0,
-   "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2] Medium close-up, eye level, slow push-in: a photorealistic AI woman in her late 20s with dark hair tied back, natural look, wearing a plain gray crewneck <IMAGE_REF_0> speaks to the lens in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage, handheld with natural micro-shake. Single continuous shot, no scene cuts. Sound: quiet room tone. The presenter, in a confident, conversational female voice, says: Tired of sunrise alarm lamps that fail fast? Delivery: brisk, confident. No music. No on-screen text, captions, subtitles, logos or watermarks. One speaker only. No face morphing. No extra people in frame. Use Image1 as the presenter reference: the same face, hair and outfit, not a literal first frame. Use Image2 as the set reference for the room and its light, not a literal first frame.",
+   "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2] Medium close-up, eye level, slow push-in: a photorealistic woman in her late 20s with dark hair tied back, natural look, wearing a plain gray crewneck <IMAGE_REF_0> speaks to the lens in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: quiet room tone. The presenter, in a confident, conversational female voice, says: Tired of sunrise alarm lamps that fail fast? Delivery: brisk, confident. No music. No on-screen text, captions, subtitles, logos or watermarks. One speaker only. No face morphing. No extra people in frame. Use Image1 as the presenter reference: the same face, hair and outfit, not a literal first frame. Use Image2 as the set reference for the room and its light, not a literal first frame.",
    "inputs": [
     {
      "tag": "<IMAGE_REF_0>",
@@ -452,7 +452,7 @@
     "shot_type": "vo-over-hands-broll",
     "task": "reference_to_video",
     "gen_duration_s": 4,
-    "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2] Close-up, slightly high angle, handheld: the presenter's hands, the sleeve of the plain gray crewneck just in frame, rest on and gently touch the LED sunrise alarm lamp, no speech, in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage, handheld with natural micro-shake. Single continuous shot, no scene cuts. Sound: quiet room tone. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. Five natural fingers on each hand, no fused fingers. No invented logo or label text. No face in frame. Use Image1 only as the reference for skin tone and the sleeve, keep the face out of frame, not a literal first frame. Use Image2 as the product reference: the same shape, colour, size and finish, not a literal first frame.",
+    "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2] Close-up, slightly high angle, slow dolly: the presenter's hands, the sleeve of the plain gray crewneck just in frame, rest on and gently touch the LED sunrise alarm lamp, no speech, in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: quiet room tone. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. Five natural fingers on each hand, no fused fingers. No invented logo or label text. No face in frame. Use Image1 only as the reference for skin tone and the sleeve, keep the face out of frame, not a literal first frame. Use Image2 as the product reference: the same shape, colour, size and finish, not a literal first frame.",
     "inputs": [
      {
       "tag": "<IMAGE_REF_0>",
@@ -489,7 +489,7 @@
    "gen_duration_s": 3,
    "window_in_s": 0.5,
    "window_out_s": 2.0,
-   "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2] Extreme close-up, eye level, slow push-in: a compact dome-shaped sunrise lamp in matte white about 15 cm wide, glowing warm <IMAGE_REF_0>, its surface texture filling the frame, shallow depth of field, macro lens, in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage, handheld with natural micro-shake. Single continuous shot, no scene cuts. Sound: close-miked texture sound. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the product reference: the same shape, colour, size and finish, not a literal first frame. Use Image2 as another product reference angle, not a literal first frame.",
+   "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2] Extreme close-up, eye level, slow push-in: a compact dome-shaped sunrise lamp in matte white about 15 cm wide, glowing warm <IMAGE_REF_0>, its surface texture filling the frame, shallow depth of field, macro lens, in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: close-miked texture sound. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the product reference: the same shape, colour, size and finish, not a literal first frame. Use Image2 as another product reference angle, not a literal first frame.",
    "inputs": [
     {
      "tag": "<IMAGE_REF_0>",
@@ -530,7 +530,7 @@
     "shot_type": "hero-static-push-in",
     "task": "image_to_video",
     "gen_duration_s": 3,
-    "prompt": "[# Sources <FIRST_FRAME>@Image1] Close-up, three-quarter angle, slow push-in: the product in the first frame on a clean surface, the camera easing in, no other motion. Vertical 9:16 smartphone footage, handheld with natural micro-shake. Single continuous shot, no scene cuts. Sound: close-miked texture sound. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the starting frame; keep the real product and label exactly as photographed.",
+    "prompt": "[# Sources <FIRST_FRAME>@Image1] Close-up, three-quarter angle, slow push-in: the product in the first frame on a clean surface, the camera easing in, no other motion. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: close-miked texture sound. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the starting frame; keep the real product and label exactly as photographed.",
     "inputs": [
      {
       "tag": "<FIRST_FRAME>",
@@ -563,7 +563,7 @@
    "gen_duration_s": 3,
    "window_in_s": 0.5,
    "window_out_s": 2.0,
-   "prompt": "[# Sources <FIRST_FRAME>@Image1] Close-up, three-quarter angle, slow push-in: the product in the first frame, the camera easing toward its key feature, no other motion. Vertical 9:16 smartphone footage, handheld with natural micro-shake. Single continuous shot, no scene cuts. Sound: live room sound. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the starting frame; keep the real product and label exactly as photographed.",
+   "prompt": "[# Sources <FIRST_FRAME>@Image1] Close-up, three-quarter angle, slow push-in: the product in the first frame, the camera easing toward its key feature, no other motion. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: live room sound. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the starting frame; keep the real product and label exactly as photographed.",
    "inputs": [
     {
      "tag": "<FIRST_FRAME>",
@@ -600,7 +600,7 @@
     "shot_type": "hero-static-push-in",
     "task": "image_to_video",
     "gen_duration_s": 3,
-    "prompt": "[# Sources <FIRST_FRAME>@Image1] Close-up, three-quarter angle, slow push-in: the product in the first frame on a clean surface, the camera easing in, no other motion. Vertical 9:16 smartphone footage, handheld with natural micro-shake. Single continuous shot, no scene cuts. Sound: live room sound. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the starting frame; keep the real product and label exactly as photographed.",
+    "prompt": "[# Sources <FIRST_FRAME>@Image1] Close-up, three-quarter angle, slow push-in: the product in the first frame on a clean surface, the camera easing in, no other motion. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: live room sound. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the starting frame; keep the real product and label exactly as photographed.",
     "inputs": [
      {
       "tag": "<FIRST_FRAME>",
@@ -634,7 +634,7 @@
    "gen_duration_s": 3,
    "window_in_s": 0.5,
    "window_out_s": 2.0,
-   "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2] Close-up, slightly high angle, handheld: the presenter's hands, the sleeve of the plain gray crewneck just in frame, rest on and gently touch the LED sunrise alarm lamp, no speech, in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage, handheld with natural micro-shake. Single continuous shot, no scene cuts. Sound: live room sound. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. Five natural fingers on each hand, no fused fingers. No invented logo or label text. No face in frame. Use Image1 only as the reference for skin tone and the sleeve, keep the face out of frame, not a literal first frame. Use Image2 as the product reference: the same shape, colour, size and finish, not a literal first frame.",
+   "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2] Close-up, slightly high angle, slow dolly: the presenter's hands, the sleeve of the plain gray crewneck just in frame, rest on and gently touch the LED sunrise alarm lamp, no speech, in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: live room sound. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. Five natural fingers on each hand, no fused fingers. No invented logo or label text. No face in frame. Use Image1 only as the reference for skin tone and the sleeve, keep the face out of frame, not a literal first frame. Use Image2 as the product reference: the same shape, colour, size and finish, not a literal first frame.",
    "inputs": [
     {
      "tag": "<IMAGE_REF_0>",
@@ -676,7 +676,7 @@
     "shot_type": "product-operating-cu",
     "task": "reference_to_video",
     "gen_duration_s": 3,
-    "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2] Close-up, slightly high angle, slow push-in: a compact dome-shaped sunrise lamp in matte white about 15 cm wide, glowing warm <IMAGE_REF_0>, its working end already doing its job in real use, hands out of frame, in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage, handheld with natural micro-shake. Single continuous shot, no scene cuts. Sound: the product's real working sound, close-miked. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the product reference: the same shape, colour, size and finish, not a literal first frame. Use Image2 as another product reference angle, not a literal first frame.",
+    "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2] Close-up, slightly high angle, slow push-in: a compact dome-shaped sunrise lamp in matte white about 15 cm wide, glowing warm <IMAGE_REF_0>, its working end already doing its job in real use, hands out of frame, in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: the product's real working sound, close-miked. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the product reference: the same shape, colour, size and finish, not a literal first frame. Use Image2 as another product reference angle, not a literal first frame.",
     "inputs": [
      {
       "tag": "<IMAGE_REF_0>",
@@ -713,7 +713,7 @@
    "gen_duration_s": 3,
    "window_in_s": 0.5,
    "window_out_s": 2.1,
-   "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2] Medium close-up, three-quarter angle, static camera: a photorealistic AI woman in her late 20s with dark hair tied back, natural look, wearing a plain gray crewneck <IMAGE_REF_0> looks down at the LED sunrise alarm lamp and nods slightly, eyes off-lens, no speech, in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: quiet room tone. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No face morphing. No extra people in frame. Use Image1 as the presenter reference: the same face, hair and outfit, not a literal first frame. Use Image2 as the set reference for the room and its light, not a literal first frame.",
+   "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2] Medium close-up, three-quarter angle, static camera: a photorealistic woman in her late 20s with dark hair tied back, natural look, wearing a plain gray crewneck <IMAGE_REF_0> looks down at the LED sunrise alarm lamp and nods slightly, eyes off-lens, no speech, in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: quiet room tone. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No face morphing. No extra people in frame. Use Image1 as the presenter reference: the same face, hair and outfit, not a literal first frame. Use Image2 as the set reference for the room and its light, not a literal first frame.",
    "inputs": [
     {
      "tag": "<IMAGE_REF_0>",
@@ -754,7 +754,7 @@
     "shot_type": "insert-object-detail",
     "task": "reference_to_video",
     "gen_duration_s": 3,
-    "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2] Close-up, slightly high angle, slow push-in: the LED sunrise alarm lamp, in detail, the camera easing toward it, in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage, handheld with natural micro-shake. Single continuous shot, no scene cuts. Sound: quiet room tone. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the product reference: the same shape, colour, size and finish, not a literal first frame. Use Image2 as another product reference angle, not a literal first frame.",
+    "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2] Close-up, slightly high angle, slow push-in: the LED sunrise alarm lamp, in detail, the camera easing toward it, in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: quiet room tone. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the product reference: the same shape, colour, size and finish, not a literal first frame. Use Image2 as another product reference angle, not a literal first frame.",
     "inputs": [
      {
       "tag": "<IMAGE_REF_0>",
@@ -792,7 +792,7 @@
    "gen_duration_s": 3,
    "window_in_s": 0.5,
    "window_out_s": 2.0,
-   "prompt": "[# Sources <FIRST_FRAME>@Image1] Medium shot, overhead, slow push-in: the flat lay in the first frame, the camera easing in overhead, every object staying still. Vertical 9:16 smartphone footage, handheld with natural micro-shake. Single continuous shot, no scene cuts. Sound: live room sound. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the starting frame; keep the real product and label exactly as photographed.",
+   "prompt": "[# Sources <FIRST_FRAME>@Image1] Medium shot, overhead, slow push-in: the flat lay in the first frame, the camera easing in overhead, every object staying still. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: live room sound. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the starting frame; keep the real product and label exactly as photographed.",
    "inputs": [
     {
      "tag": "<FIRST_FRAME>",
@@ -829,7 +829,7 @@
     "shot_type": "hero-static-push-in",
     "task": "image_to_video",
     "gen_duration_s": 3,
-    "prompt": "[# Sources <FIRST_FRAME>@Image1] Close-up, three-quarter angle, slow push-in: the product in the first frame on a clean surface, the camera easing in, no other motion. Vertical 9:16 smartphone footage, handheld with natural micro-shake. Single continuous shot, no scene cuts. Sound: live room sound. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the starting frame; keep the real product and label exactly as photographed.",
+    "prompt": "[# Sources <FIRST_FRAME>@Image1] Close-up, three-quarter angle, slow push-in: the product in the first frame on a clean surface, the camera easing in, no other motion. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: live room sound. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the starting frame; keep the real product and label exactly as photographed.",
     "inputs": [
      {
       "tag": "<FIRST_FRAME>",
@@ -862,7 +862,7 @@
    "gen_duration_s": 3,
    "window_in_s": 0.5,
    "window_out_s": 2.0,
-   "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2] Extreme close-up, eye level, slow push-in: a compact dome-shaped sunrise lamp in matte white about 15 cm wide, glowing warm <IMAGE_REF_0>, its surface texture filling the frame, shallow depth of field, macro lens, in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage, handheld with natural micro-shake. Single continuous shot, no scene cuts. Sound: close-miked texture sound. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the product reference: the same shape, colour, size and finish, not a literal first frame. Use Image2 as another product reference angle, not a literal first frame.",
+   "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2] Extreme close-up, eye level, slow push-in: a compact dome-shaped sunrise lamp in matte white about 15 cm wide, glowing warm <IMAGE_REF_0>, its surface texture filling the frame, shallow depth of field, macro lens, in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: close-miked texture sound. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the product reference: the same shape, colour, size and finish, not a literal first frame. Use Image2 as another product reference angle, not a literal first frame.",
    "inputs": [
     {
      "tag": "<IMAGE_REF_0>",
@@ -903,7 +903,7 @@
     "shot_type": "hero-static-push-in",
     "task": "image_to_video",
     "gen_duration_s": 3,
-    "prompt": "[# Sources <FIRST_FRAME>@Image1] Close-up, three-quarter angle, slow push-in: the product in the first frame on a clean surface, the camera easing in, no other motion. Vertical 9:16 smartphone footage, handheld with natural micro-shake. Single continuous shot, no scene cuts. Sound: close-miked texture sound. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the starting frame; keep the real product and label exactly as photographed.",
+    "prompt": "[# Sources <FIRST_FRAME>@Image1] Close-up, three-quarter angle, slow push-in: the product in the first frame on a clean surface, the camera easing in, no other motion. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: close-miked texture sound. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the starting frame; keep the real product and label exactly as photographed.",
     "inputs": [
      {
       "tag": "<FIRST_FRAME>",
@@ -937,7 +937,7 @@
    "gen_duration_s": 3,
    "window_in_s": 0.5,
    "window_out_s": 2.0,
-   "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2 <IMAGE_REF_2>@Image3] Medium-wide shot, eye level, slow dolly: a compact dome-shaped sunrise lamp in matte white about 15 cm wide, glowing warm <IMAGE_REF_0>, in place where it really lives, the camera sliding slowly past, in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage, handheld with natural micro-shake. Single continuous shot, no scene cuts. Sound: real ambience of the room. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the product reference: the same shape, colour, size and finish, not a literal first frame. Use Image2 as another product reference angle, not a literal first frame. Use Image3 as the set reference for the room and its light, not a literal first frame.",
+   "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2 <IMAGE_REF_2>@Image3] Medium-wide shot, eye level, slow dolly: a compact dome-shaped sunrise lamp in matte white about 15 cm wide, glowing warm <IMAGE_REF_0>, in place where it really lives, the camera sliding slowly past, in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: real ambience of the room. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the product reference: the same shape, colour, size and finish, not a literal first frame. Use Image2 as another product reference angle, not a literal first frame. Use Image3 as the set reference for the room and its light, not a literal first frame.",
    "inputs": [
     {
      "tag": "<IMAGE_REF_0>",
@@ -982,7 +982,7 @@
     "shot_type": "establishing-ws",
     "task": "text_to_video",
     "gen_duration_s": 3,
-    "prompt": "Wide shot, eye level, slow pan: a calm, tidy bedroom with a made bed, in the morning, the camera panning slowly across the room, lit by a warm bedside lamp. Vertical 9:16 smartphone footage, handheld with natural micro-shake. Single continuous shot, no scene cuts. Sound: real ambience of the place. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No people in frame. No readable signs or labels.",
+    "prompt": "Wide shot, eye level, slow pan: a calm, tidy bedroom with a made bed, in the morning, the camera panning slowly across the room, lit by a warm bedside lamp. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: real ambience of the place. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No people in frame. No readable signs or labels.",
     "inputs": []
    },
    "human_instructions": null,
@@ -1300,7 +1300,7 @@
    "gen_duration_s": 3,
    "window_in_s": 0.5,
    "window_out_s": 2.3,
-   "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2] Medium close-up, eye level, static camera: a photorealistic AI woman in her late 20s with dark hair tied back, natural look, wearing a plain gray crewneck <IMAGE_REF_0> speaks to the lens in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: quiet room tone. The presenter, in an excited, conversational female voice, says: bright before the alarm. Delivery: slow down. Let the result land. No scripted laugh. No music. No on-screen text, captions, subtitles, logos or watermarks. One speaker only. No face morphing. No extra people in frame. Use Image1 as the presenter reference: the same face, hair and outfit, not a literal first frame. Use Image2 as the set reference for the room and its light, not a literal first frame.",
+   "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2] Medium close-up, eye level, static camera: a photorealistic woman in her late 20s with dark hair tied back, natural look, wearing a plain gray crewneck <IMAGE_REF_0> speaks to the lens in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: quiet room tone. The presenter, in an excited, conversational female voice, says: bright before the alarm. Delivery: slow down. Let the result land. No scripted laugh. No music. No on-screen text, captions, subtitles, logos or watermarks. One speaker only. No face morphing. No extra people in frame. Use Image1 as the presenter reference: the same face, hair and outfit, not a literal first frame. Use Image2 as the set reference for the room and its light, not a literal first frame.",
    "inputs": [
     {
      "tag": "<IMAGE_REF_0>",
@@ -1345,7 +1345,7 @@
     "shot_type": "vo-over-hands-broll",
     "task": "reference_to_video",
     "gen_duration_s": 3,
-    "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2] Close-up, slightly high angle, handheld: the presenter's hands, the sleeve of the plain gray crewneck just in frame, rest on and gently touch the LED sunrise alarm lamp, no speech, in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage, handheld with natural micro-shake. Single continuous shot, no scene cuts. Sound: quiet room tone. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. Five natural fingers on each hand, no fused fingers. No invented logo or label text. No face in frame. Use Image1 only as the reference for skin tone and the sleeve, keep the face out of frame, not a literal first frame. Use Image2 as the product reference: the same shape, colour, size and finish, not a literal first frame.",
+    "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2] Close-up, slightly high angle, slow dolly: the presenter's hands, the sleeve of the plain gray crewneck just in frame, rest on and gently touch the LED sunrise alarm lamp, no speech, in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: quiet room tone. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. Five natural fingers on each hand, no fused fingers. No invented logo or label text. No face in frame. Use Image1 only as the reference for skin tone and the sleeve, keep the face out of frame, not a literal first frame. Use Image2 as the product reference: the same shape, colour, size and finish, not a literal first frame.",
     "inputs": [
      {
       "tag": "<IMAGE_REF_0>",
@@ -1384,7 +1384,7 @@
    "gen_duration_s": 4,
    "window_in_s": 0.5,
    "window_out_s": 1.8,
-   "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2 <IMAGE_REF_2>@Image3] Medium-wide shot, eye level, slow push-in: a photorealistic AI woman in her late 20s with dark hair tied back, natural look, wearing a plain gray crewneck <IMAGE_REF_0> stands beside the LED sunrise alarm lamp and speaks to camera in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage, handheld with natural micro-shake. Single continuous shot, no scene cuts. Sound: quiet room tone. The presenter, in a confident, conversational female voice, says: Follow, comment lamp for the link list. Delivery: natural and conversational. No music. No on-screen text, captions, subtitles, logos or watermarks. One speaker only. No face morphing. No invented logo or label text. No extra people in frame. Use Image1 as the presenter reference: the same face, hair and outfit, not a literal first frame. Use Image2 as the product reference: the same shape, colour, size and finish, not a literal first frame. Use Image3 as the set reference for the room and its light, not a literal first frame.",
+   "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2 <IMAGE_REF_2>@Image3] Medium-wide shot, eye level, slow push-in: a photorealistic woman in her late 20s with dark hair tied back, natural look, wearing a plain gray crewneck <IMAGE_REF_0> stands beside the LED sunrise alarm lamp and speaks to camera in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: quiet room tone. The presenter, in a confident, conversational female voice, says: Follow, comment lamp for the link list. Delivery: natural and conversational. No music. No on-screen text, captions, subtitles, logos or watermarks. One speaker only. No face morphing. No invented logo or label text. No extra people in frame. Use Image1 as the presenter reference: the same face, hair and outfit, not a literal first frame. Use Image2 as the product reference: the same shape, colour, size and finish, not a literal first frame. Use Image3 as the set reference for the room and its light, not a literal first frame.",
    "inputs": [
     {
      "tag": "<IMAGE_REF_0>",
@@ -1434,7 +1434,7 @@
     "shot_type": "end-card-hero",
     "task": "image_to_video",
     "gen_duration_s": 3,
-    "prompt": "[# Sources <FIRST_FRAME>@Image1] Close-up, eye level, slow push-in: the product in the first frame with clear empty space above it, the camera easing in, no other motion. Vertical 9:16 smartphone footage, handheld with natural micro-shake. Single continuous shot, no scene cuts. Sound: quiet room tone. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the starting frame; keep the real product and label exactly as photographed.",
+    "prompt": "[# Sources <FIRST_FRAME>@Image1] Close-up, eye level, slow push-in: the product in the first frame with clear empty space above it, the camera easing in, no other motion. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: quiet room tone. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the starting frame; keep the real product and label exactly as photographed.",
     "inputs": [
      {
       "tag": "<FIRST_FRAME>",
@@ -1467,7 +1467,7 @@
    "gen_duration_s": 3,
    "window_in_s": 0.5,
    "window_out_s": 1.8,
-   "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2] Close-up, slightly high angle, slow push-in: the LED sunrise alarm lamp, in detail, the camera easing toward it, in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage, handheld with natural micro-shake. Single continuous shot, no scene cuts. Sound: live room sound. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the product reference: the same shape, colour, size and finish, not a literal first frame. Use Image2 as another product reference angle, not a literal first frame.",
+   "prompt": "[# References <IMAGE_REF_0>@Image1 <IMAGE_REF_1>@Image2] Close-up, slightly high angle, slow push-in: the LED sunrise alarm lamp, in detail, the camera easing toward it, in a calm, tidy bedroom with a made bed, lit by a warm bedside lamp. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: live room sound. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the product reference: the same shape, colour, size and finish, not a literal first frame. Use Image2 as another product reference angle, not a literal first frame.",
    "inputs": [
     {
      "tag": "<IMAGE_REF_0>",
@@ -1508,7 +1508,7 @@
     "shot_type": "establishing-ws",
     "task": "text_to_video",
     "gen_duration_s": 3,
-    "prompt": "Wide shot, eye level, slow pan: a calm, tidy bedroom with a made bed, in the morning, the camera panning slowly across the room, lit by a warm bedside lamp. Vertical 9:16 smartphone footage, handheld with natural micro-shake. Single continuous shot, no scene cuts. Sound: real ambience of the place. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No people in frame. No readable signs or labels.",
+    "prompt": "Wide shot, eye level, slow pan: a calm, tidy bedroom with a made bed, in the morning, the camera panning slowly across the room, lit by a warm bedside lamp. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: real ambience of the place. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No people in frame. No readable signs or labels.",
     "inputs": []
    },
    "human_instructions": null,
@@ -1537,7 +1537,7 @@
    "gen_duration_s": 3,
    "window_in_s": 0.5,
    "window_out_s": 2.5,
-   "prompt": "[# Sources <FIRST_FRAME>@Image1 <LAST_FRAME>@Image1] [# References <IMAGE_REF_0>@Image2] Close-up, slightly high angle, slow dolly out: the opening composition in the first frame, the camera easing back and settling on it. Vertical 9:16 smartphone footage, handheld with natural micro-shake. Single continuous shot, no scene cuts. Sound: quiet room tone. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the first frame and the last frame. Use Image2 as the product reference: the same shape, colour, size and finish, not a literal first frame.",
+   "prompt": "[# Sources <FIRST_FRAME>@Image1 <LAST_FRAME>@Image1] [# References <IMAGE_REF_0>@Image2] Close-up, slightly high angle, slow dolly out: the opening composition in the first frame, the camera easing back and settling on it. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: quiet room tone. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the first frame and the last frame. Use Image2 as the product reference: the same shape, colour, size and finish, not a literal first frame.",
    "inputs": [
     {
      "tag": "<FIRST_FRAME>",
@@ -1582,7 +1582,7 @@
     "shot_type": "hero-static-push-in",
     "task": "image_to_video",
     "gen_duration_s": 3,
-    "prompt": "[# Sources <FIRST_FRAME>@Image1] Close-up, three-quarter angle, slow push-in: the product in the first frame on a clean surface, the camera easing in, no other motion. Vertical 9:16 smartphone footage, handheld with natural micro-shake. Single continuous shot, no scene cuts. Sound: quiet room tone. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the starting frame; keep the real product and label exactly as photographed.",
+    "prompt": "[# Sources <FIRST_FRAME>@Image1] Close-up, three-quarter angle, slow push-in: the product in the first frame on a clean surface, the camera easing in, no other motion. Vertical 9:16 smartphone footage. Single continuous shot, no scene cuts. Sound: quiet room tone. No dialogue, no voiceover. No music. No on-screen text, captions, subtitles, logos or watermarks. No invented logo or label text. No hands or people in frame. Use Image1 as the starting frame; keep the real product and label exactly as photographed.",
     "inputs": [
      {
       "tag": "<FIRST_FRAME>",

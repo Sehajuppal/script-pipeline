@@ -74,7 +74,13 @@ command(python3 .agents/skills/assemble-master/scripts/assemble.py)
 
 ## Examples
 
-`examples/ai/`, `examples/human/` and `examples/human-ai-broll/` hold `render.json`, `voice_plan.json` and `render.md` for the v2.1 sample bundle (LED sunrise alarm lamp): the AI lane regenerated with `presenter ai`, the human lane from the sample's own `script.json` + `shots.json`, and the same human run with AI B-roll. They are generated job data, not instructions (the AI-lane `render.json` is larger than a rules file may be; Antigravity never loads it as a rule).
+`examples/ai/`, `examples/human/` and `examples/human-ai-broll/` hold `render.json`, `voice_plan.json` and `render.md` for the LED sunrise alarm lamp:
+
+- `examples/ai/` is the v2.2 AI-lane sample run (`--presenter ai`, seed 701).
+- `examples/human/` is the v2.1 sample's human lane, built from its own `script.json` + `shots.json`.
+- `examples/human-ai-broll/` is the same human run with AI B-roll.
+
+They are generated job data, not instructions. The AI-lane `render.json` is larger than a rules file may be, and Antigravity never loads it as a rule.
 
 ## Try it offline
 
