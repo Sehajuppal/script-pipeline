@@ -1,0 +1,600 @@
+{
+ "base": {
+  "kind": "worktree",
+  "ref": "4170090",
+  "sha": "41700907e328"
+ },
+ "cand": {
+  "kind": "worktree",
+  "ref": "HEAD",
+  "sha": "7cf605c970c7"
+ },
+ "verdict": "ACCEPT",
+ "decision": {
+  "verdict": "ACCEPT",
+  "checks": [
+   {
+    "id": "golden:R1-e2e",
+    "ok": true,
+    "detail": "e2e flips 0 up / 0 down, McNemar p=1"
+   },
+   {
+    "id": "golden:R2-shippable",
+    "ok": true,
+    "detail": "shippable flips 0 up / 0 down, McNemar p=1"
+   },
+   {
+    "id": "golden:R3-rubric-ci",
+    "ok": true,
+    "detail": "rubric Δ +0.00 [95% CI +0.00, +0.00] (floor -0.5)"
+   },
+   {
+    "id": "golden:R4-audit",
+    "ok": true,
+    "detail": "audit-only mean 95.8 → 95.8 (max drop 0.5)"
+   },
+   {
+    "id": "golden:R6-compliance",
+    "ok": true,
+    "detail": "candidate compliance flags: 0"
+   },
+   {
+    "id": "golden:R8-coverage",
+    "ok": true,
+    "detail": "330 paired runs, 0 base cases missing in cand"
+   },
+   {
+    "id": "holdout:R1-e2e",
+    "ok": true,
+    "detail": "e2e flips 0 up / 0 down, McNemar p=1"
+   },
+   {
+    "id": "holdout:R2-shippable",
+    "ok": true,
+    "detail": "shippable flips 0 up / 0 down, McNemar p=1"
+   },
+   {
+    "id": "holdout:R3-rubric-ci",
+    "ok": true,
+    "detail": "rubric Δ +0.00 [95% CI +0.00, +0.00] (floor -0.5)"
+   },
+   {
+    "id": "holdout:R4-audit",
+    "ok": true,
+    "detail": "audit-only mean 94.1 → 94.1 (max drop 0.5)"
+   },
+   {
+    "id": "holdout:R6-compliance",
+    "ok": true,
+    "detail": "candidate compliance flags: 0"
+   },
+   {
+    "id": "holdout:R8-coverage",
+    "ok": true,
+    "detail": "350 paired runs, 0 base cases missing in cand"
+   },
+   {
+    "id": "holdout:R5-not-lower",
+    "ok": true,
+    "detail": "holdout e2e 1.0 → 1.0, shippable 1.0 → 1.0, rubric 97.9 → 97.9"
+   },
+   {
+    "id": "R7-selftest",
+    "ok": true,
+    "detail": "self-test green"
+   },
+   {
+    "id": "R9-guard",
+    "ok": true,
+    "detail": "no gate/rule/lexicon weakening"
+   }
+  ],
+  "reasons": []
+ },
+ "budget": "small",
+ "seeds": "1",
+ "started": "2026-09-30T00:03:10+00:00",
+ "finished": "2026-09-30T00:11:08+00:00",
+ "engine_sha": "7cf605c",
+ "guard": {
+  "guarded_changed": [],
+  "yardstick_changed": [],
+  "snapshot_errors": {
+   "base": {},
+   "cand": {}
+  },
+  "registry": {
+   "base": 46,
+   "cand": 46
+  },
+  "selftest_cases": {
+   "base": 112,
+   "cand": 112,
+   "legacy_base": 17,
+   "legacy_cand": 17
+  },
+  "lexicon_names": {
+   "base": 42,
+   "cand": 42
+  },
+  "findings": []
+ },
+ "stats": {
+  "golden": {
+   "n_base": 330,
+   "n_cand": 330,
+   "n_paired": 330,
+   "missing_in_cand": 0,
+   "e2e": {
+    "base": 1.0,
+    "cand": 1.0,
+    "down": 0,
+    "up": 0,
+    "p": 1.0
+   },
+   "shippable": {
+    "base": 1.0,
+    "cand": 1.0,
+    "down": 0,
+    "up": 0,
+    "p": 1.0
+   },
+   "rubric": {
+    "base": 98.9,
+    "cand": 98.9,
+    "delta": 0.0,
+    "ci95": [
+     0.0,
+     0.0
+    ]
+   },
+   "audit": {
+    "base": 95.8,
+    "cand": 95.8
+   },
+   "selection": {
+    "base": 99.6,
+    "cand": 99.6
+   },
+   "compliance_flags": {
+    "base": 0,
+    "cand": 0
+   },
+   "hooks": {
+    "changed_runs": 0,
+    "distinct_base": 0.6333,
+    "distinct_cand": 0.6333,
+    "distinct2_base": 0.2102,
+    "distinct2_cand": 0.2102
+   },
+   "runtime_s": {
+    "base": 0.996,
+    "cand": 1.063
+   }
+  },
+  "holdout": {
+   "n_base": 350,
+   "n_cand": 350,
+   "n_paired": 350,
+   "missing_in_cand": 0,
+   "e2e": {
+    "base": 1.0,
+    "cand": 1.0,
+    "down": 0,
+    "up": 0,
+    "p": 1.0
+   },
+   "shippable": {
+    "base": 1.0,
+    "cand": 1.0,
+    "down": 0,
+    "up": 0,
+    "p": 1.0
+   },
+   "rubric": {
+    "base": 97.9,
+    "cand": 97.9,
+    "delta": 0.0,
+    "ci95": [
+     0.0,
+     0.0
+    ]
+   },
+   "audit": {
+    "base": 94.1,
+    "cand": 94.1
+   },
+   "selection": {
+    "base": 98.8,
+    "cand": 98.8
+   },
+   "compliance_flags": {
+    "base": 0,
+    "cand": 0
+   },
+   "hooks": {
+    "changed_runs": 0,
+    "distinct_base": 0.58,
+    "distinct_cand": 0.58,
+    "distinct2_base": 0.1948,
+    "distinct2_cand": 0.1948
+   },
+   "runtime_s": {
+    "base": 0.973,
+    "cand": 1.018
+   }
+  }
+ },
+ "selftest": {
+  "ok": true,
+  "runs": [
+   {
+    "python": "/usr/bin/python3.9",
+    "version": "3.9.25",
+    "rc": 0,
+    "secs": 147.2,
+    "tail": "…earned/ untouched); optional selfchecks: e2e-creative-keys: 25 scripts x ['vsp.direction', 'vsp.hooks', 'vsp.discovery'], e2e-trend-steering: rcp-20260930-29, vsp.ingest ok (80 lines), vsp.feedback ok (71 lines), vsp.improve ok (11 lines), vsp.direction ok (12 lines), vsp.hooks ok (29 lines), vsp.discovery ok (8 lines), vsp.shotplan ok (11 lines), vsp.trends ok (147 lines), vsp.render ok (6 lines)"
+   },
+   {
+    "python": "/usr/bin/python3.12",
+    "version": "3.12.14",
+    "rc": 0,
+    "secs": 136.96,
+    "tail": "…earned/ untouched); optional selfchecks: e2e-creative-keys: 25 scripts x ['vsp.direction', 'vsp.hooks', 'vsp.discovery'], e2e-trend-steering: rcp-20260930-29, vsp.ingest ok (80 lines), vsp.feedback ok (71 lines), vsp.improve ok (11 lines), vsp.direction ok (12 lines), vsp.hooks ok (29 lines), vsp.discovery ok (8 lines), vsp.shotplan ok (11 lines), vsp.trends ok (147 lines), vsp.render ok (6 lines)"
+   }
+  ]
+ },
+ "diversity": {
+  "golden": {
+   "distinct_ratio": [
+    0.6333,
+    0.6333
+   ],
+   "distinct2": [
+    0.2102,
+    0.2102
+   ],
+   "per_cell_seed_diversity": [
+    null,
+    null
+   ],
+   "fallback_rate": [
+    0.0,
+    0.0
+   ]
+  },
+  "holdout": {
+   "distinct_ratio": [
+    0.58,
+    0.58
+   ],
+   "distinct2": [
+    0.1948,
+    0.1948
+   ],
+   "per_cell_seed_diversity": [
+    null,
+    null
+   ],
+   "fallback_rate": [
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "compare": {
+  "golden": "learned/verify/20260930T000310Z-41700907e328-7cf605c970c7/golden-compare.md",
+  "holdout": "learned/verify/20260930T000310Z-41700907e328-7cf605c970c7/holdout-compare.md"
+ },
+ "raw": {
+  "base-golden": "learned/verify/results/verify-4170090-head-base-golden.json",
+  "cand-golden": "learned/verify/results/verify-4170090-head-cand-golden.json",
+  "base-holdout": "learned/verify/results/verify-4170090-head-base-holdout.json",
+  "cand-holdout": "learned/verify/results/verify-4170090-head-cand-holdout.json"
+ },
+ "diff": {
+  "files": 80,
+  "rows": [
+   {
+    "file": ".agents/skills/vsp-produce/SKILL.md",
+    "added": "19",
+    "removed": "2"
+   },
+   {
+    "file": ".agents/skills/vsp-trends/SKILL.md",
+    "added": "186",
+    "removed": "0"
+   },
+   {
+    "file": "AGENTS.md",
+    "added": "42",
+    "removed": "4"
+   },
+   {
+    "file": "README.md",
+    "added": "35",
+    "removed": "4"
+   },
+   {
+    "file": "RULES.md",
+    "added": "111",
+    "removed": "0"
+   },
+   {
+    "file": "agent/README.md",
+    "added": "49",
+    "removed": "0"
+   },
+   {
+    "file": "agent/hermes/config.yaml",
+    "added": "4",
+    "removed": "0"
+   },
+   {
+    "file": "agent/hermes/scripts/vsp-trends-daily.sh",
+    "added": "48",
+    "removed": "0"
+   },
+   {
+    "file": "antigravity/.agents/rules/omni-prompting.md",
+    "added": "97",
+    "removed": "0"
+   },
+   {
+    "file": "antigravity/.agents/rules/qa-gate.md",
+    "added": "66",
+    "removed": "0"
+   },
+   {
+    "file": "antigravity/.agents/rules/voice-cartesia.md",
+    "added": "70",
+    "removed": "0"
+   },
+   {
+    "file": "antigravity/.agents/skills/assemble-master/SKILL.md",
+    "added": "40",
+    "removed": "0"
+   },
+   {
+    "file": "antigravity/.agents/skills/assemble-master/scripts/assemble.py",
+    "added": "299",
+    "removed": "0"
+   },
+   {
+    "file": "antigravity/.agents/skills/cartesia-voice/SKILL.md",
+    "added": "44",
+    "removed": "0"
+   },
+   {
+    "file": "antigravity/.agents/skills/cartesia-voice/scripts/cartesia_vo.py",
+    "added": "413",
+    "removed": "0"
+   },
+   {
+    "file": "antigravity/.agents/skills/lipsync-pass/SKILL.md",
+    "added": "38",
+    "removed": "0"
+   },
+   {
+    "file": "antigravity/.agents/skills/omni-render/SKILL.md",
+    "added": "47",
+    "removed": "0"
+   },
+   {
+    "file": "antigravity/.agents/skills/omni-render/scripts/omni_render.py",
+    "added": "450",
+    "removed": "0"
+   },
+   {
+    "file": "antigravity/.agents/skills/qa-judge/SKILL.md",
+    "added": "35",
+    "removed": "0"
+   },
+   {
+    "file": "antigravity/.agents/skills/qa-judge/scripts/qa_probe.py",
+    "added": "267",
+    "removed": "0"
+   },
+   {
+    "file": "antigravity/AGENTS.md",
+    "added": "133",
+    "removed": "0"
+   },
+   {
+    "file": "antigravity/README.md",
+    "added": "95",
+    "removed": "0"
+   },
+   {
+    "file": "antigravity/examples/ai/render.json",
+    "added": "1854",
+    "removed": "0"
+   },
+   {
+    "file": "antigravity/examples/ai/render.md",
+    "added": "33",
+    "removed": "0"
+   },
+   {
+    "file": "antigravity/examples/ai/voice_plan.json",
+    "added": "466",
+    "removed": "0"
+   },
+   {
+    "file": "antigravity/examples/human-ai-broll/render.json",
+    "added": "1389",
+    "removed": "0"
+   },
+   {
+    "file": "antigravity/examples/human-ai-broll/render.md",
+    "added": "31",
+    "removed": "0"
+   },
+   {
+    "file": "antigravity/examples/human-ai-broll/voice_plan.json",
+    "added": "376",
+    "removed": "0"
+   },
+   {
+    "file": "antigravity/examples/human/render.json",
+    "added": "1258",
+    "removed": "0"
+   },
+   {
+    "file": "antigravity/examples/human/render.md",
+    "added": "30",
+    "removed": "0"
+   },
+   {
+    "file": "antigravity/examples/human/voice_plan.json",
+    "added": "376",
+    "removed": "0"
+   },
+   {
+    "file": "docs/RULE-COVERAGE.md",
+    "added": "21",
+    "removed": "18"
+   },
+   {
+    "file": "docs/research/trend-discovery-rules.md",
+    "added": "90",
+    "removed": "0"
+   },
+   {
+    "file": "docs/research/trend-discovery.md",
+    "added": "288",
+    "removed": "0"
+   },
+   {
+    "file": "docs/research/video-generation-omni.md",
+    "added": "343",
+    "removed": "0"
+   },
+   {
+    "file": "docs/research/voice-cartesia.md",
+    "added": "410",
+    "removed": "0"
+   },
+   {
+    "file": "docs/ws-render-notes.md",
+    "added": "147",
+    "removed": "0"
+   },
+   {
+    "file": "docs/ws-trends-notes.md",
+    "added": "123",
+    "removed": "0"
+   },
+   {
+    "file": "learned/LEDGER.md",
+    "added": "23",
+    "removed": "0"
+   },
+   {
+    "file": "learned/verify/20260929T222042Z-41700907e328-e5c9851543b4/evidence.json",
+    "added": "606",
+    "removed": "0"
+   },
+   {
+    "file": "learned/verify/20260929T222042Z-41700907e328-e5c9851543b4/evidence.md",
+    "added": "80",
+    "removed": "0"
+   },
+   {
+    "file": "learned/verify/20260929T222042Z-41700907e328-e5c9851543b4/golden-compare.md",
+    "added": "72",
+    "removed": "0"
+   },
+   {
+    "file": "learned/verify/20260929T222042Z-41700907e328-e5c9851543b4/holdout-compare.md",
+    "added": "72",
+    "removed": "0"
+   },
+   {
+    "file": "learned/verify/20260929T225317Z-41700907e328-9d922e730f1a/evidence.json",
+    "added": "600",
+    "removed": "0"
+   },
+   {
+    "file": "learned/verify/20260929T225317Z-41700907e328-9d922e730f1a/evidence.md",
+    "added": "80",
+    "removed": "0"
+   },
+   {
+    "file": "learned/verify/20260929T225317Z-41700907e328-9d922e730f1a/golden-compare.md",
+    "added": "72",
+    "removed": "0"
+   },
+   {
+    "file": "learned/verify/20260929T225317Z-41700907e328-9d922e730f1a/holdout-compare.md",
+    "added": "72",
+    "removed": "0"
+   },
+   {
+    "file": "pipeline.py",
+    "added": "172",
+    "removed": "7"
+   },
+   {
+    "file": "trends-db-template/.gitattributes",
+    "added": "8",
+    "removed": "0"
+   },
+   {
+    "file": "trends-db-template/README.md",
+    "added": "71",
+    "removed": "0"
+   },
+   {
+    "file": "trends-db-template/creators/.gitkeep",
+    "added": "0",
+    "removed": "0"
+   },
+   {
+    "file": "trends-db-template/derived/.gitkeep",
+    "added": "0",
+    "removed": "0"
+   },
+   {
+    "file": "trends-db-template/digests/.gitkeep",
+    "added": "0",
+    "removed": "0"
+   },
+   {
+    "file": "trends-db-template/observations/.gitkeep",
+    "added": "0",
+    "removed": "0"
+   },
+   {
+    "file": "trends-db-template/schema/creator.v1.json",
+    "added": "111",
+    "removed": "0"
+   },
+   {
+    "file": "trends-db-template/schema/observation.v1.json",
+    "added": "543",
+    "removed": "0"
+   },
+   {
+    "file": "trends-db-template/schema/recipe.v1.json",
+    "added": "499",
+    "removed": "0"
+   },
+   {
+    "file": "trends-db-template/schema/signal.v1.json",
+    "added": "137",
+    "removed": "0"
+   },
+   {
+    "file": "trends-db-template/schema/trend.v1.json",
+    "added": "499",
+    "removed": "0"
+   },
+   {
+    "file": "trends-db-template/signals/.gitkeep",
+    "added": "0",
+    "removed": "0"
+   }
+  ]
+ }
+}
